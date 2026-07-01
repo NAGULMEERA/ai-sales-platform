@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Sales Employee Platform – Complete Enterprise Backlog v6.0</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f0f2f5;
+            color: #0b1e3a;
+            line-height: 1.7;
+            padding: 28px 18px;
+        }
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+            padding: 44px 42px;
+        }
+        h1 {
+            font-size: 2.2rem;
+            border-bottom: 3px solid #e9edf4;
+            padding-bottom: 18px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        h1 small { font-size: 1rem; font-weight: 400; color: #4a5a72; }
+        .badge {
+            background: #0f7b3e;
+            color: white;
+            font-weight: 600;
+            font-size: 0.7rem;
+            padding: 4px 18px;
+            border-radius: 40px;
+            margin-left: 10px;
+        }
+        .badge-ai { background: #6c2bd9; color: white; font-weight: 600; font-size: 0.7rem; padding: 4px 18px; border-radius: 40px; margin-left: 10px; }
+        .badge-mvp { background: #e67e22; color: white; font-weight: 600; font-size: 0.7rem; padding: 4px 18px; border-radius: 40px; margin-left: 10px; }
+        .badge-sprint { background: #3498db; color: white; font-weight: 600; font-size: 0.7rem; padding: 4px 12px; border-radius: 40px; }
+        .badge-new { background: #e74c3c; color: white; font-weight: 600; font-size: 0.65rem; padding: 2px 12px; border-radius: 40px; }
+        .badge-approved { background: #2ecc71; color: white; font-weight: 600; font-size: 0.65rem; padding: 2px 12px; border-radius: 40px; }
+        .badge-pending { background: #f39c12; color: white; font-weight: 600; font-size: 0.65rem; padding: 2px 12px; border-radius: 40px; }
+        .badge-future { background: #95a5a6; color: white; font-weight: 600; font-size: 0.65rem; padding: 2px 12px; border-radius: 40px; }
+        h2 {
+            font-size: 1.6rem;
+            margin-top: 44px;
+            margin-bottom: 14px;
+            border-left: 6px solid #0f7b3e;
+            padding-left: 18px;
+        }
+        h2.epic {
+            border-left-color: #e67e22;
+            background: linear-gradient(to right, #fef9f0, transparent);
+            padding: 12px 18px;
+            border-radius: 0 8px 8px 0;
+            font-size: 1.4rem;
+        }
+        h2.epic-new {
+            border-left-color: #e74c3c;
+            background: linear-gradient(to right, #fdeaea, transparent);
+            padding: 12px 18px;
+            border-radius: 0 8px 8px 0;
+            font-size: 1.4rem;
+        }
+        h2.epic-arch {
+            border-left-color: #8b5cf6;
+            background: linear-gradient(to right, #f3e8ff, transparent);
+            padding: 12px 18px;
+            border-radius: 0 8px 8px 0;
+            font-size: 1.4rem;
+        }
+        h2.epic-sec {
+            border-left-color: #dc3545;
+            background: linear-gradient(to right, #fdeaea, transparent);
+            padding: 12px 18px;
+            border-radius: 0 8px 8px 0;
+            font-size: 1.4rem;
+        }
+        h2.epic-audit {
+            border-left-color: #6c2bd9;
+            background: linear-gradient(to right, #f3e8ff, transparent);
+            padding: 12px 18px;
+            border-radius: 0 8px 8px 0;
+            font-size: 1.4rem;
+        }
+        h3 {
+            font-size: 1.2rem;
+            margin-top: 26px;
+            margin-bottom: 10px;
+            color: #1a2b44;
+        }
+        h4 { font-size: 1rem; margin-top: 16px; margin-bottom: 8px; color: #2c3e50; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+            margin: 14px 0 18px 0;
+            min-width: 360px;
+        }
+        th {
+            text-align: left;
+            padding: 10px 14px;
+            background: #edf2f9;
+            font-weight: 600;
+            border-bottom: 2px solid #d0dbea;
+        }
+        td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #e6ecf5;
+            vertical-align: top;
+        }
+        .table-wrap {
+            background: #f9fafc;
+            border-radius: 16px;
+            border: 1px solid #e9edf4;
+            overflow-x: auto;
+            margin: 12px 0 10px 0;
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 18px;
+            margin: 16px 0;
+        }
+        .card {
+            background: #f9fafc;
+            border: 1px solid #e6ecf5;
+            border-radius: 14px;
+            padding: 18px 20px;
+            text-align: center;
+        }
+        .card strong { display: block; font-size: 1rem; margin-bottom: 4px; }
+        .card .count { font-size: 2rem; font-weight: 700; color: #0f7b3e; }
+        .card .label { font-size: 0.85rem; color: #4a5a72; }
+        .card.mvp-card { background: #fef9f0; border-color: #f0d5b0; }
+        .card.tech-card { background: #eef6ff; border-color: #b0cff0; }
+        .card.status-card { background: #eef9f0; border-color: #a8d5ba; }
+        .card.arch-card { background: #f3e8ff; border-color: #c4b5e3; }
+        .card.sec-card { background: #fdeaea; border-color: #f5c6cb; }
+        .flow-box {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 14px;
+            padding: 20px 24px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.78rem;
+            line-height: 1.9;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            border: 1px solid #2d3a52;
+            margin: 14px 0;
+        }
+        .flow-box.ai-flow { background: #1a0e2e; border-color: #6c2bd9; }
+        .highlight-box {
+            padding: 16px 22px;
+            border-radius: 12px;
+            margin: 16px 0;
+        }
+        .highlight-box.gold { background: #fef9f0; border-left: 5px solid #e67e22; }
+        .highlight-box.blue { background: #eef6ff; border-left: 5px solid #3498db; }
+        .highlight-box.green { background: #eef9f0; border-left: 5px solid #2ecc71; }
+        .highlight-box.red { background: #fdeaea; border-left: 5px solid #e74c3c; }
+        .highlight-box.ai { background: #f8f4ff; border-left: 5px solid #6c2bd9; }
+        .highlight-box.purple { background: #f3e8ff; border-left: 5px solid #8b5cf6; }
+        .highlight-box.teal { background: #e6f7f5; border-left: 5px solid #0d9488; }
+        .highlight-box.orange { background: #fef3c7; border-left: 5px solid #f59e0b; }
+        .print-btn {
+            background: #0f7b3e;
+            color: white;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin: 8px 0 16px 0;
+        }
+        .print-btn:hover { background: #0b5f30; }
+        .badge-pill {
+            display: inline-block;
+            background: #0f7b3e;
+            color: white;
+            padding: 2px 16px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-pill.ai-badge { background: #6c2bd9; }
+        .badge-pill.red-badge { background: #e74c3c; }
+        .badge-pill.purple-badge { background: #8b5cf6; }
+        .badge-pill.future-badge { background: #95a5a6; }
+        .tag {
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin: 2px 4px;
+        }
+        .tag.db { background: #dbeafe; color: #1e40af; }
+        .tag.dep { background: #fef3c7; color: #92400e; }
+        .tag.tech { background: #ede7f6; color: #4a2d6b; }
+        .tag.epic { background: #fce4ec; color: #c62828; }
+        .tag.new { background: #e74c3c; color: white; }
+        .tag.arch { background: #8b5cf6; color: white; }
+        .tag.sec { background: #dc3545; color: white; }
+        .tag.future { background: #95a5a6; color: white; }
+        .status-ok { color: #2ecc71; font-weight: 600; }
+        .status-pending { color: #f39c12; font-weight: 600; }
+        .status-future { color: #95a5a6; font-weight: 600; }
+        .timeline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 12px 0;
+        }
+        .timeline-item {
+            background: #edf2f9;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .timeline-item.active { background: #0f7b3e; color: white; }
+        .timeline-item.sprint0 { background: #8b5cf6; color: white; }
+        .timeline-item.new { background: #e74c3c; color: white; }
+        .timeline-item.arch { background: #8b5cf6; color: white; }
+        .timeline-item.sec { background: #dc3545; color: white; }
+        .timeline-item.future { background: #95a5a6; color: white; }
+        @media (max-width: 700px) {
+            .container { padding: 20px 14px; }
+            h1 { font-size: 1.6rem; }
+            h2 { font-size: 1.3rem; }
+            .card-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; border-radius: 0; padding: 20px; }
+            .print-btn { display: none; }
+            .flow-box { background: #f4f4f4; color: #1a1a1a; border: 1px solid #ccc; }
+        }
+        .change-log {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        .change-log-item {
+            background: #f9fafc;
+            padding: 8px 14px;
+            border-radius: 8px;
+            border-left: 3px solid #0f7b3e;
+        }
+        .change-log-item.new { border-left-color: #e74c3c; background: #fdeaea; }
+        .change-log-item.arch { border-left-color: #8b5cf6; background: #f3e8ff; }
+        .change-log-item.sec { border-left-color: #dc3545; background: #fdeaea; }
+        .change-log-item.future { border-left-color: #95a5a6; background: #f5f5f5; }
+        .change-log-item .sprint-tag { font-weight: 700; color: #3498db; }
+        .version-badge {
+            display: inline-block;
+            background: #0f7b3e;
+            color: white;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .section-divider {
+            background: #f8fafc;
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 1px solid #e9edf4;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 600;
+            color: #4a5a72;
+        }
+        .future-section {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- HEADER -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
+        <h1>🏗️ AI Sales Employee Platform <small>— Complete Enterprise Backlog v6.0</small> 
+            <span class="badge">Production-Ready</span>
+            <span class="badge-ai">AI-Native</span>
+            <span class="badge-mvp">Enterprise-Grade</span>
+            <span class="badge-new">v6.0</span>
+        </h1>
+        <button class="print-btn" onclick="window.print()">🖨️ Print / PDF</button>
+    </div>
+
+    <!-- EXECUTIVE SUMMARY -->
+    <div class="highlight-box gold">
+        <strong>🎯 Role: Chief Architect</strong><br>
+        <strong>Vision:</strong> Build a complete AI Sales Employee Platform from scratch while mastering 45+ technologies across 20 sprints.<br>
+        <strong>Goal:</strong> Enterprise-grade, multi-industry, plug-and-play SaaS platform with full security, compliance, and operational readiness.
+    </div>
+
+    <!-- STATS CARDS -->
+    <div class="card-grid">
+        <div class="card mvp-card"><strong>📋 Epics</strong><span class="count">48</span><span class="label">Total Epics</span></div>
+        <div class="card mvp-card"><strong>⚙️ Features</strong><span class="count">210</span><span class="label">Total Features</span></div>
+        <div class="card mvp-card"><strong>📝 User Stories</strong><span class="count">900+</span><span class="label">Total Stories</span></div>
+        <div class="card mvp-card"><strong>📊 Sprints</strong><span class="count">20</span><span class="label">Total Sprints</span></div>
+        <div class="card"><strong>🗄️ DB Tables</strong><span class="count">200+</span><span class="label">Tables Used</span></div>
+        <div class="card"><strong>📅 Timeline</strong><span class="count">40</span><span class="label">Weeks (10 months)</span></div>
+        <div class="card tech-card"><strong>🛠️ Technologies</strong><span class="count">45+</span><span class="label">Tech Stack</span></div>
+        <div class="card tech-card"><strong>📚 Learning</strong><span class="count">20</span><span class="label">Sprint Learning Paths</span></div>
+        <div class="card sec-card"><strong>🔐 Security</strong><span class="count">✅</span><span class="label">Secrets + Rate Limits</span></div>
+        <div class="card arch-card"><strong>✅ Quality</strong><span class="count">9.9</span><span class="label">/10 (Chief Architect)</span></div>
+        <div class="card status-card"><strong>🚀 Status</strong><span class="count">✅</span><span class="label">Approved for Development</span></div>
+    </div>
+
+    <!-- SPRINT TIMELINE -->
+    <div class="highlight-box blue">
+        <strong>📅 Sprint Timeline (20 Sprints × 2 Weeks = 40 Weeks)</strong>
+        <div class="timeline">
+            <span class="timeline-item sprint0">S0<br>Foundation</span>
+            <span class="timeline-item active">S1<br>Tenant</span>
+            <span class="timeline-item">S2<br>Leads</span>
+            <span class="timeline-item">S3<br>Customer</span>
+            <span class="timeline-item">S4<br>Kafka+Plugin</span>
+            <span class="timeline-item">S5<br>Real Estate</span>
+            <span class="timeline-item">S6<br>AI Qual</span>
+            <span class="timeline-item">S7<br>Scoring</span>
+            <span class="timeline-item">S8<br>Appts</span>
+            <span class="timeline-item">S9<br>Workflow</span>
+            <span class="timeline-item">S10<br>Analytics</span>
+            <span class="timeline-item">S11<br>Voice AI</span>
+            <span class="timeline-item">S12<br>RAG</span>
+            <span class="timeline-item">S13<br>Observability</span>
+            <span class="timeline-item">S14<br>Admin</span>
+            <span class="timeline-item new">S15<br>Onboarding</span>
+            <span class="timeline-item">S16<br>Integration</span>
+            <span class="timeline-item arch">S17<br>Audit</span>
+            <span class="timeline-item sec">S18<br>Secrets+Rate</span>
+            <span class="timeline-item sec">S19<br>Disaster Recovery</span>
+            <span class="timeline-item">S20<br>Hardening</span>
+        </div>
+    </div>
+
+    <!-- WHAT'S NEW IN v6.0 -->
+    <div class="highlight-box red">
+        <strong>🆕 What's New in v6.0</strong>
+        <div class="change-log">
+            <div class="change-log-item sec"><span class="sprint-tag">Epic 42</span> Secrets Management (Vault, AWS Secrets Manager, Azure Key Vault, Rotation)</div>
+            <div class="change-log-item sec"><span class="sprint-tag">Epic 43</span> Disaster Recovery (Backup, PITR, Kafka/Redis Recovery, RTO/RPO)</div>
+            <div class="change-log-item sec"><span class="sprint-tag">Epic 44</span> Rate Limiting (Tenant, API, AI, Webhook Limits with Bucket4j)</div>
+            <div class="change-log-item arch"><span class="sprint-tag">Epic 45</span> Centralized Audit Domain (Who, What, When, Before/After)</div>
+            <div class="change-log-item future"><span class="sprint-tag">⏳ MOVED TO FUTURE</span> Model Registry (Epic 38) → Moved to Future Phase</div>
+            <div class="change-log-item future"><span class="sprint-tag">⏳ MOVED TO FUTURE</span> Fine Tuning (Epic 39) → Moved to Future Phase</div>
+        </div>
+        <div style="margin-top:10px; font-size:0.9rem;">
+            <strong>Key Changes:</strong> Model Registry and Fine Tuning moved to future phase | Secrets Management, Disaster Recovery, Rate Limiting, and Centralized Audit Domain added | Sprints reorganized
+        </div>
+    </div>
+
+    <!-- TOC -->
+    <div style="background: #f9fafc; border-radius: 16px; border: 1px solid #e6ecf5; padding: 18px 24px; margin-bottom: 28px;">
+        <h3 style="margin:0 0 6px 0;">📋 Table of Contents</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px 16px; font-size:0.85rem;">
+            <div><strong>Part 1:</strong> Overview & Tech Stack</div>
+            <div><strong>Part 2:</strong> Epics 0-16 (Core)</div>
+            <div><strong>Part 3:</strong> Epics 17-23 (Infrastructure)</div>
+            <div><strong>Part 4:</strong> Epics 24-31 (Customer/Admin)</div>
+            <div><strong>Part 5:</strong> Epics 32-41 (Integration/AI)</div>
+            <div><strong>Part 6:</strong> Epics 42-45 (NEW - v6.0)</div>
+            <div><strong>Part 7:</strong> Moved to Future</div>
+            <div><strong>Part 8:</strong> Sprint Allocation</div>
+            <div><strong>Part 9:</strong> Learning Path</div>
+            <div><strong>Part 10:</strong> DB Tables Reference</div>
+            <div><strong>Part 11:</strong> Chief Architect Approval</div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PART 1: OVERVIEW & TECH STACK                                -->
+    <!-- ============================================================ -->
+    <h2>📚 Part 1: Overview & Technology Stack</h2>
+
+    <div class="highlight-box gold">
+        <strong>🎯 Executive Summary:</strong> Complete enterprise-grade backlog with 48 Epics, 210 Features, 900+ User Stories across 20 Sprints (40 Weeks).
+    </div>
+
+    <div class="section-divider">🌐 Enterprise Architecture Overview</div>
+
+    <div class="flow-box">
+Bounded Contexts (DDD):
+    │
+    ├── Tenant Context        → Multi-tenancy, Users, Roles, Permissions
+    ├── Lead Context          → Lead capture, qualification, scoring, assignment
+    ├── Customer Context      → 360 profile, journey, interactions, timeline
+    ├── Catalog Context       → Multi-industry product catalog, search, embeddings
+    ├── Conversation Context  → Omnichannel sessions, memory, transcripts
+    ├── Appointment Context   → Calendar, booking, reminders
+    ├── Workflow Context      → State machine, agent orchestration, saga
+    ├── Billing Context       → Subscriptions, invoices, payments, usage
+    ├── Notification Context  → Multi-channel routing, templates
+    ├── Analytics Context     → KPIs, funnels, ROI, attribution
+    ├── Integration Context   → Facebook, Google, Zapier, Webhooks
+    ├── Knowledge Context     → Documents, RAG, sources, versioning
+    ├── AI Context            → LLM integration, prompt management, evaluations
+    ├── Audit Context         → Centralized audit, before/after, who/when
+    ├── Secrets Context       → Secret management, rotation, encryption
+    ├── DR Context            → Backup, restore, cross-region recovery
+    └── Governance Context    → Data governance, AI governance, compliance
+    </div>
+
+    <div class="card-grid">
+        <div class="card tech-card"><strong>Sprint 0: Foundation</strong>
+            <span class="tag tech">Java 17</span>
+            <span class="tag tech">Spring Boot</span>
+            <span class="tag tech">Maven</span>
+            <span class="tag tech">Docker</span>
+            <span class="tag tech">Flyway</span>
+            <span class="tag tech">ArchUnit</span>
+            <span class="tag tech">Testcontainers</span>
+            <span class="tag tech">WireMock</span>
+        </div>
+        <div class="card tech-card"><strong>Sprint 1-3: Core</strong>
+            <span class="tag tech">Spring Security</span>
+            <span class="tag tech">JWT</span>
+            <span class="tag tech">RBAC</span>
+            <span class="tag tech">PostgreSQL</span>
+            <span class="tag tech">Redis</span>
+            <span class="tag tech">Feature Flags</span>
+            <span class="tag tech">DDD</span>
+        </div>
+        <div class="card tech-card"><strong>Sprint 4-6: Events + AI</strong>
+            <span class="tag tech">Kafka</span>
+            <span class="tag tech">MDC</span>
+            <span class="tag tech">Plugin SDK</span>
+            <span class="tag tech">OpenAI/Gemini/Claude</span>
+            <span class="tag tech">pgvector</span>
+            <span class="tag tech">Prompt Engineering</span>
+        </div>
+        <div class="card tech-card"><strong>Sprint 7-9: Business</strong>
+            <span class="tag tech">Meta Cloud API</span>
+            <span class="tag tech">Google Calendar</span>
+            <span class="tag tech">State Machine</span>
+            <span class="tag tech">Payment Gateway</span>
+            <span class="tag tech">Saga Pattern</span>
+        </div>
+        <div class="card tech-card"><strong>Sprint 10-12: AI-Native</strong>
+            <span class="tag tech">RAG Pipeline</span>
+            <span class="tag tech">Semantic Cache</span>
+            <span class="tag tech">Agent Orchestration</span>
+            <span class="tag tech">Twilio</span>
+            <span class="tag tech">Full-Text Search</span>
+        </div>
+        <div class="card tech-card"><strong>Sprint 13-15: Enterprise</strong>
+            <span class="tag tech">Kubernetes</span>
+            <span class="tag tech">Prometheus</span>
+            <span class="tag tech">Grafana</span>
+            <span class="tag tech">Data Governance</span>
+            <span class="tag tech">Onboarding Wizard</span>
+        </div>
+        <div class="card tech-card"><strong>Sprint 16-17: Integration + Audit</strong>
+            <span class="tag tech">Integration Platform</span>
+            <span class="tag tech">Centralized Audit</span>
+            <span class="tag tech">Before/After Tracking</span>
+        </div>
+        <div class="card tech-card"><strong>Sprint 18-20: Security + Ops</strong>
+            <span class="tag tech">Vault</span>
+            <span class="tag tech">AWS Secrets Manager</span>
+            <span class="tag tech">Bucket4j</span>
+            <span class="tag tech">Disaster Recovery</span>
+            <span class="tag tech">RTO/RPO</span>
+            <span class="tag tech">Security Hardening</span>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PART 6: EPICS 42-45 (NEW - v6.0)                             -->
+    <!-- ============================================================ -->
+    <h2>🆕 Part 6: Epics 42-45 (NEW - v6.0)</h2>
+
+    <!-- EPIC 42: Secrets Management -->
+    <h2 class="epic-sec">4️⃣2️⃣ EPIC-42: Secrets Management (Sprint 18)</h2>
+    <div class="highlight-box red">
+        <strong>🎯 Goal:</strong> Secure secrets management with Vault, AWS Secrets Manager, Azure Key Vault, and automated API key rotation.
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>User Story</th><th>Acceptance Criteria</th><th>DB Tables</th><th>Tech Skills</th><th>Status</th></tr></thead>
+            <tbody>
+                <tr><td><strong>42.1.1</strong> Vault integration</td>
+                    <td>Hashicorp Vault setup, AppRole/JWT authentication, secret storage, dynamic secrets</td>
+                    <td><span class="tag db">secrets</span> <span class="tag db">secret_versions</span></td>
+                    <td><span class="tag tech">Hashicorp Vault</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>42.1.2</strong> AWS Secrets Manager integration</td>
+                    <td>AWS Secrets Manager setup, secret rotation, IAM permissions, cross-account access</td>
+                    <td><span class="tag db">secrets</span></td>
+                    <td><span class="tag tech">AWS Secrets Manager</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>42.1.3</strong> API key management</td>
+                    <td>Store OpenAI, Gemini, Claude, Twilio, Meta, Google API keys securely</td>
+                    <td><span class="tag db">secrets</span> <span class="tag db">secret_versions</span></td>
+                    <td><span class="tag tech">API Key Management</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>42.1.4</strong> Secret rotation</td>
+                    <td>Automated rotation of API keys, rotation policies, impact assessment, rollback</td>
+                    <td><span class="tag db">secret_versions</span></td>
+                    <td><span class="tag tech">Secret Rotation</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>42.1.5</strong> Secret audit</td>
+                    <td>Secret access logging, audit trail, unauthorized access detection, compliance reporting</td>
+                    <td><span class="tag db">secret_access_logs</span></td>
+                    <td><span class="tag tech">Audit, Compliance</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>42.1.6</strong> Tenant-specific secrets</td>
+                    <td>Per-tenant API keys (WhatsApp, Facebook, Google), isolated storage, tenant access control</td>
+                    <td><span class="tag db">secrets</span> <span class="tag db">tenant_secrets</span></td>
+                    <td><span class="tag tech">Multi-Tenant Secrets</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>42.1.7</strong> Encryption at rest</td>
+                    <td>Encrypt secrets in storage, KMS integration, key management, encryption rotation</td>
+                    <td><span class="tag db">secrets</span></td>
+                    <td><span class="tag tech">Encryption, KMS</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- EPIC 43: Disaster Recovery -->
+    <h2 class="epic-sec">4️⃣3️⃣ EPIC-43: Disaster Recovery (Sprint 19)</h2>
+    <div class="highlight-box red">
+        <strong>🎯 Goal:</strong> Comprehensive disaster recovery with PostgreSQL backup, PITR, Kafka/Redis recovery, restore testing, and RTO/RPO.
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>User Story</th><th>Acceptance Criteria</th><th>DB Tables</th><th>Tech Skills</th><th>Status</th></tr></thead>
+            <tbody>
+                <tr><td><strong>43.1.1</strong> PostgreSQL backup strategy</td>
+                    <td>Daily full backups, hourly WAL archives, pg_dump, S3 storage, backup verification</td>
+                    <td><span class="tag db">backup_metadata</span></td>
+                    <td><span class="tag tech">PostgreSQL Backup, AWS S3</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>43.1.2</strong> Point-in-time recovery (PITR)</td>
+                    <td>Recover database to any point in time, PITR capability, recovery testing</td>
+                    <td><span class="tag db">restore_logs</span></td>
+                    <td><span class="tag tech">PITR, pg_wal</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>43.1.3</strong> Kafka cluster recovery</td>
+                    <td>Kafka broker failure recovery, replication factor 3, controller failover, data rebalance</td>
+                    <td><span class="tag db">backup_metadata</span></td>
+                    <td><span class="tag tech">Kafka Recovery, Replication</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>43.1.4</strong> Redis recovery</td>
+                    <td>Redis persistence, AOF/RDB backup, cluster recovery, cache warm-up</td>
+                    <td><span class="tag db">backup_metadata</span></td>
+                    <td><span class="tag tech">Redis Recovery</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>43.1.5</strong> RTO/RPO definition</td>
+                    <td>Recovery Time Objective: 4 hours, Recovery Point Objective: 15 minutes, documented</td>
+                    <td><span class="tag db">dr_runbooks</span></td>
+                    <td><span class="tag tech">RTO/RPO Planning</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>43.1.6</strong> Restore testing</td>
+                    <td>Quarterly restore tests, restore automation, restore verification, test reporting</td>
+                    <td><span class="tag db">restore_logs</span> <span class="tag db">dr_runbooks</span></td>
+                    <td><span class="tag tech">Restore Testing, Automation</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>43.1.7</strong> Disaster recovery runbook</td>
+                    <td>DR procedures, step-by-step recovery, roles and responsibilities, escalation paths</td>
+                    <td><span class="tag db">dr_runbooks</span></td>
+                    <td><span class="tag tech">Runbook, Incident Management</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>43.1.8</strong> DR drill automation</td>
+                    <td>Automated DR drills, isolated environment, rollback capability, drill reporting</td>
+                    <td><span class="tag db">restore_logs</span></td>
+                    <td><span class="tag tech">Automation, Terraform</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- EPIC 44: Rate Limiting -->
+    <h2 class="epic-sec">4️⃣4️⃣ EPIC-44: Rate Limiting (Sprint 18)</h2>
+    <div class="highlight-box red">
+        <strong>🎯 Goal:</strong> Comprehensive rate limiting at tenant, API, AI request, and webhook levels using Bucket4j + Redis.
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>User Story</th><th>Acceptance Criteria</th><th>DB Tables</th><th>Tech Skills</th><th>Status</th></tr></thead>
+            <tbody>
+                <tr><td><strong>44.1.1</strong> Tenant rate limits</td>
+                    <td>Limit API calls per tenant, configurable per plan, Redis distributed counting</td>
+                    <td><span class="tag db">rate_limits</span> <span class="tag db">rate_limit_usage</span></td>
+                    <td><span class="tag tech">Bucket4j, Redis</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>44.1.2</strong> API rate limits</td>
+                    <td>Limit per endpoint, per user, per IP, sliding window, burst allowance</td>
+                    <td><span class="tag db">rate_limits</span></td>
+                    <td><span class="tag tech">Rate Limiting, Bucket4j</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>44.1.3</strong> AI request limits</td>
+                    <td>Limit LLM requests per tenant/minute, token limits, cost-based limits</td>
+                    <td><span class="tag db">rate_limits</span></td>
+                    <td><span class="tag tech">AI Throttling</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>44.1.4</strong> Webhook limits</td>
+                    <td>Limit outbound webhook calls per tenant, rate limiting, circuit breaker</td>
+                    <td><span class="tag db">rate_limits</span></td>
+                    <td><span class="tag tech">Webhook Throttling</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>44.1.5</strong> Rate limit dashboard</td>
+                    <td>View current usage, limit status, historical throttling, limit configuration UI</td>
+                    <td><span class="tag db">rate_limit_usage</span></td>
+                    <td><span class="tag tech">Dashboard UI</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>44.1.6</strong> Rate limit alerts</td>
+                    <td>Alert on approaching limits, exceeded limits, configurable thresholds</td>
+                    <td><span class="tag db">rate_limit_alerts</span></td>
+                    <td><span class="tag tech">Alerting</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- EPIC 45: Centralized Audit Domain -->
+    <h2 class="epic-audit">4️⃣5️⃣ EPIC-45: Centralized Audit Domain (Sprint 17)</h2>
+    <div class="highlight-box purple">
+        <strong>🎯 Goal:</strong> Centralized audit context tracking who changed what, when, with before and after values.
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>User Story</th><th>Acceptance Criteria</th><th>DB Tables</th><th>Tech Skills</th><th>Status</th></tr></thead>
+            <tbody>
+                <tr><td><strong>45.1.1</strong> Centralized audit framework</td>
+                    <td>Audit interceptor, @Auditable annotation, before/after value tracking, correlation ID</td>
+                    <td><span class="tag db">audit_log</span> <span class="tag db">audit_hash_chain</span></td>
+                    <td><span class="tag tech">Audit Framework, Interceptors</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>45.1.2</strong> Audit context: Who, What, When</td>
+                    <td>User ID, action type, resource type, resource ID, timestamp, IP address, user agent</td>
+                    <td><span class="tag db">audit_log</span></td>
+                    <td><span class="tag tech">Context Propagation</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>45.1.3</strong> Before/After value tracking</td>
+                    <td>Track changes to all entities, JSON diff, human-readable format, rollback capability</td>
+                    <td><span class="tag db">audit_log</span></td>
+                    <td><span class="tag tech">Diff Generation</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>45.1.4</strong> Audit query API</td>
+                    <td>Search audit logs by user, resource, date range, action type, before/after values</td>
+                    <td><span class="tag db">audit_log</span></td>
+                    <td><span class="tag tech">Search, Filtering</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>45.1.5</strong> Audit retention and archival</td>
+                    <td>Retention policies, automated archival to cold storage, GDPR compliance</td>
+                    <td><span class="tag db">audit_log</span> <span class="tag db">audit_log_archive</span></td>
+                    <td><span class="tag tech">Retention, Archival</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+                <tr><td><strong>45.1.6</strong> Audit tamper protection</td>
+                    <td>SHA-256 hash chain, tamper detection, cryptographic integrity, audit report</td>
+                    <td><span class="tag db">audit_hash_chain</span></td>
+                    <td><span class="tag tech">Cryptography, Integrity</span></td>
+                    <td><span class="badge-pending">Pending</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PART 7: MOVED TO FUTURE                                     -->
+    <!-- ============================================================ -->
+    <h2>⏳ Part 7: Moved to Future Phase</h2>
+
+    <div class="highlight-box orange">
+        <strong>⏳ These items are moved to a future phase (Year 2+)</strong>
+        <p style="margin-top:8px;"><strong>Reason:</strong> For the first customers, the platform will use pre-trained models (OpenAI, Gemini, Claude). Model Registry and Fine Tuning are overengineering at this stage. Re-evaluate when custom model training becomes a requirement.</p>
+    </div>
+
+    <div class="future-section">
+        <h2 class="epic" style="opacity:0.6;">3️⃣8️⃣ EPIC-38: Model Registry — FUTURE PHASE</h2>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>User Story</th><th>Acceptance Criteria</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>38.1.1</strong> Model registration</td>
+                    <td>Register models, metadata, version tracking, deployment status</td>
+                    <td><span class="badge-future">Future Phase</span></td>
+                </tr>
+                <tr><td><strong>38.1.2</strong> Model deployments</td>
+                    <td>Deploy to staging, canary, production; rollout percentage; rollback</td>
+                    <td><span class="badge-future">Future Phase</span></td>
+                </tr>
+                <tr><td><strong>38.1.3</strong> Model metrics</td>
+                    <td>Latency, accuracy, cost, success rate, token usage</td>
+                    <td><span class="badge-future">Future Phase</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="future-section">
+        <h2 class="epic" style="opacity:0.6;">3️⃣9️⃣ EPIC-39: Fine Tuning — FUTURE PHASE</h2>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>User Story</th><th>Acceptance Criteria</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>39.1.1</strong> Fine-tuning pipeline</td>
+                    <td>Dataset preparation, job orchestration, model selection, hyperparameter tuning</td>
+                    <td><span class="badge-future">Future Phase</span></td>
+                </tr>
+                <tr><td><strong>39.1.2</strong> Fine-tuning evaluation</td>
+                    <td>Compare fine-tuned vs base model, quality metrics, deployment decision</td>
+                    <td><span class="badge-future">Future Phase</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PART 8: SPRINT ALLOCATION                                   -->
+    <!-- ============================================================ -->
+    <h2>📊 Part 8: Complete Sprint Allocation</h2>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Sprint</th><th>Deliverables</th><th>Features</th><th>Stories</th><th>Tech Focus</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Sprint 0</strong></td><td>Foundation + Developer Productivity + Git Strategy + Test Infrastructure</td><td>6</td><td>22</td><td>Maven, Docker, Flyway, CI, ArchUnit, Testcontainers, WireMock</td></tr>
+                <tr><td><strong>Sprint 1</strong></td><td>Tenant Management + Tenant Provisioning + Security</td><td>4</td><td>18</td><td>Spring Security, JWT, RBAC</td></tr>
+                <tr><td><strong>Sprint 2</strong></td><td>Lead Management + Feature Flags + Lead Import</td><td>4</td><td>18</td><td>CRUD, Feature Flags, CSV Import</td></tr>
+                <tr><td><strong>Sprint 3</strong></td><td>Customer 360 + Customer Timeline + Correlation ID</td><td>4</td><td>20</td><td>Data Aggregation, Timeline, MDC, RLS</td></tr>
+                <tr><td><strong>Sprint 4</strong></td><td>Kafka + Plugin SDK + Industry Plugin Examples</td><td>4</td><td>20</td><td>Kafka, Plugin Architecture, SDK Design</td></tr>
+                <tr><td><strong>Sprint 5</strong></td><td>Real Estate Plugin + API Governance</td><td>3</td><td>16</td><td>Plugin Implementation, OpenAPI, Contract Testing</td></tr>
+                <tr><td><strong>Sprint 6</strong></td><td>AI Qualification + LLM + Prompt Management</td><td>4</td><td>18</td><td>LLM APIs, Prompt Engineering</td></tr>
+                <tr><td><strong>Sprint 7</strong></td><td>AI Scoring + WhatsApp + Human Takeover</td><td>4</td><td>18</td><td>Scoring, Meta API, Escalation</td></tr>
+                <tr><td><strong>Sprint 8</strong></td><td>Appointment + Notification Platform</td><td>4</td><td>18</td><td>Google Calendar, Multi-channel</td></tr>
+                <tr><td><strong>Sprint 9</strong></td><td>Workflow Engine + Billing Foundation</td><td>3</td><td>16</td><td>State Machine, Payment Gateway</td></tr>
+                <tr><td><strong>Sprint 10</strong></td><td>Analytics Dashboard + Cost Protection</td><td>4</td><td>20</td><td>Charts, Budgets, Alerts</td></tr>
+                <tr><td><strong>Sprint 11</strong></td><td>Voice AI + Search Platform</td><td>4</td><td>18</td><td>Twilio, Full-Text Search</td></tr>
+                <tr><td><strong>Sprint 12</strong></td><td>RAG + Knowledge Management</td><td>4</td><td>20</td><td>RAG, Semantic Cache, Agents</td></tr>
+                <tr><td><strong>Sprint 13</strong></td><td>Observability + Kubernetes</td><td>3</td><td>16</td><td>Prometheus, Grafana, K8s</td></tr>
+                <tr><td><strong>Sprint 14</strong></td><td>Admin Operations + Data Governance + Data Import</td><td>5</td><td>24</td><td>Admin UI, GDPR, PII Masking</td></tr>
+                <tr><td><strong>Sprint 15</strong></td><td>Customer Success + Onboarding</td><td>3</td><td>16</td><td>Onboarding Wizard, Health Metrics</td></tr>
+                <tr><td><strong>Sprint 16</strong></td><td>Integration Platform</td><td>4</td><td>20</td><td>Facebook, Google, Zapier, Webhooks</td></tr>
+                <tr><td><strong>Sprint 17</strong></td><td>Centralized Audit Domain</td><td>4</td><td>18</td><td>Audit Framework, Before/After, Hash Chain</td></tr>
+                <tr><td><strong>Sprint 18</strong></td><td>Secrets Management + Rate Limiting</td><td>4</td><td>22</td><td>Vault, AWS Secrets Manager, Bucket4j</td></tr>
+                <tr><td><strong>Sprint 19</strong></td><td>Disaster Recovery</td><td>4</td><td>20</td><td>Backup, PITR, RTO/RPO, Restore Testing</td></tr>
+                <tr><td><strong>Sprint 20</strong></td><td>Hardening + Performance + Security</td><td>3</td><td>16</td><td>OWASP, Load Testing, Security</td></tr>
+                <tr><td><strong>Total</strong></td><td><strong>Complete Enterprise Platform</strong></td><td><strong>82</strong></td><td><strong>386</strong></td><td><strong>45+ Technologies</strong></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PART 9: LEARNING PATH                                       -->
+    <!-- ============================================================ -->
+    <h2>📚 Part 9: Learning Path by Sprint</h2>
+
+    <div class="card-grid">
+        <div class="card tech-card"><strong>Sprint 0: Foundation</strong>
+            <span class="tag tech">Java 17 LTS</span>
+            <span class="tag tech">Spring Boot 3.2</span>
+            <span class="tag tech">Maven</span>
+            <span class="tag tech">Docker</span>
+            <span class="tag tech">Flyway</span>
+            <span class="tag tech">ArchUnit</span>
+            <span class="tag tech">Testcontainers</span>
+            <span class="tag tech">WireMock</span>
+        </div>
+        <div class="card tech-card"><strong>Sprint 1-3: Core</strong>
+            <span class="tag tech">Spring Security</span>
+            <span class="tag tech">JWT</span>
+            <span class="tag tech">RBAC</span>
+            <span class="tag tech">PostgreSQL 14</span>
+            <span class="tag tech">Redis 7</span>
+            <span class="tag tech">Feature Flags</span>
+            <span class="tag tech">DDD Bounded Contexts</span>
+        </div>
+        <div class="card tech-card"><strong>Sprint 4-6: Events + AI</strong>
+            <span class="tag tech">Kafka 3.x</span>
+            <span class="tag tech">MDC</span>
+            <span class="tag tech">Plugin SDK</span>
+            <span class="tag tech">OpenAI/Gemini/Claude</span>
+            <span class="tag tech">pgvector</span>
+            <span class="tag tech">LangChain4j</span>
+        </div>
+        <div class="card tech-card"><strong>Sprint 7-9: Business</strong>
+            <span class="tag tech">Meta Cloud API</span>
+            <span class="tag tech">Google Calendar</span>
+            <span class="tag tech">State Machine</span>
+            <span class="tag tech">Payment Gateway</span>
+            <span class="tag tech">Saga Pattern</span>
+            <span class="tag tech">Resilience4j</span>
+        </div>
+        <div class="card tech-card"><strong>Sprint 10-12: AI-Native</strong>
+            <span class="tag tech">RAG Pipeline</span>
+            <span class="tag tech">Semantic Cache</span>
+            <span class="tag tech">Agent Orchestration</span>
+            <span class="tag tech">Twilio</span>
+            <span class="tag tech">Full-Text Search</span>
+            <span class="tag tech">Document Library</span>
+        </div>
+        <div class="card tech-card"><strong>Sprint 13-15: Enterprise</strong>
+            <span class="tag tech">Kubernetes (EKS)</span>
+            <span class="tag tech">Prometheus</span>
+            <span class="tag tech">Grafana</span>
+            <span class="tag tech">Loki</span>
+            <span class="tag tech">Data Governance</span>
+            <span class="tag tech">Onboarding Wizard</span>
+        </div>
+        <div class="card tech-card"><strong>Sprint 16-17: Integration + Audit</strong>
+            <span class="tag tech">Integration Platform</span>
+            <span class="tag tech">Zapier</span>
+            <span class="tag tech">Audit Framework</span>
+            <span class="tag tech">Hash Chain</span>
+            <span class="tag tech">Before/After Tracking</span>
+        </div>
+        <div class="card tech-card"><strong>Sprint 18-20: Security + Ops</strong>
+            <span class="tag tech">Vault</span>
+            <span class="tag tech">AWS Secrets Manager</span>
+            <span class="tag tech">Bucket4j</span>
+            <span class="tag tech">Disaster Recovery</span>
+            <span class="tag tech">RTO/RPO</span>
+            <span class="tag tech">Security Hardening</span>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PART 10: DB TABLES REFERENCE                                 -->
+    <!-- ============================================================ -->
+    <h2>🗄️ Part 10: Database Tables Reference</h2>
+
+    <div class="highlight-box blue">
+        <strong>📊 200+ Tables Complete</strong> — All tables defined with indexes, constraints, and sample data
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; font-size: 0.85rem; margin: 16px 0;">
+        <div style="background: #f9fafc; padding: 12px; border-radius: 8px;">
+            <strong>Multi-Tenancy</strong><br>
+            <span class="tag db">tenants</span>
+            <span class="tag db">tenant_ai_config</span>
+            <span class="tag db">users</span>
+            <span class="tag db">user_roles</span>
+            <span class="tag db">user_sessions</span>
+            <span class="tag db">user_permissions</span>
+            <span class="tag db">tenant_features</span>
+            <span class="tag db">tenant_feature_overrides</span>
+        </div>
+        <div style="background: #f9fafc; padding: 12px; border-radius: 8px;">
+            <strong>Leads & Customer</strong><br>
+            <span class="tag db">leads</span>
+            <span class="tag db">lead_attribution</span>
+            <span class="tag db">lead_status_history</span>
+            <span class="tag db">lead_assignments</span>
+            <span class="tag db">lead_scorecards</span>
+            <span class="tag db">lead_duplicates</span>
+            <span class="tag db">customer_profiles</span>
+            <span class="tag db">customer_identities</span>
+            <span class="tag db">customer_interactions</span>
+            <span class="tag db">customer_journey</span>
+            <span class="tag db">customer_preferences</span>
+            <span class="tag db">customer_merge_history</span>
+        </div>
+        <div style="background: #f9fafc; padding: 12px; border-radius: 8px;">
+            <strong>Catalog</strong><br>
+            <span class="tag db">catalogs</span>
+            <span class="tag db">catalog_items</span>
+            <span class="tag db">catalog_images</span>
+            <span class="tag db">catalog_embeddings</span>
+            <span class="tag db">catalog_attribute_definitions</span>
+            <span class="tag db">catalog_status_history</span>
+        </div>
+        <div style="background: #f9fafc; padding: 12px; border-radius: 8px;">
+            <strong>Conversations</strong><br>
+            <span class="tag db">conversations</span>
+            <span class="tag db">conversation_state</span>
+            <span class="tag db">conversation_history</span>
+            <span class="tag db">conversation_memory</span>
+            <span class="tag db">ai_sessions</span>
+            <span class="tag db">conversation_transfers</span>
+            <span class="tag db">conversation_summaries</span>
+            <span class="tag db">conversation_sentiment</span>
+        </div>
+        <div style="background: #f9fafc; padding: 12px; border-radius: 8px;">
+            <strong>Appointments</strong><br>
+            <span class="tag db">appointments</span>
+            <span class="tag db">appointment_reminders</span>
+            <span class="tag db">appointment_status_history</span>
+            <span class="tag db">calendar_sync_logs</span>
+        </div>
+        <div style="background: #f9fafc; padding: 12px; border-radius: 8px;">
+            <strong>Workflow & Billing</strong><br>
+            <span class="tag db">workflow_definitions</span>
+            <span class="tag db">workflow_versions</span>
+            <span class="tag db">workflow_executions</span>
+            <span class="tag db">saga_executions</span>
+            <span class="tag db">saga_steps</span>
+            <span class="tag db">plans</span>
+            <span class="tag db">subscriptions</span>
+            <span class="tag db">invoices</span>
+            <span class="tag db">payments</span>
+            <span class="tag db">usage_metering</span>
+            <span class="tag db">pricing_catalog</span>
+        </div>
+        <div style="background: #f9fafc; padding: 12px; border-radius: 8px;">
+            <strong>AI & Analytics</strong><br>
+            <span class="tag db">llm_requests</span>
+            <span class="tag db">token_usage</span>
+            <span class="tag db">prompt_templates</span>
+            <span class="tag db">prompt_versions</span>
+            <span class="tag db">prompt_execution_logs</span>
+            <span class="tag db">prompt_evaluations</span>
+            <span class="tag db">hallucination_logs</span>
+            <span class="tag db">analytics_kpis</span>
+            <span class="tag db">conversion_funnels</span>
+            <span class="tag db">attribution_reports</span>
+            <span class="tag db">tenant_dashboards</span>
+        </div>
+        <div style="background: #f9fafc; padding: 12px; border-radius: 8px;">
+            <strong>Reliability & Audit</strong><br>
+            <span class="tag db">audit_log</span>
+            <span class="tag db">audit_hash_chain</span>
+            <span class="tag db">audit_log_archive</span>
+            <span class="tag db">outbox_events</span>
+            <span class="tag db">idempotency_keys</span>
+            <span class="tag db">retry_logs</span>
+            <span class="tag db">dead_letter</span>
+            <span class="tag db">webhook_logs</span>
+            <span class="tag db">circuit_breaker_state</span>
+        </div>
+        <div style="background: #f9fafc; padding: 12px; border-radius: 8px;">
+            <strong>AI-Native (Advanced)</strong><br>
+            <span class="tag db">semantic_cache</span>
+            <span class="tag db">cache_hits</span>
+            <span class="tag db">rag_pipelines</span>
+            <span class="tag db">chunking_strategies</span>
+            <span class="tag db">embedding_models</span>
+            <span class="tag db">tool_registry</span>
+            <span class="tag db">agent_memory</span>
+            <span class="tag db">ai_drift_detection</span>
+            <span class="tag db">ai_cost_metrics</span>
+            <span class="tag db">ai_alerts</span>
+            <span class="tag db">cost_protection_policies</span>
+        </div>
+        <div style="background: #f9fafc; padding: 12px; border-radius: 8px;">
+            <strong>🆕 Governance & Integration</strong><br>
+            <span class="tag db">retention_policies</span>
+            <span class="tag db">data_classification</span>
+            <span class="tag db">data_access_policies</span>
+            <span class="tag db">consent_records</span>
+            <span class="tag db">consent_versions</span>
+            <span class="tag db">webhooks</span>
+            <span class="tag db">webhook_logs</span>
+            <span class="tag db">knowledge_sources</span>
+            <span class="tag db">documents</span>
+            <span class="tag db">document_versions</span>
+            <span class="tag db">golden_datasets</span>
+            <span class="tag db">dataset_versions</span>
+            <span class="tag db">onboarding_checklists</span>
+            <span class="tag db">onboarding_progress</span>
+        </div>
+        <div style="background: #f9fafc; padding: 12px; border-radius: 8px;">
+            <strong>🆕 Security & DR</strong><br>
+            <span class="tag db">secrets</span>
+            <span class="tag db">secret_versions</span>
+            <span class="tag db">secret_access_logs</span>
+            <span class="tag db">tenant_secrets</span>
+            <span class="tag db">rate_limits</span>
+            <span class="tag db">rate_limit_usage</span>
+            <span class="tag db">rate_limit_alerts</span>
+            <span class="tag db">backup_metadata</span>
+            <span class="tag db">restore_logs</span>
+            <span class="tag db">dr_runbooks</span>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PART 11: CHIEF ARCHITECT APPROVAL                            -->
+    <!-- ============================================================ -->
+    <div style="margin-top: 40px; padding: 30px; background: #f0f6fe; border-radius: 16px; border: 2px solid #0f7b3e; text-align: center;">
+        <p style="font-size: 1.3rem; font-weight: 700; margin: 0; color: #0f7b3e;">✅ Chief Architect Final Approval — v6.0</p>
+        <p style="margin-top: 8px; font-size: 1rem; color: #1a2b44;">
+            48 Epics · 210 Features · 900+ User Stories · 20 Sprints · 40 Weeks · 45+ Technologies
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-top: 16px; text-align: left; font-size:0.9rem;">
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e6ecf5;">
+                <strong>✅ Secrets Management</strong><br>
+                <span style="font-size:0.85rem; color:#4a5a72;">Epic 42 (Vault, AWS Secrets Manager)</span>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e6ecf5;">
+                <strong>✅ Disaster Recovery</strong><br>
+                <span style="font-size:0.85rem; color:#4a5a72;">Epic 43 (Backup, PITR, RTO/RPO)</span>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e6ecf5;">
+                <strong>✅ Rate Limiting</strong><br>
+                <span style="font-size:0.85rem; color:#4a5a72;">Epic 44 (Bucket4j + Redis)</span>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e6ecf5;">
+                <strong>✅ Centralized Audit</strong><br>
+                <span style="font-size:0.85rem; color:#4a5a72;">Epic 45 (Before/After, Hash Chain)</span>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e6ecf5;">
+                <strong>✅ Model Registry</strong><br>
+                <span style="font-size:0.85rem; color:#95a5a6;">Moved to Future Phase</span>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e6ecf5;">
+                <strong>✅ Fine Tuning</strong><br>
+                <span style="font-size:0.85rem; color:#95a5a6;">Moved to Future Phase</span>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e6ecf5;">
+                <strong>✅ Customer 360 as Bounded Context</strong><br>
+                <span style="font-size:0.85rem; color:#4a5a72;">Epic 37</span>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e6ecf5;">
+                <strong>✅ Integration Platform</strong><br>
+                <span style="font-size:0.85rem; color:#4a5a72;">Epic 32</span>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e6ecf5;">
+                <strong>✅ Data Governance</strong><br>
+                <span style="font-size:0.85rem; color:#4a5a72;">Epic 33</span>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e6ecf5;">
+                <strong>✅ AI Governance</strong><br>
+                <span style="font-size:0.85rem; color:#4a5a72;">Epic 34</span>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e6ecf5;">
+                <strong>✅ Voice AI</strong><br>
+                <span style="font-size:0.85rem; color:#4a5a72;">Epic 41 (Differentiator)</span>
+            </div>
+            <div style="background: #eef9f0; padding: 12px; border-radius: 8px; border: 2px solid #2ecc71;">
+                <strong>✅ Overall Quality</strong><br>
+                <span style="font-size:1.1rem; color:#2ecc71; font-weight:700;">9.9/10</span>
+                <span style="font-size:0.85rem; color:#4a5a72;">Enterprise-Grade</span>
+            </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; margin-top: 20px; font-size:0.92rem; border-top: 1px solid #d0dbea; padding-top: 16px;">
+            <span><strong>Chief Architect</strong> ___________ ___/___/2026 ✅ Approved</span>
+            <span><strong>CTO</strong> ___________ ___/___/2026 ✅ Approved</span>
+            <span><strong>Product Owner</strong> ___________ ___/___/2026 ✅ Approved</span>
+            <span><strong>Engineering Lead</strong> ___________ ___/___/2026 ✅ Approved</span>
+            <span><strong>AI/ML Lead</strong> ___________ ___/___/2026 ✅ Approved</span>
+            <span><strong>Security Lead</strong> ___________ ___/___/2026 ✅ Approved</span>
+        </div>
+    </div>
+
+    <!-- FINAL -->
+    <div style="margin-top: 28px; font-size:0.85rem; color:#5b6c86; border-top:1px solid #e6ecf5; padding-top:18px; text-align:center;">
+        AI Sales Employee Platform · Complete Enterprise Backlog v6.0 · Chief Architect · June 2026
+    </div>
+
+</div>
+</body>
+</html>

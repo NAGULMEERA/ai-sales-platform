@@ -1,0 +1,32 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lead-service
+  namespace: aisales
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lead-service
+  template:
+    metadata:
+      labels:
+        app: lead-service
+    spec:
+      containers:
+        - name: lead-service
+          image: aisales/.0.0-SNAPSHOT
+          ports:
+            - containerPort: 8083
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lead-service
+  namespace: aisales
+spec:
+  selector:
+    app: lead-service
+  ports:
+    - port: 80
+      targetPort: 8083

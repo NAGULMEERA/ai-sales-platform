@@ -1,0 +1,686 @@
+```md
+---
+description: Enterprise DevOps Engineering Standards
+globs:
+  - "**/*.java"
+  - "**/*.yaml"
+  - "**/*.yml"
+  - "**/Dockerfile"
+  - "**/*.k8s.yaml"
+alwaysApply: true
+priority: 13
+---
+
+# ============================================================================
+# Rule 13 - Enterprise DevOps Standards
+# ============================================================================
+
+## Purpose
+
+DevOps is responsible for delivering software safely,
+reliably and repeatedly.
+
+Every deployment must be
+
+- Automated
+- Observable
+- Secure
+- Repeatable
+- Recoverable
+
+Never deploy manually.
+
+------------------------------------------------------------------------------
+
+# Platform Architecture
+
+Platform
+
+↓
+
+Microservices
+
+↓
+
+Containers
+
+↓
+
+Kubernetes
+
+↓
+
+Helm
+
+↓
+
+CI/CD
+
+↓
+
+Observability
+
+↓
+
+Autoscaling
+
+Never deploy services directly on VMs.
+
+------------------------------------------------------------------------------
+
+# Deployment Philosophy
+
+Every deployment
+
+Must be
+
+Stateless
+
+Immutable
+
+Versioned
+
+Rollback Ready
+
+Zero Downtime
+
+------------------------------------------------------------------------------
+
+# Container Standards
+
+Every service
+
+Requires
+
+Dockerfile
+
+Health Check
+
+Non-root User
+
+Minimal Base Image
+
+Version Tag
+
+Never
+
+latest
+
+Use immutable image tags.
+
+------------------------------------------------------------------------------
+
+# Kubernetes
+
+Every service
+
+Requires
+
+Deployment
+
+Service
+
+ConfigMap
+
+Secret
+
+HorizontalPodAutoscaler
+
+PodDisruptionBudget
+
+NetworkPolicy
+
+Resource Limits
+
+------------------------------------------------------------------------------
+
+# Resource Limits
+
+Every container defines
+
+CPU Request
+
+CPU Limit
+
+Memory Request
+
+Memory Limit
+
+Never deploy without limits.
+
+------------------------------------------------------------------------------
+
+# Readiness Probe
+
+Every service
+
+Must expose
+
+/actuator/health/readiness
+
+Traffic begins
+
+Only after readiness succeeds.
+
+------------------------------------------------------------------------------
+
+# Liveness Probe
+
+Every service
+
+Must expose
+
+/actuator/health/liveness
+
+Restart unhealthy containers automatically.
+
+------------------------------------------------------------------------------
+
+# Startup Probe
+
+Required
+
+For services with
+
+Slow Startup
+
+AI Model Initialization
+
+Large Cache Loading
+
+Avoid premature restarts.
+
+------------------------------------------------------------------------------
+
+# Graceful Shutdown
+
+Every service
+
+Must support
+
+SIGTERM
+
+Stop accepting requests
+
+Complete in-flight work
+
+Commit offsets
+
+Close database connections
+
+Shutdown gracefully.
+
+------------------------------------------------------------------------------
+
+# Configuration
+
+Configuration
+
+Externalized
+
+Use
+
+Config Server
+
+Environment Variables
+
+Secrets
+
+Never hardcode configuration.
+
+------------------------------------------------------------------------------
+
+# Secrets
+
+Store in
+
+Kubernetes Secrets
+
+AWS Secrets Manager
+
+Vault
+
+Rotate secrets regularly.
+
+Never commit secrets to Git.
+
+------------------------------------------------------------------------------
+
+# CI Pipeline
+
+Pipeline stages
+
+Source
+
+↓
+
+Build
+
+↓
+
+Static Analysis
+
+↓
+
+Unit Tests
+
+↓
+
+Integration Tests
+
+↓
+
+Security Scan
+
+↓
+
+Docker Build
+
+↓
+
+Image Scan
+
+↓
+
+Push Registry
+
+↓
+
+Deploy
+
+↓
+
+Smoke Test
+
+Deployment stops on failure.
+
+------------------------------------------------------------------------------
+
+# CD Strategy
+
+Preferred
+
+Rolling Update
+
+Blue/Green
+
+Canary
+
+Choose based on service criticality.
+
+Never use manual production deployments.
+
+------------------------------------------------------------------------------
+
+# Horizontal Scaling
+
+Scale based on
+
+CPU
+
+Memory
+
+HTTP Requests
+
+Kafka Consumer Lag
+
+Workflow Queue
+
+AI Queue
+
+Never scale only on CPU.
+
+------------------------------------------------------------------------------
+
+# AI Service Scaling
+
+Scale using
+
+Prompt Queue Length
+
+Inference Latency
+
+Token Throughput
+
+Provider Rate Limits
+
+AI workloads differ from REST workloads.
+
+------------------------------------------------------------------------------
+
+# Kafka Consumer Scaling
+
+Scale using
+
+Consumer Lag
+
+Partition Count
+
+Throughput
+
+Never exceed useful consumer count.
+
+------------------------------------------------------------------------------
+
+# Redis
+
+Deploy
+
+Highly Available
+
+Persistence Enabled
+
+Monitor
+
+Memory
+
+Hit Ratio
+
+Connections
+
+------------------------------------------------------------------------------
+
+# PostgreSQL
+
+Monitor
+
+Connections
+
+Replication
+
+Vacuum
+
+Slow Queries
+
+Storage
+
+Backups
+
+Do not autoscale PostgreSQL without planning.
+
+------------------------------------------------------------------------------
+
+# Media Storage
+
+Use
+
+S3
+
+Never store media inside containers.
+
+Containers remain stateless.
+
+------------------------------------------------------------------------------
+
+# Logging
+
+Centralize logs
+
+Use
+
+Loki
+
+Structured JSON
+
+Never store logs on local disk.
+
+------------------------------------------------------------------------------
+
+# Metrics
+
+Collect
+
+Micrometer
+
+↓
+
+Prometheus
+
+↓
+
+Grafana
+
+Every service exports metrics.
+
+------------------------------------------------------------------------------
+
+# Distributed Tracing
+
+Use
+
+OpenTelemetry
+
+Every request
+
+Must propagate
+
+traceId
+
+spanId
+
+correlationId
+
+tenantId
+
+------------------------------------------------------------------------------
+
+# Security
+
+Enable
+
+TLS
+
+Network Policies
+
+RBAC
+
+Image Scanning
+
+Dependency Scanning
+
+Secret Scanning
+
+Container Security
+
+------------------------------------------------------------------------------
+
+# Image Standards
+
+Base Images
+
+Minimal
+
+Updated
+
+Supported
+
+Scan every image before deployment.
+
+------------------------------------------------------------------------------
+
+# Helm
+
+Every service
+
+Must have
+
+Helm Chart
+
+Support
+
+dev
+
+qa
+
+uat
+
+prod
+
+No duplicated manifests.
+
+------------------------------------------------------------------------------
+
+# Multi-Tenant Safety
+
+Deployments
+
+Must never
+
+Leak tenant configuration
+
+Share tenant secrets
+
+Mix tenant storage
+
+------------------------------------------------------------------------------
+
+# Backup Strategy
+
+PostgreSQL
+
+Daily Backup
+
+WAL Archiving
+
+Redis
+
+Persistence
+
+S3
+
+Versioning
+
+Lifecycle Policies
+
+Verify restore procedures regularly.
+
+------------------------------------------------------------------------------
+
+# Disaster Recovery
+
+Define
+
+RPO
+
+RTO
+
+Recovery Procedures
+
+Failover Strategy
+
+Backup Validation
+
+------------------------------------------------------------------------------
+
+# Feature Flags
+
+Major features
+
+Should support
+
+Enable
+
+Disable
+
+Tenant Scope
+
+Gradual Rollout
+
+Avoid deployment for simple feature toggles.
+
+------------------------------------------------------------------------------
+
+# Performance
+
+Review
+
+Container Startup Time
+
+Image Size
+
+Memory Usage
+
+CPU Usage
+
+Pod Restart Count
+
+Autoscaling Events
+
+Deployment Time
+
+------------------------------------------------------------------------------
+
+# Release Strategy
+
+Every release
+
+Must have
+
+Version
+
+Release Notes
+
+Rollback Plan
+
+Migration Plan
+
+Compatibility Check
+
+------------------------------------------------------------------------------
+
+# Review Checklist
+
+Before deployment verify
+
+✓ Dockerfile
+
+✓ Kubernetes Manifests
+
+✓ Helm Chart
+
+✓ Resource Limits
+
+✓ Health Probes
+
+✓ Secrets
+
+✓ TLS
+
+✓ Metrics
+
+✓ Logs
+
+✓ Tracing
+
+✓ Autoscaling
+
+✓ Backup
+
+✓ Rollback
+
+✓ Security Scan
+
+------------------------------------------------------------------------------
+
+# Agent Decision Tree
+
+Before generating DevOps artifacts ask
+
+1. Is the service stateless?
+2. Does it support Kubernetes?
+3. Are health probes configured?
+4. Is autoscaling required?
+5. Are secrets externalized?
+6. Is rollback supported?
+7. Is observability configured?
+8. Is S3 used for media?
+9. Are AI services scaled independently?
+10. Is disaster recovery defined?
+
+If any answer is NO
+
+STOP
+
+Redesign deployment before implementation.
+
+Never generate infrastructure that cannot operate safely in production.

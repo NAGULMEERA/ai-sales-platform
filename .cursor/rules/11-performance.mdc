@@ -1,0 +1,668 @@
+```md
+---
+description: Enterprise Performance Engineering Standards
+globs:
+  - "**/*.java"
+  - "**/*.kt"
+  - "**/*.properties"
+  - "**/*.yaml"
+alwaysApply: true
+priority: 11
+---
+
+# ============================================================================
+# Rule 11 - Performance Engineering Standards
+# ============================================================================
+
+## Purpose
+
+Performance is an architectural requirement.
+
+Every feature must be designed for
+
+- Low Latency
+- High Throughput
+- Horizontal Scalability
+- Cost Efficiency
+- Fault Tolerance
+
+Never optimize only after production issues appear.
+
+Performance begins during design.
+
+------------------------------------------------------------------------------
+
+# Platform Performance Philosophy
+
+Preferred
+
+Asynchronous
+
+↓
+
+Event Driven
+
+↓
+
+Cached
+
+↓
+
+Horizontally Scalable
+
+↓
+
+Stateless
+
+Avoid
+
+Large Transactions
+
+Blocking Calls
+
+Chatty Services
+
+Database Bottlenecks
+
+------------------------------------------------------------------------------
+
+# Performance Budget
+
+Before implementing any feature estimate
+
+Expected Requests/Second
+
+Average Latency
+
+P95 Latency
+
+P99 Latency
+
+CPU Cost
+
+Memory Cost
+
+Network Cost
+
+Storage Cost
+
+AI Cost
+
+If estimates are unknown
+
+Document assumptions.
+
+------------------------------------------------------------------------------
+
+# Service Design
+
+Every microservice
+
+Must be
+
+Stateless
+
+Horizontally Scalable
+
+Idempotent
+
+Thread Safe
+
+Never store user session in application memory.
+
+------------------------------------------------------------------------------
+
+# REST Performance
+
+Keep REST
+
+Fast
+
+Simple
+
+Stateless
+
+Avoid
+
+Long-running HTTP requests
+
+Return
+
+202 Accepted
+
+for asynchronous operations.
+
+------------------------------------------------------------------------------
+
+# Database Performance
+
+Always
+
+Use indexes
+
+Use pagination
+
+Limit result size
+
+Batch writes
+
+Prepared statements
+
+Connection pooling
+
+Avoid
+
+SELECT *
+
+N+1 Queries
+
+Large transactions
+
+Unbounded queries
+
+Cross-service joins
+
+------------------------------------------------------------------------------
+
+# Query Review
+
+Every query
+
+Must answer
+
+Can an index be used?
+
+Can fewer columns be returned?
+
+Can this become a projection?
+
+Can Redis help?
+
+Can CQRS help?
+
+------------------------------------------------------------------------------
+
+# Read vs Write
+
+Read-heavy
+
+↓
+
+Redis
+
+Projection Tables
+
+Write-heavy
+
+↓
+
+Event Driven
+
+Outbox
+
+Async Processing
+
+Never overload transactional databases with reporting queries.
+
+------------------------------------------------------------------------------
+
+# Redis Strategy
+
+Cache
+
+Reference Data
+
+Configuration
+
+Read Models
+
+AI Responses
+
+Permission Metadata
+
+Catalog Data
+
+Never cache mutable aggregates without invalidation.
+
+------------------------------------------------------------------------------
+
+# Cache Keys
+
+Every key
+
+Includes
+
+tenantId
+
+Example
+
+tenant:1001:catalog:property:987
+
+Never create global cache keys.
+
+------------------------------------------------------------------------------
+
+# Cache TTL
+
+Define TTL for every cache.
+
+Examples
+
+Configuration
+
+24h
+
+Reference Data
+
+12h
+
+AI Response
+
+30m
+
+Catalog Search
+
+10m
+
+Never use infinite TTL unless justified.
+
+------------------------------------------------------------------------------
+
+# Kafka Performance
+
+Use Kafka for
+
+Cross-service events
+
+Async processing
+
+Background jobs
+
+Bulk operations
+
+Never use Kafka for synchronous request/response.
+
+------------------------------------------------------------------------------
+
+# Consumer Design
+
+Consumers must
+
+Be idempotent
+
+Support retry
+
+Support DLQ
+
+Process batches where appropriate
+
+Never assume ordered events across partitions.
+
+------------------------------------------------------------------------------
+
+# Batch Processing
+
+Use Spring Batch for
+
+Lead Imports
+
+Customer Imports
+
+Catalog Imports
+
+Media Processing
+
+AI Reindexing
+
+Large Data Migration
+
+Never process massive datasets in a single transaction.
+
+------------------------------------------------------------------------------
+
+# AI Performance
+
+Choose the smallest model that satisfies the requirement.
+
+Prefer
+
+Caching
+
+Prompt reuse
+
+Batch embeddings
+
+Streaming responses
+
+Async execution
+
+Never call an LLM when deterministic logic is sufficient.
+
+------------------------------------------------------------------------------
+
+# Vector Search
+
+Use pgvector only for
+
+Semantic Search
+
+Recommendations
+
+Knowledge Retrieval
+
+Always filter by
+
+tenant_id
+
+Limit nearest-neighbor results.
+
+------------------------------------------------------------------------------
+
+# Workflow Performance
+
+Workflow Service
+
+Coordinates
+
+Never performs heavy business processing.
+
+Long-running workflows
+
+↓
+
+Async
+
+↓
+
+Events
+
+↓
+
+Saga
+
+------------------------------------------------------------------------------
+
+# S3 Performance
+
+Store
+
+Images
+
+Videos
+
+PDF
+
+Audio
+
+Reports
+
+in S3.
+
+Never stream large files through application memory when direct streaming is possible.
+
+Use pre-signed URLs.
+
+------------------------------------------------------------------------------
+
+# Pagination
+
+Every collection endpoint
+
+Must support
+
+page
+
+size
+
+sort
+
+Maximum page size
+
+100
+
+Never return unbounded collections.
+
+------------------------------------------------------------------------------
+
+# API Response Size
+
+Minimize payload.
+
+Avoid unnecessary nested objects.
+
+Prefer DTO projections.
+
+Compress large responses when appropriate.
+
+------------------------------------------------------------------------------
+
+# Connection Pools
+
+Configure
+
+PostgreSQL
+
+Redis
+
+Kafka
+
+HTTP Clients
+
+Monitor
+
+Pool utilization
+
+Timeouts
+
+Connection leaks
+
+------------------------------------------------------------------------------
+
+# Thread Management
+
+Never create unmanaged threads.
+
+Use
+
+Virtual Threads (where appropriate)
+
+Spring Task Executor
+
+Scheduled Executor
+
+Reactive APIs only when justified.
+
+------------------------------------------------------------------------------
+
+# JVM Performance
+
+Monitor
+
+Heap
+
+GC
+
+Threads
+
+CPU
+
+Class Loading
+
+Avoid premature JVM tuning.
+
+Tune only using production metrics.
+
+------------------------------------------------------------------------------
+
+# Horizontal Scaling
+
+Design every service to support
+
+Multiple Instances
+
+No Sticky Sessions
+
+Shared Nothing
+
+Externalized State
+
+------------------------------------------------------------------------------
+
+# Autoscaling
+
+Scale using
+
+CPU
+
+Memory
+
+Kafka Consumer Lag
+
+Request Rate
+
+Queue Depth
+
+Workflow Backlog
+
+AI Queue Length
+
+------------------------------------------------------------------------------
+
+# Performance Testing
+
+Measure
+
+P50
+
+P95
+
+P99
+
+Maximum Throughput
+
+Error Rate
+
+Resource Usage
+
+Use realistic production workloads.
+
+------------------------------------------------------------------------------
+
+# AI Cost Performance
+
+Track
+
+Prompt Tokens
+
+Completion Tokens
+
+Embedding Tokens
+
+Average Cost
+
+Cache Hit Ratio
+
+Provider Latency
+
+Cost is a performance metric.
+
+------------------------------------------------------------------------------
+
+# Performance Observability
+
+Expose metrics for
+
+REST
+
+Kafka
+
+Redis
+
+Database
+
+Workflow
+
+AI
+
+S3
+
+Thread Pools
+
+Connection Pools
+
+Cache
+
+------------------------------------------------------------------------------
+
+# Performance Anti-Patterns
+
+Never
+
+Database per request inside loops
+
+Nested REST chains
+
+Blocking AI calls in UI requests
+
+Large object graphs
+
+Synchronous media processing
+
+Repeated vector generation
+
+Repeated prompt construction
+
+Cross-service database access
+
+------------------------------------------------------------------------------
+
+# Performance Checklist
+
+Before implementation verify
+
+✓ Stateless
+
+✓ Database optimized
+
+✓ Indexes reviewed
+
+✓ Pagination implemented
+
+✓ Redis evaluated
+
+✓ Kafka evaluated
+
+✓ Async processing considered
+
+✓ AI optimized
+
+✓ S3 used for media
+
+✓ Horizontal scaling supported
+
+✓ Metrics available
+
+------------------------------------------------------------------------------
+
+# Agent Decision Tree
+
+Before generating code ask
+
+1. Is this latency sensitive?
+2. Should this be asynchronous?
+3. Can Redis improve this?
+4. Should Kafka be used?
+5. Can the query be optimized?
+6. Is pagination required?
+7. Is AI necessary?
+8. Can media live in S3?
+9. Can this scale horizontally?
+10. Is the performance measurable?
+
+If any answer is NO
+
+Stop
+
+Redesign before implementation.
+
+Never generate implementations that cannot scale.

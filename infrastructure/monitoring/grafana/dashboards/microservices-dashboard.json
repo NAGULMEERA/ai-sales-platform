@@ -1,0 +1,15 @@
+{
+  "title": "Microservices Dashboard",
+  "panels": [
+    {
+      "title": "Request Rate",
+      "type": "graph",
+      "targets": [{"expr": "rate(http_server_requests_seconds_count[5m])"}]
+    },
+    {
+      "title": "Error Rate",
+      "type": "graph",
+      "targets": [{"expr": "rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])"}]
+    }
+  ]
+}

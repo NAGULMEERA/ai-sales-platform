@@ -1,0 +1,2643 @@
+---
+
+description: Enterprise Microservice Policy v2 - Part 1 (Architecture Foundation)
+globs:
+
+* "**/*.java"
+* "**/*.kt"
+  alwaysApply: true
+  priority: 1
+
+---
+
+# ============================================================================
+
+# Rule 01 - Enterprise Microservice Policy v2
+
+# Part 1 - Architecture Foundation
+
+# ============================================================================
+
+# Purpose
+
+This document defines the architectural policies for the AI Sales Employee Platform.
+
+Every architectural decision must conform to these policies before implementation begins.
+
+This document has higher priority than implementation preferences.
+
+If implementation conflicts with architecture, architecture wins.
+
+---
+
+# Platform Vision
+
+The platform is a multi-tenant, AI-native, plugin-based SaaS platform.
+
+Platform Core provides reusable capabilities.
+
+Industry-specific behavior is implemented through plugins.
+
+Platform Core must remain industry agnostic.
+
+Supported industries include, but are not limited to:
+
+* Real Estate
+* Automobile
+* Education
+* Healthcare
+* Insurance
+* Banking
+* Recruitment
+* Travel
+
+New industries must be added without modifying Platform Core.
+
+---
+
+# Architectural Principles
+
+The platform is built on these principles:
+
+* Domain-Driven Design
+* Microservices
+* Database Per Service
+* Event-Driven Architecture
+* Asynchronous Communication
+* AI as a Platform Capability
+* Workflow Orchestration
+* Plugin Extensibility
+* Repository Governance
+* Multi-Tenant Isolation
+* Zero Trust Security
+* Observability by Default
+
+Every architectural decision must reinforce these principles.
+
+---
+
+# Repository Intelligence
+
+Before generating any code, determine repository ownership.
+
+Always ask:
+
+1. Which business capability owns this feature?
+2. Which bounded context owns it?
+3. Which microservice owns it?
+4. Which Maven module owns it?
+5. Does it belong to Platform Core?
+6. Does it belong to an Industry Plugin?
+7. Does it belong to a Capability Plugin?
+8. Does an existing implementation already exist?
+9. Will this introduce duplicate ownership?
+10. Will this increase coupling?
+
+Never generate code until ownership is clear.
+
+---
+
+# Architecture Decision Flow
+
+Every feature follows this sequence:
+
+Business Goal
+
+↓
+
+Business Capability
+
+↓
+
+Bounded Context
+
+↓
+
+Aggregate
+
+↓
+
+Microservice
+
+↓
+
+Module
+
+↓
+
+Package
+
+↓
+
+Implementation
+
+Never start from classes, packages, or database tables.
+
+---
+
+# Business Capability Ownership
+
+Every business capability has exactly one owner.
+
+Examples:
+
+Lead Management
+→ Lead Service
+
+Customer Management
+→ Customer Service
+
+Conversation Management
+→ Conversation Service
+
+Workflow Execution
+→ Workflow Service
+
+Artificial Intelligence
+→ AI Service
+
+Media Management
+→ Media Service
+
+Notification Delivery
+→ Notification Service
+
+Billing
+→ Billing Service
+
+Search
+→ Search Service
+
+Analytics
+→ Analytics Service
+
+Never duplicate business ownership.
+
+---
+
+# Bounded Context Rules
+
+Each bounded context:
+
+* Owns its language
+* Owns its business rules
+* Owns its persistence
+* Owns its APIs
+* Owns its events
+* Owns its aggregates
+
+A bounded context never owns another bounded context.
+
+Business logic must never span bounded contexts.
+
+---
+
+# Service Ownership
+
+Each microservice owns:
+
+* One business capability
+* One bounded context (or a cohesive subset where justified)
+* One persistence model
+* One API
+* One event model
+* One deployment unit
+
+A microservice must not become a "shared business service."
+
+---
+
+# Platform Core
+
+Platform Core owns only reusable capabilities.
+
+Examples:
+
+* Authentication
+* Authorization
+* Tenant Management
+* User Management
+* Workflow Engine
+* AI Engine
+* Notification Engine
+* Media Engine
+* Billing Framework
+* Audit
+* Observability
+* Plugin Registry
+* Configuration
+
+Platform Core never owns industry-specific concepts.
+
+---
+
+# Industry Plugins
+
+Industry Plugins contain:
+
+* Industry entities
+* Industry rules
+* Industry workflows
+* Industry AI prompts
+* Industry integrations
+* Industry reports
+
+Examples:
+
+Real Estate Plugin
+
+* Property
+* Project
+* Builder
+* Site Visit
+* Property Matching
+
+Education Plugin
+
+* Student
+* Course
+* Admission
+
+Healthcare Plugin
+
+* Patient
+* Doctor
+* Appointment
+
+Industry logic never belongs in Platform Core.
+
+---
+
+# Capability Plugins
+
+Capability Plugins provide reusable platform capabilities.
+
+Examples:
+
+* WhatsApp
+* Voice AI
+* Email
+* SMS
+* Calendar
+* Payment Gateway
+* OCR
+* Maps
+* CRM Connector
+* E-Signature
+
+Capability Plugins must remain reusable across industries.
+
+---
+
+# Repository Ownership
+
+Each repository module has exactly one responsibility.
+
+Allowed top-level structure:
+
+common/
+services/
+plugins/
+infrastructure/
+monitoring/
+kubernetes/
+scripts/
+tools/
+docs/
+.cursor/
+
+Do not introduce arbitrary top-level folders.
+
+---
+
+# Module Ownership
+
+Before creating a new module ask:
+
+* Does an existing module own this?
+* Can an existing bounded context own it?
+* Is this reusable?
+* Is this industry-specific?
+* Is this infrastructure?
+* Is this platform capability?
+
+Create new modules only when ownership cannot be assigned.
+
+---
+
+# Dependency Direction
+
+Allowed
+
+Service
+→ common
+
+Service
+→ SDK
+
+Service
+→ Contracts
+
+Service
+→ Events
+
+Plugin
+→ SDK
+
+Plugin
+→ Contracts
+
+Forbidden
+
+common
+→ Service
+
+Plugin
+→ Platform Internals
+
+Service
+→ Another Service Implementation
+
+Circular Dependencies
+
+Cross-Service Entity Sharing
+
+Cross-Service Repository Access
+
+---
+
+# Repository Reuse Policy
+
+Before generating any class:
+
+Search for:
+
+* Existing Aggregate
+* Existing Entity
+* Existing DTO
+* Existing Event
+* Existing API
+* Existing Mapper
+* Existing Client
+* Existing SDK
+* Existing Workflow
+* Existing Utility
+
+Prefer extension over duplication.
+
+---
+
+# Architecture Guardrails
+
+Never:
+
+* Create shared business logic
+* Create generic "common-utils"
+* Create "misc" packages
+* Duplicate business capabilities
+* Share databases
+* Share repositories
+* Share entities
+* Bypass bounded contexts
+* Create circular dependencies
+
+Architecture consistency is more important than implementation speed.
+
+---
+
+# Decision Tree
+
+Before implementation ask:
+
+1. Which business capability owns this?
+2. Which bounded context owns this?
+3. Which service owns this?
+4. Does Platform Core already provide it?
+5. Is this industry-specific?
+6. Is this a capability plugin?
+7. Is there an existing implementation?
+8. Will this introduce duplicate ownership?
+9. Will this violate repository governance?
+10. Is the ownership unambiguous?
+
+If any answer is unclear:
+
+STOP.
+
+Resolve ownership before generating code.
+
+
+description: Enterprise Microservice Policy v2 - Part 2 (Communication & Integration)
+globs:
+
+* "**/*.java"
+* "**/*.kt"
+  alwaysApply: true
+  priority: 1
+
+---
+
+# ============================================================================
+
+# Rule 01 - Enterprise Microservice Policy v2
+
+# Part 2 - Communication & Integration
+
+# ============================================================================
+
+# Communication Philosophy
+
+Microservices collaborate.
+
+They never become dependent on each other.
+
+Communication must preserve
+
+* Loose Coupling
+* Independent Deployment
+* Fault Isolation
+* Version Compatibility
+* Scalability
+
+Prefer asynchronous communication whenever business requirements allow.
+
+---
+
+# Communication Decision Matrix
+
+Before connecting two services ask
+
+1. Is an immediate response required?
+
+YES
+
+↓
+
+REST
+
+NO
+
+↓
+
+Event
+
+If the interaction changes business state across services
+
+↓
+
+Saga
+
+If only information is required
+
+↓
+
+REST Query
+
+If notification is sufficient
+
+↓
+
+Kafka Event
+
+---
+
+# REST Communication
+
+Use REST only for
+
+* Immediate user responses
+* Query current state
+* Validation requests
+* Synchronous business operations
+* Read operations
+
+REST must never become workflow orchestration.
+
+Avoid long chains like
+
+API
+
+↓
+
+Service A
+
+↓
+
+Service B
+
+↓
+
+Service C
+
+↓
+
+Service D
+
+If this pattern appears
+
+Redesign using events.
+
+---
+
+# Event Driven Communication
+
+Business state changes
+
+Must publish events.
+
+Examples
+
+Lead Created
+
+Lead Qualified
+
+Customer Registered
+
+Appointment Booked
+
+Conversation Started
+
+Payment Received
+
+Workflow Completed
+
+Events notify.
+
+Events never request work.
+
+---
+
+# Domain Events
+
+Domain Events
+
+Remain inside the owning bounded context.
+
+Examples
+
+LeadQualified
+
+LeadAssigned
+
+ConversationClosed
+
+CustomerVerified
+
+Never consume another service's internal domain events.
+
+---
+
+# Integration Events
+
+Integration Events
+
+Are public contracts.
+
+Examples
+
+LeadQualifiedIntegrationEvent
+
+CustomerCreatedIntegrationEvent
+
+PaymentCompletedIntegrationEvent
+
+Only Integration Events cross service boundaries.
+
+---
+
+# Event Versioning
+
+Every Integration Event
+
+Must include
+
+eventId
+
+eventType
+
+eventVersion
+
+occurredAt
+
+tenantId
+
+correlationId
+
+aggregateId
+
+payload
+
+Never break existing event consumers.
+
+Create new versions instead.
+
+---
+
+# Event Ownership
+
+Only the owning service publishes its events.
+
+Example
+
+Lead Service
+
+Publishes
+
+LeadCreated
+
+LeadQualified
+
+LeadAssigned
+
+Customer Service
+
+Never publishes
+
+LeadCreated
+
+Ownership is exclusive.
+
+---
+
+# Kafka Policy
+
+Kafka is used for
+
+Cross-service communication
+
+Workflow progression
+
+Notifications
+
+Analytics
+
+Audit
+
+Background processing
+
+AI pipelines
+
+Media processing
+
+Never use Kafka for request/response.
+
+---
+
+# Outbox Pattern
+
+Every service owns
+
+One Outbox table.
+
+Business transaction
+
+↓
+
+Commit
+
+↓
+
+Outbox Record
+
+↓
+
+Kafka Publisher
+
+↓
+
+Event
+
+Never publish Kafka directly inside business transactions.
+
+---
+
+# Saga Pattern
+
+Distributed business transactions
+
+Must use Saga.
+
+Never use
+
+Two Phase Commit
+
+Distributed Database Transactions
+
+XA
+
+Each Saga defines
+
+Forward Action
+
+Compensation Action
+
+Retry Policy
+
+Timeout
+
+Failure Strategy
+
+---
+
+# Compensation
+
+Every distributed workflow
+
+Must define compensation.
+
+Example
+
+Reserve Slot
+
+↓
+
+Create Appointment
+
+↓
+
+Payment Failed
+
+↓
+
+Cancel Appointment
+
+↓
+
+Release Slot
+
+Compensation restores business consistency.
+
+---
+
+# CQRS
+
+Separate
+
+Write Model
+
+Read Model
+
+When
+
+Read complexity grows
+
+Do not introduce CQRS prematurely.
+
+Use it only when it improves scalability or query performance.
+
+---
+
+# Read Models
+
+Read Models
+
+May be built from
+
+Integration Events
+
+Projection Services
+
+Materialized Views
+
+Read Models never become system of record.
+
+---
+
+# API Gateway
+
+All external requests
+
+Pass through
+
+API Gateway.
+
+Gateway responsibilities
+
+Authentication
+
+Tenant Resolution
+
+Rate Limiting
+
+Routing
+
+Correlation Id
+
+Security Headers
+
+Gateway never contains business logic.
+
+---
+
+# SDK Policy
+
+Cross-service capabilities
+
+Must be accessed through SDKs.
+
+Examples
+
+ai-sdk
+
+workflow-sdk
+
+notification-sdk
+
+media-sdk
+
+plugin-sdk
+
+event-sdk
+
+Never reference another service's internal implementation.
+
+---
+
+# Contracts
+
+Shared Contracts
+
+Contain
+
+DTO
+
+Request Models
+
+Response Models
+
+Enums
+
+Error Models
+
+Never share JPA entities across services.
+
+---
+
+# Anti-Corruption Layer
+
+Every external integration
+
+Must use an ACL.
+
+Examples
+
+WhatsApp
+
+Facebook
+
+Google
+
+Payment Gateway
+
+CRM
+
+Maps
+
+External DTOs never enter the domain directly.
+
+Translate them at the boundary.
+
+---
+
+# Idempotency
+
+Public APIs
+
+Webhooks
+
+Event Consumers
+
+Media Uploads
+
+Payment Processing
+
+Must be idempotent.
+
+Duplicate requests
+
+Must not duplicate business state.
+
+---
+
+# Retry Policy
+
+Every remote communication
+
+Defines
+
+Retry Count
+
+Backoff Strategy
+
+Timeout
+
+Circuit Breaker
+
+Failure Handling
+
+Retries must be safe.
+
+---
+
+# Timeouts
+
+Every REST call
+
+Defines timeout.
+
+Every Kafka consumer
+
+Defines processing timeout.
+
+Every workflow step
+
+Defines execution timeout.
+
+Never allow infinite waits.
+
+---
+
+# Failure Isolation
+
+Failure of one service
+
+Must not stop the platform.
+
+Use
+
+Retry
+
+Fallback
+
+Compensation
+
+DLQ
+
+Graceful degradation
+
+---
+
+# Correlation
+
+Every request
+
+Every event
+
+Every workflow
+
+Must propagate
+
+correlationId
+
+traceId
+
+tenantId
+
+requestId
+
+Never lose traceability.
+
+---
+
+# API Versioning
+
+Public APIs
+
+Must support versioning.
+
+Examples
+
+/api/v1/leads
+
+/api/v2/leads
+
+Never introduce breaking API changes without versioning.
+
+---
+
+# Review Checklist
+
+Before approving verify
+
+✓ Correct communication pattern
+
+✓ REST only when synchronous
+
+✓ Events for notifications
+
+✓ Outbox implemented
+
+✓ Saga required?
+
+✓ Compensation defined
+
+✓ SDK used
+
+✓ No entity sharing
+
+✓ Versioning complete
+
+✓ Correlation propagated
+
+---
+
+# Decision Tree
+
+Before generating communication code ask
+
+1. Is synchronous communication required?
+2. Would an event reduce coupling?
+3. Does this cross bounded contexts?
+4. Is an Integration Event required?
+5. Is Saga required?
+6. Is an SDK available?
+7. Is an ACL required?
+8. Is idempotency implemented?
+9. Is versioning defined?
+10. Can this evolve independently?
+
+If any answer is NO
+
+STOP
+
+Redesign communication before implementation.
+
+# End of Part 2
+# ============================================================================
+
+# Rule 01 - Enterprise Microservice Policy v2
+
+# Part 3 - Platform Service Ownership
+
+# ============================================================================
+
+# Platform Service Philosophy
+
+Every platform capability has exactly one owner.
+
+Business Services own business state.
+
+Platform Services provide reusable capabilities.
+
+Industry Plugins extend business capabilities.
+
+Capability Plugins extend platform capabilities.
+
+Never duplicate ownership.
+
+---
+
+# Platform Service Classification
+
+Platform Services
+
+↓
+
+Authentication
+
+Authorization
+
+Tenant
+
+Workflow
+
+AI
+
+Media
+
+Notification
+
+Billing
+
+Search
+
+Audit
+
+Configuration
+
+Observability
+
+Plugin Registry
+
+Business Services
+
+↓
+
+Lead
+
+Customer
+
+Conversation
+
+Appointment
+
+Catalog
+
+Campaign
+
+Analytics
+
+Plugins
+
+↓
+
+Real Estate
+
+Education
+
+Healthcare
+
+Insurance
+
+Automobile
+
+Capability Plugins
+
+↓
+
+WhatsApp
+
+Voice AI
+
+Email
+
+SMS
+
+Payment Gateway
+
+Maps
+
+Calendar
+
+OCR
+
+CRM
+
+---
+
+# Authentication Service
+
+Owns
+
+Authentication
+
+User Login
+
+Refresh Tokens
+
+Password Management
+
+MFA
+
+Session Management
+
+OAuth2
+
+OIDC
+
+Never owns
+
+Business Users
+
+Customers
+
+Leads
+
+Properties
+
+---
+
+# Authorization Service
+
+Owns
+
+RBAC
+
+Permissions
+
+Policies
+
+Access Evaluation
+
+Never owns
+
+Business Decisions
+
+---
+
+# Tenant Service
+
+Owns
+
+Tenant
+
+Organization
+
+Subscription
+
+Tenant Configuration
+
+Tenant Lifecycle
+
+Feature Flags
+
+Plugin Assignment
+
+Never owns
+
+Business Data
+
+---
+
+# AI Service
+
+AI Service owns
+
+Prompt Registry
+
+Prompt Versioning
+
+Prompt Execution
+
+Provider Routing
+
+LLM Providers
+
+Embeddings
+
+Vector Search
+
+Knowledge Base
+
+Tool Calling
+
+AI Evaluation
+
+Token Usage
+
+AI Cost Tracking
+
+AI Observability
+
+AI Cache
+
+AI Service never owns
+
+Lead
+
+Customer
+
+Property
+
+Appointment
+
+Workflow State
+
+Billing
+
+Business Rules
+
+AI recommends.
+
+Business Aggregates decide.
+
+---
+
+# Workflow Service
+
+Workflow Service owns
+
+Workflow Definitions
+
+Workflow Execution
+
+Saga Orchestration
+
+Retry
+
+Compensation
+
+Timers
+
+Human Tasks
+
+Escalation
+
+Workflow History
+
+Workflow Metrics
+
+Workflow never owns
+
+Business Entities
+
+Business State
+
+Workflow coordinates only.
+
+---
+
+# Media Service
+
+Media Service owns
+
+Upload
+
+Download
+
+Delete
+
+Pre-Signed URLs
+
+Image Processing
+
+Video Processing
+
+Thumbnail Generation
+
+Virus Scan
+
+Checksum Validation
+
+Media Metadata
+
+Lifecycle Policies
+
+Storage Paths
+
+Media Service stores
+
+Metadata
+
+↓
+
+PostgreSQL
+
+Binary Files
+
+↓
+
+S3
+
+Never
+
+BYTEA
+
+LOB
+
+Large Binary Objects
+
+inside PostgreSQL.
+
+---
+
+# Notification Service
+
+Notification Service owns
+
+Email
+
+SMS
+
+WhatsApp
+
+Push Notification
+
+Voice Notification
+
+Template Management
+
+Delivery Tracking
+
+Retry
+
+DLQ
+
+Notification Metrics
+
+Business Services
+
+Never send notifications directly.
+
+---
+
+# Billing Service
+
+Billing Service owns
+
+Plans
+
+Subscriptions
+
+Invoices
+
+Payments
+
+Usage
+
+Credits
+
+Coupons
+
+Billing Events
+
+Revenue Reports
+
+Billing never owns
+
+Customer Business Data
+
+---
+
+# Search Service
+
+Search Service owns
+
+Full Text Search
+
+Semantic Search
+
+Search Indexes
+
+Search Projections
+
+Ranking
+
+Autocomplete
+
+Search Analytics
+
+Business Services
+
+Never build search indexes independently.
+
+---
+
+# Audit Service
+
+Audit owns
+
+Audit Events
+
+Compliance
+
+History
+
+Change Tracking
+
+Sensitive Operations
+
+Audit Search
+
+Audit Reports
+
+Never
+
+Business Logic
+
+---
+
+# Configuration Service
+
+Owns
+
+Global Configuration
+
+Tenant Configuration
+
+Feature Flags
+
+Runtime Configuration
+
+Configuration History
+
+Never hardcode configuration.
+
+---
+
+# Observability Service
+
+Owns
+
+Metrics
+
+Logging
+
+Tracing
+
+Alerts
+
+Dashboards
+
+Health Monitoring
+
+SLO
+
+SLI
+
+Platform Monitoring
+
+Business Services expose telemetry.
+
+Observability aggregates it.
+
+---
+
+# Plugin Registry
+
+Owns
+
+Plugin Discovery
+
+Plugin Installation
+
+Plugin Enable
+
+Plugin Disable
+
+Plugin Version
+
+Compatibility
+
+Extension Points
+
+Plugin Health
+
+Never
+
+Business Logic
+
+---
+
+# Business Services
+
+Every Business Service owns
+
+Aggregate
+
+Repository
+
+Business Rules
+
+Domain Events
+
+Integration Events
+
+REST APIs
+
+Persistence
+
+Business Validation
+
+No Platform Service owns business rules.
+
+---
+
+# Industry Plugins
+
+Industry Plugins own
+
+Industry Aggregates
+
+Industry Events
+
+Industry AI Prompts
+
+Industry Workflows
+
+Industry Reports
+
+Industry Validation
+
+Industry Search Filters
+
+Industry Integrations
+
+Example
+
+Real Estate
+
+↓
+
+Property
+
+Builder
+
+Project
+
+Unit
+
+Site Visit
+
+Property Match
+
+---
+
+# Capability Plugins
+
+Capability Plugins own
+
+Provider Integrations
+
+Reusable Features
+
+Examples
+
+WhatsApp
+
+↓
+
+Meta Cloud API
+
+Voice AI
+
+↓
+
+Twilio
+
+↓
+
+Google STT
+
+↓
+
+Google TTS
+
+Calendar
+
+↓
+
+Google Calendar
+
+Email
+
+↓
+
+SMTP
+
+↓
+
+SES
+
+↓
+
+SendGrid
+
+Maps
+
+↓
+
+Google Maps
+
+Payment
+
+↓
+
+Razorpay
+
+↓
+
+Stripe
+
+↓
+
+Cashfree
+
+Capability Plugins never contain business logic.
+
+---
+
+# Data Ownership
+
+Every Aggregate
+
+Has one owner.
+
+Every Database
+
+Has one owner.
+
+Every Event
+
+Has one publisher.
+
+Every API
+
+Has one owner.
+
+Every Workflow
+
+Has one coordinator.
+
+Every Prompt
+
+Has one owner.
+
+Ownership ambiguity is an architectural defect.
+
+---
+
+# Cross Service Rules
+
+Never
+
+Repository Access
+
+Database Join
+
+Shared Entities
+
+Shared Transactions
+
+Cross Service Foreign Keys
+
+Business Services communicate using
+
+REST
+
+Kafka
+
+SDK
+
+Contracts
+
+---
+
+# Service Evolution
+
+Before creating a new microservice ask
+
+1.
+
+Can an existing bounded context own this?
+
+2.
+
+Is independent deployment required?
+
+3.
+
+Does this reduce coupling?
+
+4.
+
+Does this improve scalability?
+
+5.
+
+Will another team own it?
+
+Only create a new service when justified.
+
+---
+
+# Architecture Checklist
+
+Before approving verify
+
+✓ Correct service owner
+
+✓ Correct platform capability
+
+✓ Correct plugin owner
+
+✓ Business logic isolated
+
+✓ AI ownership correct
+
+✓ Workflow ownership correct
+
+✓ Media ownership correct
+
+✓ Notification ownership correct
+
+✓ Billing ownership correct
+
+✓ Search ownership correct
+
+✓ Single ownership maintained
+
+---
+
+# Decision Tree
+
+Before generating a feature ask
+
+1.
+
+Is this Platform?
+
+↓
+
+Platform Service
+
+2.
+
+Is this Business?
+
+↓
+
+Business Service
+
+3.
+
+Is this Industry?
+
+↓
+
+Industry Plugin
+
+4.
+
+Is this Reusable Capability?
+
+↓
+
+Capability Plugin
+
+5.
+
+Who owns the Aggregate?
+
+6.
+
+Who owns the Event?
+
+7.
+
+Who owns the Database?
+
+8.
+
+Who owns the Workflow?
+
+9.
+
+Who owns the Prompt?
+
+10.
+
+Who owns the API?
+
+If ownership is unclear
+
+STOP
+
+Determine ownership before implementation.
+
+# End of Part 3
+# ============================================================================
+
+# Rule 01 - Enterprise Microservice Policy v2
+
+# Part 4 - Architecture Governance & Repository Intelligence
+
+# ============================================================================
+
+# Architecture Governance
+
+Architecture is a long-term asset.
+
+Every implementation decision must improve
+
+* Maintainability
+* Scalability
+* Reliability
+* Modularity
+* Team Productivity
+
+Never sacrifice architecture for short-term speed.
+
+---
+
+# Repository Governance
+
+The repository represents the architecture.
+
+Every new artifact must have
+
+* One owner
+* One purpose
+* One location
+
+Never create code with ambiguous ownership.
+
+---
+
+# Repository Intelligence
+
+Before generating any artifact perform repository analysis.
+
+Search for
+
+* Existing Service
+* Existing Aggregate
+* Existing Entity
+* Existing Repository
+* Existing Event
+* Existing API
+* Existing DTO
+* Existing Mapper
+* Existing SDK
+* Existing Plugin
+* Existing Workflow
+* Existing Prompt
+* Existing Configuration
+
+Prefer reuse.
+
+Never duplicate.
+
+---
+
+# Duplicate Detection
+
+If similar functionality exists
+
+Evaluate
+
+Reuse
+
+↓
+
+Extension
+
+↓
+
+Composition
+
+↓
+
+New Implementation
+
+Creating duplicate implementations is prohibited unless explicitly justified.
+
+---
+
+# Module Decision Matrix
+
+Before creating a class ask
+
+Platform Capability?
+
+↓
+
+Platform Service
+
+Business Capability?
+
+↓
+
+Business Service
+
+Industry Specific?
+
+↓
+
+Industry Plugin
+
+Reusable Integration?
+
+↓
+
+Capability Plugin
+
+Cross-Service Contract?
+
+↓
+
+SDK
+
+Cross-Service Event?
+
+↓
+
+common-events
+
+Infrastructure?
+
+↓
+
+Infrastructure Module
+
+Never guess module ownership.
+
+---
+
+# Service Decomposition
+
+Before introducing a new microservice ask
+
+Can an existing bounded context own it?
+
+Can an existing service evolve?
+
+Will deployment independence improve?
+
+Will team ownership improve?
+
+Does it reduce coupling?
+
+Does it improve scalability?
+
+Create a new microservice only after answering YES where applicable.
+
+---
+
+# Architecture Review
+
+Every feature requires an architecture review.
+
+Questions
+
+1.
+
+Who owns this capability?
+
+2.
+
+Which bounded context owns it?
+
+3.
+
+Which aggregate owns it?
+
+4.
+
+Which service owns it?
+
+5.
+
+Which database owns it?
+
+6.
+
+Which event owns it?
+
+7.
+
+Which workflow owns it?
+
+8.
+
+Which plugin owns it?
+
+9.
+
+Which SDK exposes it?
+
+10.
+
+Who maintains it?
+
+Architecture precedes implementation.
+
+---
+
+# Dependency Governance
+
+Allowed
+
+Platform
+
+↓
+
+SDK
+
+↓
+
+Business Services
+
+↓
+
+Plugins
+
+Forbidden
+
+Plugin
+
+↓
+
+Plugin
+
+Common
+
+↓
+
+Business Service
+
+Business Service
+
+↓
+
+Another Business Service Implementation
+
+Circular Dependencies
+
+Database Dependencies
+
+Repository Dependencies
+
+---
+
+# Shared Module Policy
+
+Shared modules may contain
+
+Contracts
+
+Events
+
+Security
+
+Validation
+
+Observability
+
+Utilities
+
+Base Infrastructure
+
+Shared modules must never contain
+
+Business Rules
+
+Entities
+
+Repositories
+
+Business Services
+
+Industry Logic
+
+---
+
+# API Governance
+
+Every public API
+
+Must have
+
+Owner
+
+Version
+
+Documentation
+
+Authentication
+
+Authorization
+
+Observability
+
+Deprecation Strategy
+
+Breaking changes require version upgrades.
+
+---
+
+# Event Governance
+
+Every event must define
+
+Publisher
+
+Consumers
+
+Version
+
+Schema
+
+Business Meaning
+
+Retention
+
+Retry Strategy
+
+DLQ Strategy
+
+Events are contracts.
+
+Treat them like public APIs.
+
+---
+
+# Database Governance
+
+Every table must answer
+
+Who owns it?
+
+Which aggregate uses it?
+
+Which service maintains it?
+
+Can another service modify it?
+
+If ownership is unclear
+
+Do not create the table.
+
+---
+
+# Plugin Governance
+
+Industry Plugins
+
+Must never modify Platform Core.
+
+Capability Plugins
+
+Must remain reusable.
+
+Every plugin defines
+
+Owner
+
+Version
+
+Compatibility
+
+Dependencies
+
+Lifecycle
+
+---
+
+# AI Governance
+
+Every AI feature must answer
+
+Why AI?
+
+Can deterministic logic solve it?
+
+Who validates AI output?
+
+How is hallucination handled?
+
+What happens when AI is unavailable?
+
+How is cost controlled?
+
+AI augments the platform.
+
+AI never owns business state.
+
+---
+
+# Workflow Governance
+
+Workflow coordinates
+
+Business Services execute
+
+Aggregates validate
+
+Workflow must never become a business service.
+
+---
+
+# Media Governance
+
+Media belongs in
+
+Media Service
+
+↓
+
+S3
+
+Business Services
+
+Store references only.
+
+---
+
+# Multi-Tenant Governance
+
+Every new feature must define
+
+Tenant Context
+
+Isolation Strategy
+
+Authorization
+
+Data Ownership
+
+Audit
+
+Cross-tenant access is forbidden unless explicitly approved.
+
+---
+
+# Security Governance
+
+Every feature must satisfy
+
+Authentication
+
+Authorization
+
+Tenant Isolation
+
+Input Validation
+
+Audit
+
+Encryption
+
+Secret Management
+
+Security reviews are mandatory.
+
+---
+
+# Performance Governance
+
+Every feature estimates
+
+Latency
+
+Throughput
+
+Memory
+
+Storage
+
+Network
+
+AI Cost
+
+Scaling Strategy
+
+Performance must be measurable.
+
+---
+
+# Observability Governance
+
+Every feature exposes
+
+Logs
+
+Metrics
+
+Traces
+
+Health
+
+Business Metrics
+
+Alerts
+
+No production feature is complete without observability.
+
+---
+
+# Technical Debt
+
+Reject
+
+Temporary Workarounds
+
+Anonymous TODOs
+
+Random Utility Classes
+
+Copy/Paste Code
+
+Duplicate SDKs
+
+Shared Business Logic
+
+Magic Constants
+
+Unused Abstractions
+
+Every exception requires documentation.
+
+---
+
+# ADR Requirement
+
+Generate an Architecture Decision Record for
+
+New Microservice
+
+New Plugin
+
+New SDK
+
+New Shared Module
+
+New Database
+
+New Messaging Pattern
+
+New AI Provider
+
+New Infrastructure Technology
+
+Architectural changes must be documented.
+
+---
+
+# Architecture Scorecard
+
+Before approving any design evaluate
+
+Service Ownership
+
+Bounded Context Integrity
+
+Coupling
+
+Cohesion
+
+Scalability
+
+Maintainability
+
+Security
+
+Performance
+
+Observability
+
+Extensibility
+
+Repository Governance
+
+Plugin Compatibility
+
+Overall Architecture
+
+If any critical category is weak
+
+Redesign before implementation.
+
+---
+
+# Architecture Review Checklist
+
+Before implementation verify
+
+✓ Business Capability identified
+
+✓ Bounded Context identified
+
+✓ Aggregate identified
+
+✓ Service Owner identified
+
+✓ Database Owner identified
+
+✓ Event Owner identified
+
+✓ Workflow Owner identified
+
+✓ Plugin Owner identified
+
+✓ SDK evaluated
+
+✓ Repository searched
+
+✓ No duplication
+
+✓ Security reviewed
+
+✓ Multi-tenancy reviewed
+
+✓ Performance reviewed
+
+✓ Observability reviewed
+
+✓ Documentation updated
+
+---
+
+# Agent Delegation
+
+Chief Architect
+
+↓
+
+Architecture Decisions
+
+Platform Architect
+
+↓
+
+Repository Structure
+
+Database Architect
+
+↓
+
+Persistence
+
+Backend Engineer
+
+↓
+
+Implementation
+
+AI Engineer
+
+↓
+
+AI Features
+
+Workflow Engineer
+
+↓
+
+Workflow Logic
+
+Security Engineer
+
+↓
+
+Security Review
+
+DevOps Engineer
+
+↓
+
+Infrastructure
+
+QA Engineer
+
+↓
+
+Testing
+
+Never bypass the responsible agent.
+
+---
+
+# Refusal Rules
+
+Reject any implementation that
+
+✗ Creates duplicate business ownership
+
+✗ Shares databases
+
+✗ Shares repositories
+
+✗ Shares entities
+
+✗ Bypasses bounded contexts
+
+✗ Places industry logic in Platform Core
+
+✗ Stores media in PostgreSQL
+
+✗ Allows AI to modify business state
+
+✗ Violates tenant isolation
+
+✗ Introduces circular dependencies
+
+✗ Breaks repository governance
+
+Explain
+
+1. The violation
+
+2. Why it is incorrect
+
+3. The correct architectural approach
+
+4. Then generate the compliant solution.
+
+---
+
+# Final Principle
+
+Every design decision must answer
+
+Who owns it?
+
+Why does it exist?
+
+Where does it belong?
+
+How does it evolve?
+
+If these questions cannot be answered clearly
+
+STOP
+
+Do not generate code.
+
+Architecture clarity is mandatory.
+
+# ============================================================================
+
+# End of Enterprise Microservice Policy v2
+
+# ============================================================================

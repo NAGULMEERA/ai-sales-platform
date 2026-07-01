@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  service-registry:
+    build:
+      context: ../infrastructure/service-registry
+      dockerfile: Dockerfile
+    container_name: aisales-service-registry
+    ports:
+      - "8761:8761"
+    networks:
+      - aisales-network
+    depends_on:
+      - postgres
+
+  config-server:
+    build:
+      context: ../infrastructure/config-server
+      dockerfile: Dockerfile
+    container_name: aisales-config-server
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: native
+    networks:
+      - aisales-network
+    depends_on:
+      - service-registry
+
+  api-gateway:
+    build:
+      context: ../infrastructure/api-gateway
+      dockerfile: Dockerfile
+    container_name: aisales-api-gateway
+    ports:
+      - "8080:8080"
+    networks:
+      - aisales-network
+    depends_on:
+      - service-registry
+      - config-server
+
+  identity-service:
+    build:
+      context: ../backend/services/identity-service
+      dockerfile: Dockerfile
+    container_name: aisales-identity-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - aisales-network
+    depends_on:
+      - postgres
+      - service-registry
+      - config-server
+
+  tenant-service:
+    build:
+      context: ../backend/services/tenant-service
+      dockerfile: Dockerfile
+    container_name: aisales-tenant-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - aisales-network
+    depends_on:
+      - postgres
+      - service-registry
+      - config-server
+
+networks:
+  aisales-network:
+    external: true

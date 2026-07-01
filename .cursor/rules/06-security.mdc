@@ -1,0 +1,2384 @@
+---
+description: Enterprise Security Governance Standards v2
+globs:
+  - "**/*.java"
+  - "**/*.kt"
+  - "**/*.properties"
+  - "**/security/**"
+alwaysApply: true
+priority: 6
+---
+
+# Rule 06 - Enterprise Security Governance v2
+
+## Related Rules
+
+- Rule 01 - Enterprise Microservice Policy
+- Rule 02 - Enterprise DDD
+- Rule 03 - Enterprise Event Governance
+- Rule 04 - Enterprise REST API Governance
+- Rule 05 - Enterprise Database Governance
+- Rule 07 - Enterprise Testing Standards
+
+---
+
+# Part 1 - Security Architecture
+
+## Purpose
+
+Security is a platform capability.
+
+Security is never an afterthought.
+
+Every architectural decision must preserve
+
+- Confidentiality
+- Integrity
+- Availability
+- Accountability
+- Tenant Isolation
+- Least Privilege
+
+Security is everyone's responsibility.
+
+---
+
+## Security Philosophy
+
+Business Capability
+
+↓
+
+Security Requirements
+
+↓
+
+Architecture
+
+↓
+
+Microservices
+
+↓
+
+Implementation
+
+↓
+
+Verification
+
+↓
+
+Monitoring
+
+Security is designed into the platform.
+
+It is never added after implementation.
+
+---
+
+## Zero Trust Architecture
+
+Never trust
+
+External Users
+
+Internal Users
+
+Microservices
+
+Plugins
+
+Networks
+
+AI Models
+
+External APIs
+
+Every request must be
+
+Authenticated
+
+Authorized
+
+Validated
+
+Audited
+
+---
+
+## Defense in Depth
+
+Security exists at multiple layers.
+
+Client
+
+↓
+
+API Gateway
+
+↓
+
+Authentication
+
+↓
+
+Authorization
+
+↓
+
+Business Rules
+
+↓
+
+Database
+
+↓
+
+Infrastructure
+
+A single security control is never sufficient.
+
+---
+
+## Security Ownership
+
+Every security capability has one owner.
+
+Identity
+
+↓
+
+Identity Service
+
+Authorization
+
+↓
+
+Identity Service
+
+Authentication
+
+↓
+
+Identity Service
+
+Audit
+
+↓
+
+Audit Service
+
+Secrets
+
+↓
+
+Platform Service
+
+AI Security
+
+↓
+
+AI Service
+
+Workflow Security
+
+↓
+
+Workflow Service
+
+Platform security responsibilities must be clearly defined.
+
+---
+
+## Authentication
+
+Authentication proves
+
+Who the user is.
+
+Supported mechanisms
+
+JWT
+
+OAuth2
+
+OpenID Connect
+
+API Keys (Internal Integrations)
+
+Anonymous access is prohibited unless explicitly approved.
+
+---
+
+## Authorization
+
+Authorization determines
+
+What the authenticated user may do.
+
+Authorization is enforced using
+
+RBAC
+
+Permissions
+
+Tenant Context
+
+Business Rules
+
+Never rely only on frontend authorization.
+
+---
+
+## Role-Based Access Control
+
+Permissions are assigned to Roles.
+
+Roles are assigned to Users.
+
+Business Services evaluate permissions before executing business operations.
+
+Never hardcode permissions.
+
+---
+
+## Tenant Isolation
+
+Every authenticated request resolves
+
+tenant_id
+
+organization_id
+
+user_id
+
+roles
+
+permissions
+
+Every service validates tenant ownership before accessing data.
+
+Cross-tenant access is prohibited.
+
+---
+
+## API Gateway Security
+
+Every external request enters through the API Gateway.
+
+Gateway responsibilities
+
+Authentication
+
+JWT Validation
+
+Rate Limiting
+
+Tenant Resolution
+
+Correlation ID
+
+Request Logging
+
+Security Headers
+
+Gateway never performs business logic.
+
+---
+
+## Service-to-Service Security
+
+Internal communication must use
+
+Authenticated identities
+
+JWT propagation
+
+Internal authorization
+
+Correlation IDs
+
+Future architecture may introduce mTLS.
+
+Services never trust internal traffic implicitly.
+
+---
+
+## Plugin Security
+
+Every plugin executes within defined permissions.
+
+Industry Plugins
+
+May access only their own business capabilities.
+
+Capability Plugins
+
+May access only approved platform services.
+
+Plugins never bypass platform security.
+
+---
+
+## AI Security
+
+AI Service must protect
+
+Prompt Templates
+
+Knowledge Base
+
+Embeddings
+
+Provider Credentials
+
+Inference History
+
+Token Usage
+
+AI outputs are treated as untrusted input.
+
+Business Services validate AI recommendations.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Security Filter
+
+JWT Configuration
+
+Authentication Provider
+
+Permission
+
+Authorization Rule
+
+Security Configuration
+
+Secret
+
+Repository
+
+The agent must search the repository.
+
+Questions
+
+Does this security capability already exist?
+
+Can an existing filter be reused?
+
+Can an existing permission be extended?
+
+Can an existing security configuration evolve?
+
+Avoid duplicate security implementations.
+
+---
+
+## Security Categories
+
+Identity
+
+Authentication
+
+Authorization
+
+API Security
+
+Service Security
+
+Database Security
+
+AI Security
+
+Workflow Security
+
+Plugin Security
+
+Infrastructure Security
+
+Observability Security
+
+Every security implementation belongs to one category.
+
+---
+
+## Security Principles
+
+Always
+
+Authenticate
+
+Authorize
+
+Validate
+
+Audit
+
+Encrypt
+
+Monitor
+
+Never
+
+Trust client input
+
+Trust internal networks
+
+Trust AI output
+
+Store secrets in source code
+
+Bypass authorization
+
+---
+
+## Architecture Review Checklist
+
+Before implementing security verify
+
+✓ Security owner identified
+
+✓ Authentication strategy selected
+
+✓ Authorization strategy defined
+
+✓ Tenant isolation included
+
+✓ API Gateway responsibilities verified
+
+✓ Service-to-service authentication defined
+
+✓ AI security evaluated
+
+✓ Plugin permissions reviewed
+
+✓ Repository searched
+
+✓ Existing security components reused
+
+---
+
+## Decision Tree
+
+Before implementing security ask
+
+1. Which service owns this security capability?
+
+2. Is authentication required?
+
+3. Is authorization required?
+
+4. Is tenant isolation required?
+
+5. Does an implementation already exist?
+
+6. Can an existing permission be reused?
+
+7. Is AI involved?
+
+8. Is this plugin-specific?
+
+9. Does this expose sensitive information?
+
+10. Is repository reuse possible?
+
+If any answer is unclear
+
+STOP
+
+Review the security architecture before implementation.
+
+# End of Part 1
+## Part 2 - Application Security Standards
+
+## Application Security Philosophy
+
+Application Security protects
+
+Business Logic
+
+Data
+
+Users
+
+Services
+
+AI
+
+Plugins
+
+Workflows
+
+Security is implemented at every layer.
+
+Never rely on a single security mechanism.
+
+---
+
+## Authentication Standards
+
+Supported authentication
+
+JWT
+
+OAuth2
+
+OpenID Connect
+
+Internal Service JWT
+
+API Keys (Approved Integrations Only)
+
+Authentication is mandatory for all protected endpoints.
+
+Anonymous endpoints require explicit approval.
+
+---
+
+## JWT Standards
+
+JWT must contain
+
+user_id
+
+tenant_id
+
+organization_id
+
+roles
+
+permissions
+
+session_id
+
+issued_at
+
+expiration
+
+Never place
+
+Passwords
+
+Secrets
+
+Sensitive PII
+
+inside JWT claims.
+
+JWT remains lightweight.
+
+---
+
+## Refresh Tokens
+
+Refresh Tokens
+
+Must be
+
+Secure
+
+Revocable
+
+Rotated
+
+Stored securely
+
+Refresh Tokens are never sent to downstream services.
+
+---
+
+## Authorization Standards
+
+Authorization uses
+
+RBAC
+
+Permission Checks
+
+Tenant Validation
+
+Business Rules
+
+Every protected operation requires authorization.
+
+Never trust UI authorization.
+
+---
+
+## Permission Model
+
+Permissions follow
+
+resource:action
+
+Examples
+
+lead:read
+
+lead:create
+
+lead:update
+
+lead:delete
+
+customer:read
+
+appointment:schedule
+
+workflow:approve
+
+Permissions remain granular.
+
+---
+
+## API Security
+
+Every API validates
+
+Authentication
+
+Authorization
+
+Tenant Context
+
+Request Validation
+
+Correlation ID
+
+Rate Limits
+
+Sensitive operations require additional permission validation.
+
+---
+
+## Input Validation
+
+Validate
+
+Length
+
+Range
+
+Format
+
+Enums
+
+Nullability
+
+Required Fields
+
+Reject invalid input immediately.
+
+Never trust client input.
+
+---
+
+## Output Validation
+
+Responses must never expose
+
+Passwords
+
+Secrets
+
+Tokens
+
+Internal IDs
+
+Stack Traces
+
+Database Errors
+
+Return only documented DTOs.
+
+---
+
+## SQL Injection Protection
+
+Always use
+
+Prepared Statements
+
+JPA
+
+Parameterized Queries
+
+Never build SQL using string concatenation.
+
+---
+
+## Cross-Site Scripting (XSS)
+
+Escape user-generated content before rendering.
+
+Validate HTML where supported.
+
+Never trust rich text input.
+
+---
+
+## Cross-Site Request Forgery (CSRF)
+
+Stateless JWT APIs
+
+CSRF disabled where appropriate.
+
+Session-based applications
+
+CSRF protection enabled.
+
+Choose the strategy based on authentication model.
+
+---
+
+## Cross-Origin Resource Sharing (CORS)
+
+Allow only
+
+Approved Origins
+
+Approved Methods
+
+Approved Headers
+
+Never allow unrestricted origins in production.
+
+---
+
+## File Upload Security
+
+Validate
+
+Content Type
+
+Extension
+
+Maximum Size
+
+Virus Scan Status
+
+Checksum
+
+Store uploaded files in S3.
+
+Never execute uploaded files.
+
+---
+
+## S3 Security
+
+Always use
+
+Pre-Signed URLs
+
+Private Buckets
+
+Server-Side Encryption
+
+Lifecycle Policies
+
+Store only object metadata in PostgreSQL.
+
+Never expose bucket paths directly.
+
+---
+
+## Secrets Management
+
+Secrets include
+
+JWT Keys
+
+API Keys
+
+Database Credentials
+
+OAuth Secrets
+
+Provider Tokens
+
+Never store secrets
+
+In source code
+
+In Git
+
+In configuration files committed to version control
+
+Use Secret Manager or Vault.
+
+---
+
+## Password Policy
+
+Passwords must
+
+Meet minimum length requirements
+
+Support strong complexity requirements
+
+Be hashed using approved algorithms
+
+Never store plaintext passwords.
+
+Never log passwords.
+
+---
+
+## Session Security
+
+Sessions include
+
+Expiration
+
+Revocation
+
+Device Tracking (where required)
+
+Idle Timeout
+
+Logout Invalidates Sessions
+
+Long-lived sessions require explicit business approval.
+
+---
+
+## Rate Limiting
+
+Protect
+
+Authentication
+
+Registration
+
+Password Reset
+
+Public APIs
+
+Webhook Endpoints
+
+Apply tenant-aware rate limits where appropriate.
+
+---
+
+## Data Validation
+
+Validate
+
+Business Rules
+
+Tenant Ownership
+
+Permission
+
+Entity State
+
+Aggregate Invariants
+
+Validation occurs before persistence.
+
+---
+
+## Error Handling
+
+Never expose
+
+Stack Traces
+
+Framework Exceptions
+
+Database Errors
+
+Internal Paths
+
+Return standardized error responses.
+
+---
+
+## Logging Security
+
+Never log
+
+Passwords
+
+Tokens
+
+Secrets
+
+PII
+
+Sensitive AI prompts
+
+Log
+
+Correlation ID
+
+Tenant ID
+
+User ID
+
+Request ID
+
+Security Events
+
+---
+
+## Encryption
+
+Encrypt
+
+Sensitive Configuration
+
+Secrets
+
+Credentials
+
+PII (where required)
+
+Use TLS for all external and internal communication where supported.
+
+---
+
+## Dependency Security
+
+Use
+
+Supported Framework Versions
+
+Security Updates
+
+Dependency Scanning
+
+Remove vulnerable libraries promptly.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+JWT Filter
+
+Authentication Provider
+
+Permission
+
+Security Configuration
+
+Input Validator
+
+Secret Configuration
+
+Search the repository.
+
+Questions
+
+Does an implementation already exist?
+
+Can it be extended?
+
+Can an existing validator be reused?
+
+Can an existing permission model evolve?
+
+Reuse before creating.
+
+---
+
+## Review Checklist
+
+Before implementation verify
+
+✓ Authentication implemented
+
+✓ Authorization enforced
+
+✓ JWT validated
+
+✓ Tenant validation included
+
+✓ Input validation implemented
+
+✓ Output protected
+
+✓ Secrets externalized
+
+✓ File uploads secured
+
+✓ Logging sanitized
+
+✓ Repository searched
+
+---
+
+## Agent Decision Tree
+
+Before implementing security ask
+
+1. Is authentication required?
+
+2. Is authorization required?
+
+3. Is tenant validation required?
+
+4. Does an implementation already exist?
+
+5. Can an existing validator be reused?
+
+6. Can an existing permission be reused?
+
+7. Are secrets protected?
+
+8. Are uploads secured?
+
+9. Are logs sanitized?
+
+10. Does this violate Zero Trust?
+
+If any answer is unclear
+
+STOP
+
+Review the application security design before implementation.
+
+# End of Part 2
+## Part 3 - Platform Security Architecture
+
+## Platform Security Philosophy
+
+Every platform capability is secured independently.
+
+Security boundaries follow
+
+Business Capability
+
+↓
+
+Bounded Context
+
+↓
+
+Microservice
+
+↓
+
+Platform Capability
+
+↓
+
+Implementation
+
+No platform capability bypasses security.
+
+---
+
+## AI Security
+
+AI Service protects
+
+Prompt Templates
+
+Prompt Versions
+
+Knowledge Base
+
+Embeddings
+
+Model Configuration
+
+Provider Credentials
+
+Inference History
+
+Token Usage
+
+AI artifacts remain isolated from business data.
+
+---
+
+## Prompt Injection Protection
+
+Treat every prompt as untrusted input.
+
+Validate
+
+Prompt Variables
+
+Prompt Templates
+
+User Instructions
+
+External Documents
+
+Never allow prompts to override
+
+Business Rules
+
+Authorization
+
+Tenant Isolation
+
+System Instructions
+
+---
+
+## Indirect Prompt Injection
+
+Knowledge documents
+
+PDF
+
+Word
+
+Email
+
+Website
+
+OCR
+
+Voice Transcripts
+
+are untrusted.
+
+Retrieved content must never become executable instructions.
+
+Knowledge influences AI.
+
+Knowledge never controls AI.
+
+---
+
+## AI Output Validation
+
+AI responses must be validated before use.
+
+Validate
+
+Business Rules
+
+Permission Rules
+
+Tenant Ownership
+
+Required Fields
+
+Data Types
+
+Confidence Thresholds
+
+AI recommendations never modify business data directly.
+
+Business Services remain authoritative.
+
+---
+
+## RAG Security
+
+Knowledge Retrieval must filter by
+
+tenant_id
+
+organization_id
+
+document_permissions
+
+user_permissions
+
+Never retrieve documents across tenants.
+
+Cross-tenant retrieval is prohibited.
+
+---
+
+## Vector Database Security
+
+pgvector stores
+
+Embeddings
+
+Similarity Indexes
+
+Knowledge References
+
+Never store
+
+Passwords
+
+Secrets
+
+Authentication Data
+
+Financial Credentials
+
+inside vector embeddings.
+
+---
+
+## AI Provider Security
+
+Protect
+
+API Keys
+
+Provider Credentials
+
+Model Configuration
+
+Quota Configuration
+
+Provider Failover
+
+Credentials belong in Secret Manager.
+
+Never store provider secrets in source code.
+
+---
+
+## Kafka Security
+
+Every event contains
+
+event_id
+
+correlation_id
+
+trace_id
+
+tenant_id
+
+event_version
+
+timestamp
+
+Never publish
+
+Passwords
+
+Secrets
+
+JWT
+
+Refresh Tokens
+
+PII unless explicitly approved.
+
+---
+
+## Event Integrity
+
+Events are immutable.
+
+Never modify published events.
+
+Corrections occur through
+
+New Events
+
+Compensation Events
+
+Business Events remain append-only.
+
+---
+
+## Workflow Security
+
+Workflow Service validates
+
+Authentication
+
+Authorization
+
+Tenant Ownership
+
+Approval Permissions
+
+Workflow State
+
+Workflow never bypasses business authorization.
+
+---
+
+## Plugin Security
+
+Industry Plugins
+
+Access only their own business capabilities.
+
+Capability Plugins
+
+Access only approved Platform APIs.
+
+Plugins cannot
+
+Access internal schemas
+
+Bypass RBAC
+
+Bypass Tenant Validation
+
+Access another plugin's private data.
+
+---
+
+## External Integration Security
+
+Protect integrations with
+
+WhatsApp
+
+Email
+
+SMS
+
+Voice
+
+Payment Providers
+
+Calendar
+
+Maps
+
+OCR
+
+Translation
+
+Validate
+
+Authentication
+
+Authorization
+
+Rate Limits
+
+Retries
+
+Webhook Signatures
+
+Every external integration is authenticated.
+
+---
+
+## Webhook Security
+
+Every webhook validates
+
+Signature
+
+Timestamp
+
+Replay Protection
+
+Tenant Mapping
+
+Idempotency
+
+Reject unsigned webhooks.
+
+---
+
+## Media Security
+
+Media Service protects
+
+Images
+
+Videos
+
+Voice
+
+Documents
+
+PDF
+
+Binary objects remain private.
+
+Downloads use
+
+Pre-Signed URLs
+
+Expiration
+
+Permission Validation
+
+Audit Logging
+
+---
+
+## S3 Security
+
+Enable
+
+Private Buckets
+
+Server-Side Encryption
+
+Versioning
+
+Bucket Policies
+
+Lifecycle Rules
+
+Object Lock where required
+
+Never expose public buckets.
+
+---
+
+## Search Security
+
+Search indexes include
+
+tenant_id
+
+visibility
+
+document_permissions
+
+Search Service validates authorization before returning results.
+
+---
+
+## Notification Security
+
+Protect
+
+Email Templates
+
+SMS Templates
+
+WhatsApp Templates
+
+Push Notifications
+
+Voice Templates
+
+Never allow template injection.
+
+Template changes require authorization.
+
+---
+
+## Database Security
+
+Protect
+
+PII
+
+Financial Data
+
+Authentication Data
+
+Tenant Data
+
+Use
+
+Encryption at Rest
+
+Encryption in Transit
+
+Least Privilege
+
+Secure Backups
+
+Database security complements application security.
+
+---
+
+## Secret Management
+
+Secrets include
+
+JWT Signing Keys
+
+OAuth Secrets
+
+Database Passwords
+
+API Keys
+
+Provider Tokens
+
+Encryption Keys
+
+Never
+
+Commit secrets to Git
+
+Store secrets in application.properties
+
+Log secrets
+
+Secrets are retrieved from Secret Manager or Vault.
+
+---
+
+## Audit Security
+
+Audit Service records
+
+Authentication Events
+
+Authorization Failures
+
+Permission Changes
+
+Configuration Changes
+
+Administrative Actions
+
+Sensitive Data Access
+
+Audit records remain immutable.
+
+---
+
+## Observability Security
+
+Protect
+
+Logs
+
+Metrics
+
+Traces
+
+Audit Events
+
+Never expose
+
+Secrets
+
+JWT
+
+Passwords
+
+PII
+
+Prompt Content
+
+Sensitive data must be masked.
+
+---
+
+## Security Monitoring
+
+Monitor
+
+Failed Logins
+
+Permission Failures
+
+Tenant Violations
+
+Rate Limit Violations
+
+Abnormal AI Usage
+
+Webhook Failures
+
+Secret Access
+
+Suspicious Activity
+
+Security monitoring is continuous.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Security Filter
+
+Kafka Security
+
+Webhook Validator
+
+Plugin Permission
+
+Prompt Validator
+
+Secret Configuration
+
+Audit Event
+
+Search the repository.
+
+Questions
+
+Does this implementation already exist?
+
+Can an existing security component evolve?
+
+Can existing validation be reused?
+
+Avoid duplicate security implementations.
+
+---
+
+## Platform Review Checklist
+
+Before implementation verify
+
+✓ AI Security implemented
+
+✓ Prompt Injection protection implemented
+
+✓ RAG isolation verified
+
+✓ Kafka security reviewed
+
+✓ Workflow authorization verified
+
+✓ Plugin isolation verified
+
+✓ Webhook validation implemented
+
+✓ Secrets externalized
+
+✓ Audit enabled
+
+✓ Repository searched
+
+---
+
+## Agent Decision Tree
+
+Before implementing platform security ask
+
+1. Is AI involved?
+
+2. Is RAG involved?
+
+3. Is Kafka involved?
+
+4. Is a webhook involved?
+
+5. Is S3 involved?
+
+6. Is this plugin-specific?
+
+7. Is tenant isolation preserved?
+
+8. Does a security implementation already exist?
+
+9. Can it be reused?
+
+10. Does this expose sensitive information?
+
+If any answer is unclear
+
+STOP
+
+Review the platform security architecture before implementation.
+
+# End of Part 3
+## Part 4 - Security Governance & Repository Intelligence
+
+## Security Governance Philosophy
+
+Security is a continuous process.
+
+Every security implementation must protect
+
+- Users
+- Tenants
+- Business Data
+- AI Systems
+- Platform Services
+- External Integrations
+
+Security is reviewed continuously.
+
+Never assume software is secure because it passed initial testing.
+
+---
+
+## Security Lifecycle
+
+Every security feature follows
+
+Requirements
+
+↓
+
+Threat Modeling
+
+↓
+
+Architecture Review
+
+↓
+
+Implementation
+
+↓
+
+Code Review
+
+↓
+
+Security Testing
+
+↓
+
+Deployment
+
+↓
+
+Monitoring
+
+↓
+
+Incident Response
+
+↓
+
+Continuous Improvement
+
+Security exists throughout the software lifecycle.
+
+---
+
+## Security Ownership
+
+Every security capability has one owner.
+
+Identity Service
+
+Owns
+
+Authentication
+
+Authorization
+
+JWT
+
+OAuth2
+
+RBAC
+
+Platform Service
+
+Owns
+
+Secrets
+
+Configuration
+
+Feature Flags
+
+AI Service
+
+Owns
+
+Prompt Security
+
+RAG Security
+
+Model Configuration
+
+Audit Service
+
+Owns
+
+Audit Logs
+
+Security Events
+
+Incident History
+
+Ownership is never shared.
+
+---
+
+## Repository Intelligence Workflow
+
+Before creating
+
+Security Filter
+
+JWT Provider
+
+Authentication Provider
+
+Permission
+
+Authorization Rule
+
+Security Configuration
+
+Secret
+
+Webhook Validator
+
+Prompt Validator
+
+Search the repository.
+
+Verify
+
+Existing Security Configuration
+
+Existing JWT Implementation
+
+Existing Permission Model
+
+Existing Validation
+
+Existing Secret Management
+
+Existing Plugin Security
+
+Existing Audit Event
+
+Reuse before creating.
+
+Never duplicate security implementations.
+
+---
+
+## Threat Modeling
+
+Every major feature must evaluate
+
+Authentication Risks
+
+Authorization Risks
+
+Tenant Isolation Risks
+
+Data Leakage
+
+Privilege Escalation
+
+Injection Attacks
+
+Replay Attacks
+
+Prompt Injection
+
+Supply Chain Risks
+
+Document security assumptions.
+
+---
+
+## OWASP Compliance
+
+Review against
+
+OWASP Top 10
+
+API Security Top 10
+
+Authentication Best Practices
+
+Session Management
+
+Secure Configuration
+
+Sensitive Data Exposure
+
+Security standards evolve continuously.
+
+---
+
+## Secure Coding
+
+Every implementation
+
+Validates Input
+
+Escapes Output
+
+Uses Parameterized Queries
+
+Uses DTOs
+
+Avoids Reflection Abuse
+
+Avoids Dynamic SQL
+
+Avoids Hardcoded Secrets
+
+Secure coding is mandatory.
+
+---
+
+## Dependency Security
+
+Every dependency must be
+
+Reviewed
+
+Supported
+
+Maintained
+
+Scanned
+
+Monitor
+
+Known Vulnerabilities
+
+License Risks
+
+Dependency Updates
+
+Remove vulnerable dependencies promptly.
+
+---
+
+## Secret Scanning
+
+Continuously scan for
+
+Passwords
+
+API Keys
+
+JWT Secrets
+
+OAuth Secrets
+
+Database Credentials
+
+Cloud Credentials
+
+Private Keys
+
+Never commit secrets into source control.
+
+---
+
+## Vulnerability Management
+
+Continuously identify
+
+Library Vulnerabilities
+
+Framework Vulnerabilities
+
+Infrastructure Vulnerabilities
+
+Cloud Misconfiguration
+
+Container Risks
+
+Every vulnerability requires
+
+Assessment
+
+Prioritization
+
+Remediation
+
+Verification
+
+---
+
+## Penetration Testing
+
+Regularly test
+
+Authentication
+
+Authorization
+
+Tenant Isolation
+
+API Security
+
+Webhook Security
+
+AI Security
+
+Plugin Security
+
+External Integrations
+
+Critical releases require penetration testing.
+
+---
+
+## Security Testing
+
+Security testing includes
+
+Unit Tests
+
+Integration Tests
+
+Authorization Tests
+
+Authentication Tests
+
+Tenant Isolation Tests
+
+Negative Tests
+
+OWASP Tests
+
+Regression Tests
+
+Security tests are part of CI/CD.
+
+---
+
+## Incident Response
+
+Every security incident defines
+
+Severity
+
+Owner
+
+Impact
+
+Containment
+
+Recovery
+
+Root Cause
+
+Corrective Actions
+
+Lessons Learned
+
+Incidents are documented.
+
+---
+
+## Audit Governance
+
+Audit records include
+
+Authentication
+
+Authorization
+
+Permission Changes
+
+Administrative Actions
+
+Configuration Changes
+
+Sensitive Data Access
+
+Security Events
+
+Audit records remain immutable.
+
+---
+
+## Compliance
+
+Support
+
+Data Privacy
+
+Retention Policies
+
+Audit Requirements
+
+Encryption Requirements
+
+Business Compliance Policies
+
+Compliance requirements are documented.
+
+---
+
+## Multi-Tenant Security Review
+
+Verify
+
+Tenant Resolution
+
+Tenant Validation
+
+Tenant Authorization
+
+Tenant Isolation
+
+Tenant Data Ownership
+
+Cross-tenant access is prohibited.
+
+---
+
+## AI Security Review
+
+Verify
+
+Prompt Injection Protection
+
+Indirect Prompt Injection Protection
+
+Output Validation
+
+Knowledge Isolation
+
+RAG Filtering
+
+Token Limits
+
+Provider Security
+
+Business Services validate AI output.
+
+---
+
+## Plugin Security Review
+
+Verify
+
+Plugin Permissions
+
+Capability Isolation
+
+Industry Isolation
+
+Tenant Isolation
+
+API Authorization
+
+Plugins never bypass platform security.
+
+---
+
+## Security Monitoring
+
+Continuously monitor
+
+Authentication Failures
+
+Authorization Failures
+
+Permission Changes
+
+Tenant Violations
+
+Webhook Failures
+
+Rate Limit Violations
+
+Abnormal AI Usage
+
+Secret Access
+
+Security Events
+
+Monitoring is continuous.
+
+---
+
+## Security Metrics
+
+Track
+
+Failed Login Rate
+
+Authorization Failure Rate
+
+Token Expiration Errors
+
+Tenant Violation Attempts
+
+Prompt Injection Attempts
+
+Webhook Verification Failures
+
+Secret Rotation Status
+
+Security Patch Compliance
+
+Metrics drive continuous improvement.
+
+---
+
+## Security Anti-Patterns
+
+Reject
+
+Hardcoded Secrets
+
+Shared Accounts
+
+Public S3 Buckets
+
+Plaintext Passwords
+
+Disabled Authorization
+
+Disabled Input Validation
+
+Cross-Tenant Access
+
+Trusting AI Output
+
+Trusting Client Input
+
+Trusting Internal Networks
+
+Security shortcuts are prohibited.
+
+---
+
+## Architecture Review Checklist
+
+Before implementation verify
+
+✓ Authentication implemented
+
+✓ Authorization enforced
+
+✓ Tenant isolation verified
+
+✓ Repository searched
+
+✓ Existing security reused
+
+✓ Secrets externalized
+
+✓ OWASP reviewed
+
+✓ AI security reviewed
+
+✓ Plugin security reviewed
+
+✓ Audit enabled
+
+✓ Security tests implemented
+
+✓ Monitoring configured
+
+---
+
+## Agent Decision Tree
+
+Before implementing security ask
+
+1. Does this feature require authentication?
+
+2. Does it require authorization?
+
+3. Is tenant isolation required?
+
+4. Is AI involved?
+
+5. Is a plugin involved?
+
+6. Is sensitive data processed?
+
+7. Does an implementation already exist?
+
+8. Can an existing security component be reused?
+
+9. Are secrets protected?
+
+10. Does this comply with platform security standards?
+
+If any answer is unclear
+
+STOP
+
+Review the security architecture before implementation.
+
+---
+
+## Mandatory Rules
+
+### MUST
+
+- Authenticate every protected request.
+- Authorize every business operation.
+- Resolve tenant context before business logic.
+- Store secrets in Secret Manager or Vault.
+- Validate all user input.
+- Sanitize all outputs.
+- Protect S3 with private buckets and pre-signed URLs.
+- Encrypt sensitive data in transit and at rest.
+- Audit security-sensitive operations.
+- Search the repository before creating new security components.
+
+### MUST NOT
+
+- Hardcode secrets.
+- Trust client input.
+- Trust AI output.
+- Trust internal network traffic.
+- Expose stack traces.
+- Log passwords, tokens, or secrets.
+- Share authentication logic across services without governance.
+- Allow cross-tenant access.
+- Disable authorization checks.
+- Duplicate security implementations.
+
+---
+
+## Final Principle
+
+Never design security from
+
+Framework Features
+
+Libraries
+
+Controllers
+
+Filters
+
+Configuration Files
+
+Always design security from
+
+Business Capability
+
+↓
+
+Risk Assessment
+
+↓
+
+Security Architecture
+
+↓
+
+Identity
+
+↓
+
+Authorization
+
+↓
+
+Tenant Isolation
+
+↓
+
+Business Rules
+
+↓
+
+Implementation
+
+↓
+
+Verification
+
+↓
+
+Monitoring
+
+Security enables the platform.
+
+Security never limits the architecture.
+
+# End of Enterprise Security Governance v2

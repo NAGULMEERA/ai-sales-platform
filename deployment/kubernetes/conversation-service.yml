@@ -1,0 +1,32 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conversation-service
+  namespace: aisales
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: conversation-service
+  template:
+    metadata:
+      labels:
+        app: conversation-service
+    spec:
+      containers:
+        - name: conversation-service
+          image: aisales/.0.0-SNAPSHOT
+          ports:
+            - containerPort: 8086
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: conversation-service
+  namespace: aisales
+spec:
+  selector:
+    app: conversation-service
+  ports:
+    - port: 80
+      targetPort: 8086

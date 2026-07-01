@@ -1,0 +1,32 @@
+@startuml
+title AI Sales Platform - Microservices
+
+package "Infrastructure" {
+  [API Gateway] as GW
+  [Service Registry] as REG
+  [Config Server] as CFG
+}
+
+package "Core Services" {
+  [Identity Service] as ID
+  [Tenant Service] as TEN
+}
+
+package "Business Services" {
+  [Lead Service] as LEAD
+  [Customer Service] as CUST
+  [Catalog Service] as CAT
+  [Conversation Service] as CONV
+  [Appointment Service] as APPT
+  [AI Service] as AI
+}
+
+GW --> ID
+GW --> TEN
+GW --> LEAD
+GW --> CUST
+TEN --> REG
+ID --> REG
+GW --> REG
+CFG --> REG
+@enduml

@@ -1,0 +1,17 @@
+﻿@startuml
+title Data Flow - Lead Qualification
+
+actor SalesRep
+participant Gateway
+participant LeadService
+participant AIService
+queue Kafka
+participant NotificationService
+
+SalesRep -> Gateway: POST /api/v1/leads
+Gateway -> LeadService: Create lead
+LeadService -> Kafka: LeadCreatedEvent
+Kafka -> AIService: Score lead
+AIService -> Kafka: LeadScoredEvent
+Kafka -> NotificationService: Notify rep
+@enduml

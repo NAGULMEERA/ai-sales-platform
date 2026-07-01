@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/aisales
+    username: aisales
+    password: aisales
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: true
+
+aisales:
+  security:
+    jwt:
+      secret: aisales-dev-jwt-secret-key-change-in-production-min-256-bits
+      access-token-expiration-ms: 3600000
+      refresh-token-expiration-ms: 86400000
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

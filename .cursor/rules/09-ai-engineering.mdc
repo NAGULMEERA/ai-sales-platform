@@ -1,0 +1,2685 @@
+---
+description: Enterprise AI Engineering Governance Standards v2
+globs:
+  - "**/*.java"
+  - "**/*.kt"
+  - "**/ai/**"
+alwaysApply: true
+priority: 9
+---
+
+# Rule 09 - Enterprise AI Engineering Governance v2
+
+## Related Rules
+
+- Rule 01 - Enterprise Microservice Policy
+- Rule 02 - Enterprise DDD
+- Rule 03 - Enterprise Event Governance
+- Rule 04 - Enterprise REST API Governance
+- Rule 05 - Enterprise Database Governance
+- Rule 06 - Enterprise Security Governance
+- Rule 07 - Enterprise Testing Governance
+- Rule 08 - Enterprise Observability Governance
+
+---
+
+# Part 1 - AI Architecture
+
+## Purpose
+
+Artificial Intelligence is a platform capability.
+
+AI assists business operations.
+
+AI never owns business rules.
+
+Business Services remain the system of record.
+
+---
+
+## AI Philosophy
+
+Business Capability
+
+↓
+
+Business Service
+
+↓
+
+AI Service
+
+↓
+
+LLM
+
+↓
+
+Validated Response
+
+↓
+
+Business Decision
+
+↓
+
+Persistence
+
+AI provides recommendations.
+
+Business Services make decisions.
+
+---
+
+## AI Ownership
+
+AI Service owns
+
+Prompt Templates
+
+Prompt Versions
+
+Conversation Context
+
+Knowledge Retrieval
+
+Embeddings
+
+Vector Search
+
+LLM Providers
+
+Tool Calling
+
+Token Usage
+
+Inference History
+
+Business Services own business state.
+
+---
+
+## AI Principles
+
+Every AI capability must be
+
+Business Driven
+
+Deterministic where required
+
+Observable
+
+Secure
+
+Tenant Aware
+
+Versioned
+
+Testable
+
+Cost Aware
+
+AI complements software.
+
+AI never replaces architecture.
+
+---
+
+## AI Responsibilities
+
+AI may
+
+Generate Text
+
+Summarize Content
+
+Classify Leads
+
+Recommend Actions
+
+Extract Information
+
+Search Knowledge
+
+Generate Responses
+
+Support Decision Making
+
+AI must not
+
+Persist Business Data
+
+Bypass Authorization
+
+Modify Aggregates
+
+Execute Transactions
+
+Own Business Rules
+
+---
+
+## AI Service Architecture
+
+Client
+
+↓
+
+Gateway
+
+↓
+
+Business Service
+
+↓
+
+AI Service
+
+↓
+
+Prompt Engine
+
+↓
+
+Knowledge Retrieval
+
+↓
+
+LLM Provider
+
+↓
+
+Validated Response
+
+↓
+
+Business Service
+
+↓
+
+Business Decision
+
+AI remains an isolated platform capability.
+
+---
+
+## Supported Providers
+
+Platform supports
+
+OpenAI
+
+Google Gemini
+
+Azure OpenAI
+
+Anthropic Claude
+
+Future Providers
+
+Providers are interchangeable.
+
+Business logic never depends on a specific vendor.
+
+---
+
+## Spring AI
+
+Spring AI is the standard abstraction layer.
+
+Never couple business logic directly to provider SDKs.
+
+Business Services communicate only through AI Service.
+
+---
+
+## Multi-Agent Architecture
+
+Each Agent owns one responsibility.
+
+Examples
+
+Lead Qualification Agent
+
+↓
+
+Property Recommendation Agent
+
+↓
+
+Conversation Agent
+
+↓
+
+Follow-up Agent
+
+↓
+
+Appointment Scheduling Agent
+
+↓
+
+Document Analysis Agent
+
+Agents remain independent.
+
+Agents communicate through workflows.
+
+---
+
+## Prompt Architecture
+
+Every prompt defines
+
+Purpose
+
+Owner
+
+Version
+
+Variables
+
+Expected Output
+
+Validation Rules
+
+Related Business Capability
+
+Prompts are version-controlled assets.
+
+---
+
+## Conversation Architecture
+
+Conversation Context includes
+
+User Messages
+
+AI Responses
+
+Business Context
+
+Tenant Context
+
+Conversation History
+
+Memory References
+
+Context remains isolated per tenant.
+
+---
+
+## Knowledge Architecture
+
+Knowledge Sources
+
+PDF
+
+Word
+
+Excel
+
+Markdown
+
+FAQs
+
+Policies
+
+Business Documents
+
+Knowledge files reside in S3.
+
+Metadata resides in PostgreSQL.
+
+Embeddings reside in pgvector.
+
+---
+
+## Retrieval Architecture
+
+Knowledge Base
+
+↓
+
+Embedding Search
+
+↓
+
+Vector Similarity
+
+↓
+
+Ranking
+
+↓
+
+Context Assembly
+
+↓
+
+Prompt
+
+↓
+
+LLM
+
+↓
+
+Validated Output
+
+Retrieval remains tenant-aware.
+
+---
+
+## AI Memory
+
+Conversation memory includes
+
+Short-Term Memory
+
+Long-Term References
+
+Conversation Context
+
+User Preferences
+
+Business Context
+
+Memory never bypasses business validation.
+
+---
+
+## Tool Calling
+
+AI may invoke
+
+Search
+
+Calendar
+
+Notification
+
+CRM
+
+Workflow
+
+Knowledge Search
+
+Media Lookup
+
+Tool execution requires explicit authorization.
+
+---
+
+## AI Events
+
+AI publishes
+
+Prompt Executed
+
+Response Generated
+
+Embedding Created
+
+Knowledge Indexed
+
+Tool Invoked
+
+Provider Failed
+
+Token Budget Exceeded
+
+AI events support observability.
+
+---
+
+## Tenant Isolation
+
+Every AI request resolves
+
+tenant_id
+
+organization_id
+
+user_id
+
+permissions
+
+Knowledge retrieval never crosses tenant boundaries.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Prompt
+
+Agent
+
+Tool
+
+Workflow
+
+Embedding
+
+Knowledge Source
+
+Provider
+
+Memory
+
+Search the repository.
+
+Questions
+
+Does this capability already exist?
+
+Can an existing prompt evolve?
+
+Can an existing agent be reused?
+
+Can an existing tool be extended?
+
+Reuse before creating.
+
+---
+
+## Architecture Review Checklist
+
+Before implementation verify
+
+✓ Business capability identified
+
+✓ AI ownership defined
+
+✓ Prompt versioned
+
+✓ Knowledge source identified
+
+✓ Tenant isolation included
+
+✓ Provider abstraction maintained
+
+✓ Business validation preserved
+
+✓ Repository searched
+
+✓ Existing prompts reused
+
+✓ Existing agents evaluated
+
+---
+
+## Decision Tree
+
+Before implementing AI ask
+
+1. Does this require AI?
+
+2. Is an existing AI capability available?
+
+3. Does an agent already exist?
+
+4. Does a prompt already exist?
+
+5. Is RAG required?
+
+6. Is tool calling required?
+
+7. Is tenant isolation preserved?
+
+8. Will business rules remain outside AI?
+
+9. Can existing components be reused?
+
+10. Is provider independence maintained?
+
+If any answer is unclear
+
+STOP
+
+Review the AI architecture before implementation.
+
+# End of Part 1
+## Part 2 - AI Engineering Standards
+
+## AI Engineering Philosophy
+
+AI engineering transforms
+
+Business Context
+
+↓
+
+Knowledge
+
+↓
+
+Prompt
+
+↓
+
+LLM
+
+↓
+
+Validated Output
+
+↓
+
+Business Decision
+
+AI produces recommendations.
+
+Business Services remain responsible for decisions.
+
+---
+
+## Prompt Engineering
+
+Every prompt defines
+
+Purpose
+
+Owner
+
+Version
+
+Input Variables
+
+Expected Output
+
+Validation Rules
+
+Fallback Strategy
+
+Prompts are software assets.
+
+---
+
+## Prompt Templates
+
+Store prompts as version-controlled templates.
+
+Avoid hardcoded prompts inside Java classes.
+
+Every prompt has
+
+Unique Identifier
+
+Description
+
+Owner
+
+Version
+
+Status
+
+Creation Date
+
+Approval Status
+
+---
+
+## Prompt Variables
+
+Prompt variables must be
+
+Validated
+
+Escaped
+
+Typed
+
+Business Meaningful
+
+Never concatenate raw user input directly into prompts.
+
+---
+
+## Prompt Versioning
+
+Every prompt change creates
+
+New Version
+
+Change History
+
+Migration Notes
+
+Backward Compatibility Review
+
+Never overwrite production prompts.
+
+---
+
+## Structured Output
+
+LLMs should return
+
+JSON
+
+Enums
+
+Typed Objects
+
+Collections
+
+Avoid free-form text when business logic consumes responses.
+
+Structured output reduces parsing errors.
+
+---
+
+## Output Validation
+
+Validate
+
+JSON Structure
+
+Required Fields
+
+Enum Values
+
+Data Types
+
+Ranges
+
+Business Rules
+
+Confidence Threshold
+
+Invalid AI output is rejected.
+
+---
+
+## AI Confidence
+
+Every AI response should expose
+
+Confidence Score
+
+Reasoning Summary
+
+Source References (when applicable)
+
+Business Services determine whether confidence is sufficient.
+
+---
+
+## Tool Calling
+
+AI tools include
+
+Knowledge Search
+
+Workflow Execution
+
+Calendar
+
+Notification
+
+CRM Lookup
+
+Property Search
+
+Media Lookup
+
+Tool execution requires
+
+Authentication
+
+Authorization
+
+Tenant Validation
+
+AI cannot invoke unauthorized tools.
+
+---
+
+## Conversation Memory
+
+Support
+
+Short-Term Memory
+
+Conversation History
+
+Business Context
+
+User Preferences
+
+Session Context
+
+Memory is tenant isolated.
+
+Memory does not replace database records.
+
+---
+
+## Context Management
+
+Context includes
+
+Tenant Context
+
+Business Context
+
+Conversation Context
+
+Knowledge Context
+
+Workflow Context
+
+Include only information required for the current task.
+
+Avoid unnecessary context.
+
+---
+
+## Context Window
+
+Monitor
+
+Prompt Size
+
+Retrieved Context
+
+Conversation Length
+
+Token Count
+
+Model Limits
+
+Context overflow must be prevented.
+
+---
+
+## Embedding Standards
+
+Generate embeddings for
+
+Knowledge Documents
+
+FAQs
+
+Policies
+
+Manuals
+
+Product Documentation
+
+Business Content
+
+Do not generate embeddings for
+
+Passwords
+
+Secrets
+
+Sensitive Credentials
+
+Private Keys
+
+---
+
+## pgvector Standards
+
+Store
+
+Embeddings
+
+Vector Metadata
+
+Similarity Indexes
+
+Tenant Metadata
+
+Do not store
+
+Business Transactions
+
+Authentication Data
+
+Financial Secrets
+
+inside vector storage.
+
+---
+
+## Retrieval Standards
+
+Retrieval validates
+
+Tenant Ownership
+
+Document Permissions
+
+Knowledge Freshness
+
+Document Status
+
+Similarity Threshold
+
+Low-quality retrieval must not be used.
+
+---
+
+## AI Provider Abstraction
+
+Business Services never call
+
+OpenAI SDK
+
+Gemini SDK
+
+Claude SDK
+
+directly.
+
+All providers are accessed through
+
+Spring AI
+
+Provider switching requires no business code changes.
+
+---
+
+## Retry Strategy
+
+Retry only
+
+Transient Provider Failures
+
+Rate Limits
+
+Temporary Network Failures
+
+Do not retry
+
+Prompt Validation Errors
+
+Authorization Failures
+
+Business Validation Failures
+
+Retries remain controlled.
+
+---
+
+## Fallback Strategy
+
+Fallback order
+
+Primary Provider
+
+↓
+
+Secondary Provider
+
+↓
+
+Cached Response (where applicable)
+
+↓
+
+Business Fallback
+
+↓
+
+Human Escalation
+
+Business continuity is maintained.
+
+---
+
+## Token Management
+
+Track
+
+Prompt Tokens
+
+Completion Tokens
+
+Total Tokens
+
+Average Tokens
+
+Cost Per Request
+
+Daily Consumption
+
+Monthly Consumption
+
+Token usage must be measurable.
+
+---
+
+## Cost Optimization
+
+Optimize
+
+Prompt Length
+
+Context Size
+
+Embedding Usage
+
+Model Selection
+
+Caching
+
+Reuse
+
+Avoid unnecessary LLM calls.
+
+---
+
+## AI Caching
+
+Cache
+
+Knowledge Retrieval
+
+Embeddings
+
+Reference Data
+
+Frequently Used Prompts
+
+Do not cache
+
+Sensitive Conversations
+
+Authentication Data
+
+Tenant-specific confidential responses
+
+---
+
+## AI Error Handling
+
+Handle
+
+Provider Timeout
+
+Rate Limits
+
+Model Unavailable
+
+Invalid Output
+
+Parsing Errors
+
+Tool Failures
+
+Every AI failure has a defined fallback.
+
+---
+
+## AI Security Validation
+
+Validate
+
+Prompt Injection
+
+Indirect Prompt Injection
+
+Tool Permissions
+
+Tenant Isolation
+
+Output Safety
+
+Security validation occurs before execution.
+
+---
+
+## AI Performance
+
+Measure
+
+Latency
+
+Throughput
+
+Concurrency
+
+Provider Availability
+
+Embedding Speed
+
+Retrieval Time
+
+Response Parsing Time
+
+Performance objectives are measurable.
+
+---
+
+## AI Testing Requirements
+
+Every AI capability tests
+
+Prompt Rendering
+
+Structured Output
+
+Output Validation
+
+Knowledge Retrieval
+
+Tool Calling
+
+Fallback
+
+Retry
+
+Token Limits
+
+AI engineering includes automated tests.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Prompt
+
+Prompt Template
+
+Agent
+
+Embedding
+
+Retriever
+
+Tool
+
+Memory
+
+Provider
+
+Validator
+
+Search the repository.
+
+Questions
+
+Does this component already exist?
+
+Can an existing prompt evolve?
+
+Can an existing tool be reused?
+
+Can an existing validator be reused?
+
+Reuse before creating.
+
+---
+
+## Review Checklist
+
+Before implementation verify
+
+✓ Prompt versioned
+
+✓ Variables validated
+
+✓ Structured output defined
+
+✓ Output validation implemented
+
+✓ Tool permissions verified
+
+✓ Context optimized
+
+✓ Token usage monitored
+
+✓ Fallback implemented
+
+✓ Security validation included
+
+✓ Repository searched
+
+---
+
+## Agent Decision Tree
+
+Before implementing AI ask
+
+1. Does a prompt already exist?
+
+2. Can an existing agent be reused?
+
+3. Is structured output required?
+
+4. Is RAG required?
+
+5. Is tool calling required?
+
+6. Is tenant isolation preserved?
+
+7. Is output validation implemented?
+
+8. Is fallback defined?
+
+9. Is token usage acceptable?
+
+10. Can existing AI components be reused?
+
+If any answer is unclear
+
+STOP
+
+Review the AI engineering standards before implementation.
+
+# End of Part 2
+## Part 3 - AI Platform Architecture
+
+## AI Platform Philosophy
+
+Artificial Intelligence is a platform capability.
+
+AI enhances
+
+Business Services
+
+Workflows
+
+Knowledge Retrieval
+
+Customer Conversations
+
+Decision Support
+
+AI never owns business state.
+
+Business Services remain authoritative.
+
+---
+
+## AI Platform Architecture
+
+Client
+
+↓
+
+API Gateway
+
+↓
+
+Business Service
+
+↓
+
+AI Service
+
+↓
+
+Workflow Engine
+
+↓
+
+Knowledge Service
+
+↓
+
+Tool Calling
+
+↓
+
+LLM Provider
+
+↓
+
+Validated Response
+
+↓
+
+Business Service
+
+↓
+
+Business Decision
+
+Platform architecture separates
+
+Business Logic
+
+AI Logic
+
+Infrastructure
+
+Knowledge
+
+---
+
+## Multi-Agent Architecture
+
+Each agent owns one responsibility.
+
+Examples
+
+Lead Qualification Agent
+
+↓
+
+Property Matching Agent
+
+↓
+
+Conversation Agent
+
+↓
+
+Follow-up Agent
+
+↓
+
+Appointment Scheduling Agent
+
+↓
+
+Document Analysis Agent
+
+↓
+
+Notification Agent
+
+Agents communicate through
+
+Workflow
+
+Events
+
+Never through direct business coupling.
+
+---
+
+## Agent Responsibilities
+
+Each Agent owns
+
+Prompt
+
+Memory
+
+Tools
+
+Knowledge Retrieval
+
+Output Validation
+
+Observability
+
+Agents never share mutable state.
+
+---
+
+## Agent Orchestration
+
+Workflow Engine coordinates
+
+Agent Execution
+
+↓
+
+Parallel Execution
+
+↓
+
+Retries
+
+↓
+
+Compensation
+
+↓
+
+Human Approval
+
+↓
+
+Completion
+
+Business Services never orchestrate multiple agents directly.
+
+---
+
+## AI Workflow Integration
+
+Workflow Engine manages
+
+Long-running AI Tasks
+
+Human Approval
+
+Retry
+
+Timeout
+
+Fallback
+
+Escalation
+
+AI remains workflow driven.
+
+---
+
+## Retrieval-Augmented Generation (RAG)
+
+RAG Pipeline
+
+Knowledge Request
+
+↓
+
+Tenant Validation
+
+↓
+
+Embedding Search
+
+↓
+
+Similarity Ranking
+
+↓
+
+Context Assembly
+
+↓
+
+Prompt Construction
+
+↓
+
+LLM
+
+↓
+
+Validated Response
+
+Knowledge retrieval is always tenant aware.
+
+---
+
+## Knowledge Architecture
+
+Knowledge Sources
+
+PDF
+
+Word
+
+Excel
+
+Markdown
+
+FAQs
+
+Policies
+
+Training Manuals
+
+Business Documents
+
+Storage
+
+Documents
+
+↓
+
+S3
+
+Metadata
+
+↓
+
+PostgreSQL
+
+Embeddings
+
+↓
+
+pgvector
+
+Knowledge remains separated from business data.
+
+---
+
+## Embedding Pipeline
+
+Document
+
+↓
+
+Parser
+
+↓
+
+Chunking
+
+↓
+
+Embedding Model
+
+↓
+
+pgvector
+
+↓
+
+Metadata
+
+↓
+
+Search Index
+
+Embeddings are versioned.
+
+---
+
+## Semantic Search
+
+Semantic Search supports
+
+Knowledge Retrieval
+
+Recommendations
+
+FAQ Search
+
+Conversation Context
+
+Document Discovery
+
+Business Services never query pgvector directly.
+
+---
+
+## AI Plugin Architecture
+
+AI capabilities are implemented as plugins.
+
+Examples
+
+OCR Plugin
+
+Translation Plugin
+
+Summarization Plugin
+
+Classification Plugin
+
+Recommendation Plugin
+
+Speech-to-Text Plugin
+
+Text-to-Speech Plugin
+
+Platform Core remains AI-provider independent.
+
+---
+
+## Industry AI Plugins
+
+Industry Plugins own
+
+Real Estate
+
+Property Recommendation
+
+Lead Qualification
+
+Builder Insights
+
+Education
+
+Admission Recommendation
+
+Course Guidance
+
+Healthcare
+
+Patient Guidance
+
+Insurance
+
+Policy Recommendation
+
+Platform Core never owns industry intelligence.
+
+---
+
+## Capability AI Plugins
+
+Reusable capabilities include
+
+Translation
+
+OCR
+
+Voice
+
+Vision
+
+Speech Recognition
+
+Speech Synthesis
+
+Document Extraction
+
+Sentiment Analysis
+
+Capability plugins remain reusable.
+
+---
+
+## Voice AI
+
+Voice Pipeline
+
+Speech
+
+↓
+
+Speech-to-Text
+
+↓
+
+AI Processing
+
+↓
+
+Workflow
+
+↓
+
+Text-to-Speech
+
+↓
+
+Response
+
+Voice AI remains independent from business logic.
+
+---
+
+## WhatsApp AI
+
+WhatsApp AI supports
+
+Lead Qualification
+
+Conversation
+
+FAQ
+
+Appointment Booking
+
+Property Recommendation
+
+Workflow Initiation
+
+WhatsApp AI uses Business Services for business decisions.
+
+---
+
+## AI Search Integration
+
+Search Service supports
+
+Semantic Search
+
+Hybrid Search
+
+Autocomplete
+
+Knowledge Search
+
+Recommendations
+
+Search projections remain read models.
+
+---
+
+## AI Events
+
+Publish
+
+Prompt Executed
+
+Knowledge Retrieved
+
+Embedding Created
+
+AI Response Generated
+
+Tool Invoked
+
+Provider Failed
+
+Budget Exceeded
+
+Events support observability.
+
+---
+
+## AI Security
+
+Protect
+
+Prompt Templates
+
+Provider Keys
+
+Knowledge
+
+Embeddings
+
+Conversation Memory
+
+Tool Permissions
+
+Validate
+
+Prompt Injection
+
+Indirect Prompt Injection
+
+Output Safety
+
+Tenant Isolation
+
+AI Security follows Rule 06.
+
+---
+
+## AI Observability
+
+Observe
+
+Prompt Latency
+
+Completion Latency
+
+Embedding Time
+
+Retrieval Time
+
+Provider Latency
+
+Fallback Usage
+
+Token Usage
+
+Cost
+
+Hallucination Reports
+
+Tool Calls
+
+AI telemetry follows Rule 08.
+
+---
+
+## AI Performance
+
+Measure
+
+Throughput
+
+Latency
+
+Concurrent Requests
+
+Embedding Speed
+
+Retrieval Speed
+
+Prompt Rendering
+
+Workflow Duration
+
+Performance objectives are measurable.
+
+---
+
+## AI Cost Management
+
+Track
+
+Prompt Tokens
+
+Completion Tokens
+
+Embedding Tokens
+
+Daily Cost
+
+Monthly Cost
+
+Tenant Cost
+
+Provider Cost
+
+Model Usage
+
+Cost monitoring is mandatory.
+
+---
+
+## Human-in-the-Loop
+
+Business-critical decisions require
+
+Human Review
+
+Approval Workflow
+
+Manual Override
+
+Escalation
+
+Examples
+
+Large Financial Decisions
+
+Sensitive Customer Actions
+
+Policy Exceptions
+
+AI assists humans.
+
+Humans remain accountable.
+
+---
+
+## Multi-Tenant AI
+
+Every AI request resolves
+
+tenant_id
+
+organization_id
+
+user_id
+
+permissions
+
+Knowledge
+
+Memory
+
+Embeddings
+
+Conversation Context
+
+remain tenant isolated.
+
+Cross-tenant AI access is prohibited.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Agent
+
+Prompt
+
+Workflow
+
+Retriever
+
+Embedding Pipeline
+
+Knowledge Source
+
+Tool
+
+Plugin
+
+Memory Store
+
+Provider
+
+Search the repository.
+
+Questions
+
+Does this AI capability already exist?
+
+Can an existing agent be extended?
+
+Can an existing workflow be reused?
+
+Can an existing prompt evolve?
+
+Reuse before creating.
+
+---
+
+## Platform Review Checklist
+
+Before implementation verify
+
+✓ AI ownership defined
+
+✓ Agent responsibility defined
+
+✓ Workflow integration completed
+
+✓ RAG implemented correctly
+
+✓ Knowledge stored correctly
+
+✓ Embeddings versioned
+
+✓ Plugin architecture followed
+
+✓ Tenant isolation verified
+
+✓ AI security implemented
+
+✓ AI observability implemented
+
+✓ Cost monitoring enabled
+
+✓ Repository searched
+
+---
+
+## Agent Decision Tree
+
+Before implementing AI ask
+
+1. Does an Agent already exist?
+
+2. Is Workflow required?
+
+3. Is RAG required?
+
+4. Is Semantic Search required?
+
+5. Is Voice AI involved?
+
+6. Is WhatsApp AI involved?
+
+7. Is Tool Calling required?
+
+8. Can an existing plugin be reused?
+
+9. Is tenant isolation preserved?
+
+10. Is provider independence maintained?
+
+If any answer is unclear
+
+STOP
+
+Review the AI platform architecture before implementation.
+
+# End of Part 3
+## Part 4 - AI Governance & Repository Intelligence
+
+## AI Governance Philosophy
+
+Artificial Intelligence is governed software.
+
+AI must be
+
+Reliable
+
+Secure
+
+Observable
+
+Testable
+
+Versioned
+
+Auditable
+
+Cost Controlled
+
+Business Aligned
+
+AI never operates without governance.
+
+---
+
+## AI Lifecycle
+
+Every AI capability follows
+
+Business Requirement
+
+↓
+
+Architecture Review
+
+↓
+
+Prompt Design
+
+↓
+
+Implementation
+
+↓
+
+Testing
+
+↓
+
+Security Review
+
+↓
+
+Performance Validation
+
+↓
+
+Deployment
+
+↓
+
+Monitoring
+
+↓
+
+Continuous Improvement
+
+AI evolves through controlled governance.
+
+---
+
+## AI Ownership
+
+Every AI capability has
+
+Business Owner
+
+Technical Owner
+
+Prompt Owner
+
+Knowledge Owner
+
+Model Owner
+
+Workflow Owner
+
+Shared ownership is prohibited.
+
+---
+
+## Prompt Governance
+
+Every prompt defines
+
+Unique Identifier
+
+Purpose
+
+Owner
+
+Version
+
+Status
+
+Variables
+
+Expected Output
+
+Validation Rules
+
+Approval Date
+
+Prompts are version-controlled artifacts.
+
+---
+
+## Prompt Lifecycle
+
+Draft
+
+↓
+
+Review
+
+↓
+
+Approval
+
+↓
+
+Testing
+
+↓
+
+Production
+
+↓
+
+Monitoring
+
+↓
+
+Deprecation
+
+↓
+
+Retirement
+
+Never modify production prompts directly.
+
+---
+
+## Model Governance
+
+Every AI model defines
+
+Provider
+
+Model Version
+
+Capabilities
+
+Context Window
+
+Token Limits
+
+Cost
+
+Latency
+
+Fallback Provider
+
+Model selection is an architectural decision.
+
+---
+
+## Provider Governance
+
+Business logic never depends on
+
+OpenAI
+
+Gemini
+
+Claude
+
+Azure OpenAI
+
+Provider abstraction is mandatory.
+
+Providers remain interchangeable.
+
+---
+
+## Knowledge Governance
+
+Knowledge defines
+
+Owner
+
+Source
+
+Classification
+
+Version
+
+Last Updated
+
+Approval Status
+
+Retention Policy
+
+Only approved knowledge participates in RAG.
+
+---
+
+## Embedding Governance
+
+Embeddings define
+
+Embedding Model
+
+Version
+
+Chunk Strategy
+
+Similarity Threshold
+
+Tenant Ownership
+
+Update Strategy
+
+Embeddings are regenerated when source knowledge changes.
+
+---
+
+## Conversation Governance
+
+Conversation history includes
+
+Tenant Context
+
+Business Context
+
+User Context
+
+Memory References
+
+Conversation State
+
+Conversation history follows retention policies.
+
+---
+
+## Human-in-the-Loop
+
+Human approval is mandatory for
+
+Financial Decisions
+
+Policy Exceptions
+
+Contract Generation
+
+Sensitive Customer Actions
+
+Bulk Business Operations
+
+AI recommendations are reviewed before execution.
+
+---
+
+## Hallucination Policy
+
+AI responses must
+
+Be Validated
+
+Reference Knowledge
+
+Follow Business Rules
+
+Reject Unsupported Claims
+
+Hallucinations never update business state.
+
+---
+
+## AI Security Governance
+
+Validate
+
+Prompt Injection
+
+Indirect Prompt Injection
+
+Jailbreak Attempts
+
+Tool Abuse
+
+Output Safety
+
+Tenant Isolation
+
+Provider Secrets
+
+AI Security follows Rule 06.
+
+---
+
+## AI Cost Governance
+
+Monitor
+
+Prompt Tokens
+
+Completion Tokens
+
+Embedding Tokens
+
+Total Cost
+
+Tenant Cost
+
+Daily Budget
+
+Monthly Budget
+
+Provider Cost
+
+AI budgets are continuously monitored.
+
+---
+
+## AI Performance Governance
+
+Monitor
+
+Latency
+
+Throughput
+
+Availability
+
+Provider Failures
+
+Retry Count
+
+Fallback Usage
+
+Embedding Speed
+
+Retrieval Speed
+
+Performance objectives are measurable.
+
+---
+
+## AI Observability Governance
+
+Observe
+
+Prompt Execution
+
+Model Usage
+
+Knowledge Retrieval
+
+Embedding Generation
+
+Workflow Execution
+
+Token Consumption
+
+Cost
+
+Provider Availability
+
+Hallucination Reports
+
+AI telemetry follows Rule 08.
+
+---
+
+## AI Testing Governance
+
+Every AI capability validates
+
+Prompt Rendering
+
+Structured Output
+
+Output Validation
+
+Knowledge Retrieval
+
+Tool Calling
+
+Fallback
+
+Retry
+
+Prompt Injection
+
+Hallucination Handling
+
+AI testing follows Rule 07.
+
+---
+
+## AI Compliance
+
+AI complies with
+
+Tenant Isolation
+
+Privacy Requirements
+
+Security Policies
+
+Retention Policies
+
+Audit Requirements
+
+Regulatory Requirements
+
+Compliance is continuously verified.
+
+---
+
+## AI Audit Trail
+
+Every AI operation records
+
+Request ID
+
+Correlation ID
+
+Trace ID
+
+Tenant ID
+
+Prompt Version
+
+Model Version
+
+Knowledge Version
+
+Execution Time
+
+Token Usage
+
+Decision Outcome
+
+Audit trails support compliance.
+
+---
+
+## AI Review Board
+
+Major AI changes require review of
+
+Architecture
+
+Prompt Design
+
+Knowledge Source
+
+Security
+
+Cost
+
+Performance
+
+Testing
+
+Observability
+
+Review before production deployment.
+
+---
+
+## AI KPIs
+
+Track
+
+Lead Qualification Accuracy
+
+Recommendation Acceptance Rate
+
+Conversation Success Rate
+
+Workflow Completion Rate
+
+Knowledge Retrieval Accuracy
+
+AI Response Time
+
+Token Cost
+
+Customer Satisfaction
+
+Business KPIs measure AI value.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Prompt
+
+Prompt Template
+
+Agent
+
+Workflow
+
+Retriever
+
+Embedding
+
+Knowledge Source
+
+Tool
+
+Memory Store
+
+Validator
+
+Provider
+
+Search the repository.
+
+Questions
+
+Does this AI component already exist?
+
+Can an existing prompt evolve?
+
+Can an existing agent be reused?
+
+Can an existing workflow be extended?
+
+Can an existing retriever be reused?
+
+Reuse before creating.
+
+Avoid duplicate AI implementations.
+
+---
+
+## Technical Debt
+
+Reject
+
+Duplicate Prompts
+
+Duplicate Agents
+
+Duplicate Retrievers
+
+Duplicate Embedding Pipelines
+
+Hardcoded Prompts
+
+Provider-specific Business Logic
+
+Unused AI Components
+
+Undocumented Prompt Changes
+
+Every exception requires documented justification.
+
+---
+
+## AI Anti-Patterns
+
+Reject
+
+AI Making Business Decisions
+
+Hardcoded Prompt Strings
+
+Provider-specific Business Logic
+
+Unvalidated AI Output
+
+Cross-Tenant Knowledge Retrieval
+
+Unlimited Conversation Memory
+
+Direct Database Access by AI
+
+Bypassing Business Services
+
+Ignoring Cost Monitoring
+
+Skipping Prompt Versioning
+
+AI must remain governed.
+
+---
+
+## Architecture Review Checklist
+
+Before implementation verify
+
+✓ AI ownership defined
+
+✓ Prompt versioned
+
+✓ Model approved
+
+✓ Knowledge approved
+
+✓ Output validation implemented
+
+✓ Security review completed
+
+✓ Tenant isolation verified
+
+✓ Observability implemented
+
+✓ Cost monitoring enabled
+
+✓ AI testing completed
+
+✓ Repository searched
+
+---
+
+## Agent Decision Tree
+
+Before implementing AI ask
+
+1. Is AI actually required?
+
+2. Does an existing AI capability already exist?
+
+3. Can an existing prompt be reused?
+
+4. Can an existing agent be extended?
+
+5. Is RAG required?
+
+6. Is output validation implemented?
+
+7. Is human approval required?
+
+8. Is tenant isolation preserved?
+
+9. Is cost acceptable?
+
+10. Does this follow AI governance?
+
+If any answer is unclear
+
+STOP
+
+Review the AI governance before implementation.
+
+---
+
+## Mandatory Rules
+
+### MUST
+
+- Keep business rules outside AI.
+- Version every prompt.
+- Validate every AI response.
+- Use structured outputs for business workflows.
+- Monitor token usage and AI costs.
+- Protect against prompt injection.
+- Enforce tenant isolation.
+- Maintain complete audit trails.
+- Search the repository before creating AI artifacts.
+- Test every AI capability before deployment.
+
+### MUST NOT
+
+- Allow AI to modify business state directly.
+- Hardcode prompts in Java classes.
+- Depend on a single LLM provider.
+- Execute tools without authorization.
+- Retrieve knowledge across tenants.
+- Trust unvalidated AI output.
+- Ignore hallucinations.
+- Deploy AI without monitoring.
+- Duplicate prompts, agents, or retrievers.
+- Bypass Business Services or Workflow Engine.
+
+---
+
+## Final Principle
+
+Never design AI from
+
+LLMs
+
+Prompt Libraries
+
+Provider SDKs
+
+Model Features
+
+Always design AI from
+
+Business Capability
+
+↓
+
+Business Problem
+
+↓
+
+Business Workflow
+
+↓
+
+Knowledge
+
+↓
+
+Prompt
+
+↓
+
+Validated AI Response
+
+↓
+
+Business Service
+
+↓
+
+Business Decision
+
+↓
+
+Audit Trail
+
+↓
+
+Continuous Improvement
+
+Business drives AI.
+
+AI augments the platform.
+
+Governance makes AI trustworthy.
+
+# End of Enterprise AI Engineering Governance v2

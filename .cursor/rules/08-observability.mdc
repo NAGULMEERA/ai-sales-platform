@@ -1,0 +1,2568 @@
+---
+description: Enterprise Observability Governance Standards v2
+globs:
+  - "**/*.java"
+  - "**/*.kt"
+  - "**/*.properties"
+alwaysApply: true
+priority: 8
+---
+
+# Rule 08 - Enterprise Observability Governance v2
+
+## Related Rules
+
+- Rule 01 - Enterprise Microservice Policy
+- Rule 02 - Enterprise DDD
+- Rule 03 - Enterprise Event Governance
+- Rule 04 - Enterprise REST API Governance
+- Rule 05 - Enterprise Database Governance
+- Rule 06 - Enterprise Security Governance
+- Rule 07 - Enterprise Testing Governance
+
+---
+
+# Part 1 - Observability Architecture
+
+## Purpose
+
+Observability enables engineers to understand
+
+- System Behaviour
+- Business Behaviour
+- Platform Health
+- Customer Experience
+- AI Behaviour
+- Distributed Workflows
+
+Observability is designed into the platform.
+
+It is never added after deployment.
+
+---
+
+## Observability Philosophy
+
+Business Capability
+
+↓
+
+Business Event
+
+↓
+
+Application
+
+↓
+
+Telemetry
+
+↓
+
+Monitoring
+
+↓
+
+Alerting
+
+↓
+
+Diagnosis
+
+↓
+
+Recovery
+
+Observability explains
+
+What happened
+
+Why it happened
+
+Where it happened
+
+When it happened
+
+Who was affected
+
+---
+
+## Three Pillars
+
+Every platform capability produces
+
+Logs
+
+Metrics
+
+Traces
+
+Together they provide complete observability.
+
+No pillar replaces another.
+
+---
+
+## Observability Ownership
+
+Every service owns
+
+Application Logs
+
+Business Metrics
+
+Distributed Traces
+
+Health Indicators
+
+Custom Metrics
+
+Business Events
+
+Every service is responsible for its own telemetry.
+
+---
+
+## Telemetry Architecture
+
+Business Event
+
+↓
+
+Application Service
+
+↓
+
+OpenTelemetry
+
+↓
+
+Collector
+
+↓
+
+Storage
+
+↓
+
+Visualization
+
+↓
+
+Alerting
+
+Telemetry flows through a standardized pipeline.
+
+---
+
+## Correlation Context
+
+Every request generates
+
+correlation_id
+
+Every operation generates
+
+trace_id
+
+Every span generates
+
+span_id
+
+These identifiers propagate across
+
+REST
+
+Kafka
+
+Workflow
+
+AI
+
+Plugins
+
+External APIs
+
+End-to-end tracing is mandatory.
+
+---
+
+## Business Context
+
+Every telemetry record includes
+
+service_name
+
+bounded_context
+
+tenant_id
+
+organization_id
+
+user_id (when applicable)
+
+operation
+
+environment
+
+version
+
+Telemetry must always include business context.
+
+---
+
+## Health Indicators
+
+Every service exposes
+
+Liveness
+
+Readiness
+
+Startup
+
+Dependency Health
+
+Health endpoints represent operational state.
+
+They never expose sensitive information.
+
+---
+
+## Service Health
+
+Every service reports
+
+Application Status
+
+Database Status
+
+Redis Status
+
+Kafka Status
+
+External Dependency Status
+
+S3 Status
+
+AI Provider Status
+
+Workflow Status
+
+Health reflects the ability to serve requests.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Logger
+
+Metric
+
+Trace
+
+Span
+
+Dashboard
+
+Alert
+
+Instrumentation
+
+Search the repository.
+
+Questions
+
+Does this telemetry already exist?
+
+Can an existing metric be reused?
+
+Can an existing logger be extended?
+
+Can an existing dashboard evolve?
+
+Reuse before creating.
+
+---
+
+## Logging Strategy
+
+Logs record
+
+Business Events
+
+Warnings
+
+Errors
+
+Unexpected Behaviour
+
+Infrastructure Events
+
+Logs explain
+
+What happened.
+
+---
+
+## Metrics Strategy
+
+Metrics measure
+
+Performance
+
+Availability
+
+Business Activity
+
+Resource Usage
+
+Failures
+
+Metrics answer
+
+How much
+
+How often
+
+How fast
+
+---
+
+## Tracing Strategy
+
+Traces connect
+
+Gateway
+
+↓
+
+Microservices
+
+↓
+
+Kafka
+
+↓
+
+Workflow
+
+↓
+
+Database
+
+↓
+
+External APIs
+
+↓
+
+Response
+
+Traces explain request execution.
+
+---
+
+## Business Observability
+
+Observe
+
+Lead Created
+
+Lead Qualified
+
+AI Conversation Started
+
+Site Visit Scheduled
+
+Notification Sent
+
+Workflow Completed
+
+Appointment Booked
+
+Business metrics are first-class telemetry.
+
+---
+
+## API Observability
+
+Every API records
+
+Request Count
+
+Latency
+
+Response Status
+
+Validation Failures
+
+Authentication Failures
+
+Authorization Failures
+
+Rate Limit Events
+
+API telemetry measures customer experience.
+
+---
+
+## Event Observability
+
+Every event records
+
+event_id
+
+event_type
+
+event_version
+
+tenant_id
+
+correlation_id
+
+trace_id
+
+publish_time
+
+processing_time
+
+Event flow must be observable.
+
+---
+
+## Database Observability
+
+Observe
+
+Query Duration
+
+Slow Queries
+
+Connection Pool
+
+Transaction Duration
+
+Deadlocks
+
+Lock Contention
+
+Migration Status
+
+Database telemetry supports performance diagnosis.
+
+---
+
+## Multi-Tenant Observability
+
+Every telemetry record preserves
+
+tenant_id
+
+organization_id
+
+service_name
+
+Cross-tenant aggregation must never expose customer data.
+
+Tenant isolation applies to observability.
+
+---
+
+## Architecture Review Checklist
+
+Before implementation verify
+
+✓ Logs defined
+
+✓ Metrics defined
+
+✓ Traces defined
+
+✓ Correlation IDs propagated
+
+✓ Tenant context included
+
+✓ Business metrics identified
+
+✓ Health indicators implemented
+
+✓ Repository searched
+
+✓ Existing telemetry reused
+
+✓ Dashboards planned
+
+---
+
+## Decision Tree
+
+Before adding telemetry ask
+
+1. Is this business critical?
+
+2. Is telemetry already available?
+
+3. Should this be a log?
+
+4. Should this be a metric?
+
+5. Should this be a trace?
+
+6. Does tenant context exist?
+
+7. Does correlation context exist?
+
+8. Can existing telemetry be reused?
+
+9. Will this help diagnose failures?
+
+10. Is the repository already instrumented?
+
+If any answer is unclear
+
+STOP
+
+Review the observability architecture before implementation.
+
+# End of Part 1
+## Part 2 - Logging, Metrics & Tracing
+
+## Telemetry Philosophy
+
+Telemetry provides
+
+Visibility
+
+Diagnosis
+
+Performance Analysis
+
+Capacity Planning
+
+Business Insights
+
+Every telemetry signal must provide operational value.
+
+Avoid unnecessary telemetry.
+
+---
+
+## Structured Logging
+
+All logs must use structured JSON.
+
+Every log contains
+
+timestamp
+
+level
+
+service_name
+
+bounded_context
+
+tenant_id
+
+organization_id
+
+correlation_id
+
+trace_id
+
+span_id
+
+operation
+
+environment
+
+version
+
+Structured logs enable automated analysis.
+
+---
+
+## Logging Levels
+
+Use
+
+TRACE
+
+DEBUG
+
+INFO
+
+WARN
+
+ERROR
+
+FATAL (where supported)
+
+Choose the lowest level that accurately represents the event.
+
+Never log normal application behaviour as ERROR.
+
+---
+
+## Log Categories
+
+Application Logs
+
+Business Logs
+
+Audit Logs
+
+Security Logs
+
+Infrastructure Logs
+
+AI Logs
+
+Workflow Logs
+
+Integration Logs
+
+Each log belongs to exactly one category.
+
+---
+
+## Business Logging
+
+Log
+
+Lead Created
+
+Lead Updated
+
+Lead Assigned
+
+Conversation Started
+
+Workflow Completed
+
+Appointment Scheduled
+
+Payment Completed
+
+Business logs describe business behaviour.
+
+---
+
+## Error Logging
+
+Every error log contains
+
+Error Code
+
+Exception Type
+
+Correlation ID
+
+Trace ID
+
+Tenant ID
+
+Operation
+
+Root Cause
+
+Recovery Information (if available)
+
+Never expose sensitive information.
+
+---
+
+## Sensitive Data Logging
+
+Never log
+
+Passwords
+
+JWT Tokens
+
+Refresh Tokens
+
+API Keys
+
+Secrets
+
+Credit Card Data
+
+Personal Identifiers
+
+Prompt Content containing confidential information
+
+Mask sensitive values before logging.
+
+---
+
+## MDC Context
+
+Populate MDC with
+
+correlation_id
+
+trace_id
+
+tenant_id
+
+organization_id
+
+user_id
+
+service_name
+
+Every log automatically inherits the MDC context.
+
+---
+
+## Distributed Tracing
+
+Use OpenTelemetry.
+
+Trace
+
+REST Requests
+
+Kafka Messages
+
+Workflow Execution
+
+Database Calls
+
+External APIs
+
+S3 Operations
+
+AI Requests
+
+Distributed tracing is mandatory.
+
+---
+
+## Span Design
+
+Each span represents
+
+One logical operation.
+
+Examples
+
+Validate JWT
+
+Load Aggregate
+
+Save Entity
+
+Publish Event
+
+Invoke AI
+
+Upload Media
+
+Call External API
+
+Keep spans meaningful.
+
+---
+
+## Trace Propagation
+
+Propagate
+
+trace_id
+
+span_id
+
+correlation_id
+
+tenant_id
+
+Across
+
+REST
+
+Kafka
+
+Workflow
+
+Plugin Calls
+
+External APIs
+
+Tracing must never be broken.
+
+---
+
+## Metrics Philosophy
+
+Metrics measure
+
+Availability
+
+Performance
+
+Failures
+
+Business Activity
+
+Capacity
+
+Every metric has a defined purpose.
+
+---
+
+## Infrastructure Metrics
+
+Collect
+
+CPU Usage
+
+Memory Usage
+
+Disk Usage
+
+Network Throughput
+
+JVM Heap
+
+GC Activity
+
+Thread Count
+
+Connection Pool
+
+Infrastructure metrics support capacity planning.
+
+---
+
+## Application Metrics
+
+Measure
+
+Request Count
+
+Response Time
+
+Error Rate
+
+Retry Count
+
+Timeout Count
+
+Circuit Breaker State
+
+Cache Hit Rate
+
+Application metrics describe service health.
+
+---
+
+## Business Metrics
+
+Measure
+
+Leads Created
+
+Leads Converted
+
+Appointments Scheduled
+
+AI Conversations
+
+Workflows Completed
+
+Notifications Delivered
+
+Payments Processed
+
+Business metrics measure business value.
+
+---
+
+## Database Metrics
+
+Monitor
+
+Connection Pool Usage
+
+Slow Queries
+
+Transaction Duration
+
+Deadlocks
+
+Lock Wait Time
+
+Index Usage
+
+Migration Execution
+
+Database metrics support optimization.
+
+---
+
+## Kafka Metrics
+
+Monitor
+
+Producer Throughput
+
+Consumer Throughput
+
+Consumer Lag
+
+Retry Count
+
+DLQ Count
+
+Topic Size
+
+Partition Utilization
+
+Event processing must remain observable.
+
+---
+
+## Redis Metrics
+
+Monitor
+
+Cache Hits
+
+Cache Misses
+
+Evictions
+
+Memory Usage
+
+Expiration
+
+Lock Acquisition
+
+Redis health must remain observable.
+
+---
+
+## API Metrics
+
+Track
+
+Request Count
+
+Latency
+
+Success Rate
+
+Failure Rate
+
+HTTP Status Codes
+
+Payload Size
+
+Rate Limit Violations
+
+Every public API exposes operational metrics.
+
+---
+
+## AI Metrics
+
+Track
+
+Model Latency
+
+Prompt Count
+
+Token Usage
+
+Completion Tokens
+
+Prompt Tokens
+
+Model Failures
+
+Provider Failures
+
+Fallback Usage
+
+AI usage must be measurable.
+
+---
+
+## Workflow Metrics
+
+Track
+
+Workflow Started
+
+Workflow Completed
+
+Workflow Failed
+
+Retry Count
+
+Compensation Count
+
+Average Duration
+
+Pending Workflows
+
+Workflow execution must be observable.
+
+---
+
+## Plugin Metrics
+
+Track
+
+Plugin Requests
+
+Plugin Failures
+
+Plugin Latency
+
+Plugin Availability
+
+Capability Usage
+
+Plugin health is monitored independently.
+
+---
+
+## Alerting Standards
+
+Create alerts for
+
+High Error Rate
+
+High Latency
+
+Database Failure
+
+Kafka Lag
+
+Redis Failure
+
+AI Provider Failure
+
+Workflow Failure
+
+Plugin Failure
+
+Alerts must be actionable.
+
+---
+
+## Dashboard Standards
+
+Every service provides dashboards for
+
+Health
+
+Performance
+
+Business Metrics
+
+Security Events
+
+Infrastructure
+
+AI Usage
+
+Workflows
+
+Dashboards support rapid diagnosis.
+
+---
+
+## SLIs
+
+Measure
+
+Availability
+
+Latency
+
+Error Rate
+
+Throughput
+
+Durability
+
+Recovery Time
+
+SLIs define observable behaviour.
+
+---
+
+## SLOs
+
+Every critical capability defines
+
+Availability Target
+
+Latency Target
+
+Error Budget
+
+Recovery Objective
+
+Performance Objective
+
+SLOs are measurable.
+
+---
+
+## Error Budgets
+
+Every critical service defines
+
+Maximum Error Rate
+
+Maximum Downtime
+
+Recovery Expectations
+
+Error budgets guide release decisions.
+
+---
+
+## Log Retention
+
+Define retention for
+
+Application Logs
+
+Audit Logs
+
+Security Logs
+
+Business Logs
+
+Infrastructure Logs
+
+Retention follows business and compliance requirements.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Logger
+
+Metric
+
+Dashboard
+
+Alert
+
+Span
+
+Trace
+
+Instrumentation
+
+Search the repository.
+
+Questions
+
+Does this telemetry already exist?
+
+Can an existing metric be reused?
+
+Can an existing dashboard evolve?
+
+Reuse before creating.
+
+---
+
+## Review Checklist
+
+Before implementation verify
+
+✓ Structured logging implemented
+
+✓ MDC configured
+
+✓ OpenTelemetry enabled
+
+✓ Metrics defined
+
+✓ Business metrics included
+
+✓ Alerts configured
+
+✓ Dashboards planned
+
+✓ SLIs defined
+
+✓ SLOs defined
+
+✓ Repository searched
+
+---
+
+## Agent Decision Tree
+
+Before adding telemetry ask
+
+1. Should this be a log?
+
+2. Should this be a metric?
+
+3. Should this be a trace?
+
+4. Is business telemetry required?
+
+5. Is infrastructure telemetry required?
+
+6. Does telemetry already exist?
+
+7. Can existing dashboards be reused?
+
+8. Will this improve diagnosis?
+
+9. Does tenant context exist?
+
+10. Is correlation propagated?
+
+If any answer is unclear
+
+STOP
+
+Review the telemetry implementation before adding instrumentation.
+
+# End of Part 2
+## Part 3 - Platform Observability
+
+## Platform Observability Philosophy
+
+Platform observability measures
+
+Business Behaviour
+
+Platform Health
+
+Distributed Systems
+
+AI Operations
+
+Customer Experience
+
+Operational Excellence
+
+Every platform capability must produce meaningful telemetry.
+
+---
+
+## AI Observability
+
+Monitor
+
+Prompt Requests
+
+Prompt Versions
+
+Model Selection
+
+Model Latency
+
+Provider Latency
+
+Prompt Tokens
+
+Completion Tokens
+
+Total Tokens
+
+Token Cost
+
+AI Error Rate
+
+Fallback Usage
+
+Every AI request is observable.
+
+---
+
+## Prompt Observability
+
+Record
+
+Prompt Template
+
+Prompt Version
+
+Execution Time
+
+Provider
+
+Token Usage
+
+Response Size
+
+Prompt Success
+
+Prompt Failure
+
+Never log confidential prompt content.
+
+---
+
+## Prompt Injection Monitoring
+
+Monitor
+
+Prompt Injection Attempts
+
+Instruction Override Attempts
+
+Prompt Validation Failures
+
+Unsafe Tool Calls
+
+Blocked Requests
+
+Prompt attacks generate security events.
+
+---
+
+## RAG Observability
+
+Monitor
+
+Knowledge Retrieval Time
+
+Chunk Count
+
+Retrieved Documents
+
+Embedding Search Time
+
+Ranking Time
+
+Context Size
+
+Context Assembly Time
+
+Tenant Filtering
+
+RAG behaviour must be observable.
+
+---
+
+## Vector Database Observability
+
+Monitor
+
+Embedding Creation Time
+
+Vector Search Latency
+
+Similarity Score Distribution
+
+Index Size
+
+Index Growth
+
+Embedding Count
+
+Update Duration
+
+Vector operations require telemetry.
+
+---
+
+## Workflow Observability
+
+Monitor
+
+Workflow Started
+
+Workflow Completed
+
+Workflow Failed
+
+Workflow Duration
+
+Retry Count
+
+Compensation Count
+
+Approval Duration
+
+Timeout Count
+
+Workflow execution must be traceable.
+
+---
+
+## Saga Observability
+
+Track
+
+Saga Started
+
+Saga Completed
+
+Saga Failed
+
+Compensation Triggered
+
+Rollback Duration
+
+Distributed Transaction Status
+
+Saga behaviour is observable end-to-end.
+
+---
+
+## Kafka Observability
+
+Monitor
+
+Producer Throughput
+
+Consumer Throughput
+
+Consumer Lag
+
+Retry Count
+
+DLQ Count
+
+Topic Size
+
+Partition Utilization
+
+Serialization Errors
+
+Every event pipeline is observable.
+
+---
+
+## Outbox Observability
+
+Track
+
+Pending Events
+
+Published Events
+
+Failed Publications
+
+Retry Attempts
+
+Publishing Latency
+
+Outbox Queue Size
+
+Outbox health is continuously monitored.
+
+---
+
+## Inbox Observability
+
+Track
+
+Received Events
+
+Processed Events
+
+Duplicate Events
+
+Ignored Events
+
+Retry Count
+
+Inbox Queue Size
+
+Inbox processing remains observable.
+
+---
+
+## Search Observability
+
+Monitor
+
+Search Requests
+
+Search Latency
+
+Autocomplete Latency
+
+Result Count
+
+Index Refresh Time
+
+Search Failures
+
+Projection Lag
+
+Search Service remains measurable.
+
+---
+
+## Media Observability
+
+Track
+
+Upload Requests
+
+Download Requests
+
+Upload Duration
+
+Download Duration
+
+S3 Failures
+
+Storage Usage
+
+Media Processing Time
+
+Binary storage remains observable.
+
+---
+
+## Notification Observability
+
+Monitor
+
+Email Delivery
+
+SMS Delivery
+
+WhatsApp Delivery
+
+Push Delivery
+
+Voice Delivery
+
+Template Rendering
+
+Retry Count
+
+Failure Rate
+
+Notification health is measurable.
+
+---
+
+## Plugin Observability
+
+Monitor
+
+Plugin Requests
+
+Plugin Latency
+
+Plugin Errors
+
+Plugin Availability
+
+Plugin Version
+
+Plugin Health
+
+Plugin Resource Usage
+
+Every plugin publishes telemetry independently.
+
+---
+
+## External Integration Observability
+
+Track
+
+Authentication Failures
+
+Timeouts
+
+Retries
+
+Rate Limits
+
+Webhook Requests
+
+Webhook Failures
+
+Circuit Breaker State
+
+Fallback Execution
+
+Every external dependency is observable.
+
+---
+
+## Security Observability
+
+Monitor
+
+Authentication Failures
+
+Authorization Failures
+
+Tenant Violations
+
+Permission Failures
+
+JWT Validation Errors
+
+Prompt Injection Attempts
+
+Webhook Verification Failures
+
+Security telemetry supports incident response.
+
+---
+
+## Database Observability
+
+Track
+
+Connection Pool Usage
+
+Slow Queries
+
+Deadlocks
+
+Transaction Duration
+
+Migration Execution
+
+Lock Wait Time
+
+Storage Growth
+
+Database health is continuously monitored.
+
+---
+
+## Redis Observability
+
+Monitor
+
+Cache Hits
+
+Cache Misses
+
+Evictions
+
+Memory Usage
+
+TTL Expiration
+
+Lock Acquisition
+
+Connection Errors
+
+Redis health remains observable.
+
+---
+
+## S3 Observability
+
+Track
+
+Upload Success
+
+Upload Failure
+
+Download Success
+
+Download Failure
+
+Storage Consumption
+
+Bucket Errors
+
+Pre-Signed URL Generation
+
+Object Lifecycle Events
+
+Storage behaviour is measurable.
+
+---
+
+## Multi-Tenant Observability
+
+Every telemetry record includes
+
+tenant_id
+
+organization_id
+
+service_name
+
+environment
+
+version
+
+Cross-tenant telemetry leakage is prohibited.
+
+---
+
+## Business KPIs
+
+Track
+
+Leads Created
+
+Leads Qualified
+
+Leads Converted
+
+Appointments Scheduled
+
+Site Visits Completed
+
+AI Conversations
+
+Workflow Success Rate
+
+Notification Success Rate
+
+Revenue
+
+Subscription Growth
+
+Business telemetry measures platform value.
+
+---
+
+## Platform Dashboards
+
+Provide dashboards for
+
+Business KPIs
+
+Service Health
+
+Kafka
+
+Redis
+
+PostgreSQL
+
+AI
+
+Workflow
+
+Search
+
+Notifications
+
+Plugins
+
+Infrastructure
+
+Dashboards support operational decisions.
+
+---
+
+## Alerting
+
+Generate alerts for
+
+Kafka Lag
+
+Workflow Failure
+
+AI Provider Failure
+
+Database Failure
+
+Redis Failure
+
+Plugin Failure
+
+High Error Rate
+
+High Latency
+
+Storage Thresholds
+
+Tenant Isolation Violations
+
+Alerts must be actionable.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Dashboard
+
+Alert
+
+Metric
+
+Logger
+
+Span
+
+Trace
+
+Business KPI
+
+Instrumentation
+
+Search the repository.
+
+Questions
+
+Does this telemetry already exist?
+
+Can an existing dashboard evolve?
+
+Can an existing alert be reused?
+
+Can an existing metric be extended?
+
+Reuse before creating.
+
+---
+
+## Platform Review Checklist
+
+Before implementation verify
+
+✓ AI telemetry implemented
+
+✓ Kafka telemetry implemented
+
+✓ Workflow telemetry implemented
+
+✓ Outbox monitored
+
+✓ Inbox monitored
+
+✓ Plugin telemetry implemented
+
+✓ Business KPIs defined
+
+✓ Dashboards planned
+
+✓ Alerts configured
+
+✓ Repository searched
+
+---
+
+## Agent Decision Tree
+
+Before adding platform telemetry ask
+
+1. Is AI involved?
+
+2. Is Kafka involved?
+
+3. Is Workflow involved?
+
+4. Is Search involved?
+
+5. Is S3 involved?
+
+6. Is this Plugin-specific?
+
+7. Is Business telemetry required?
+
+8. Does telemetry already exist?
+
+9. Can it be reused?
+
+10. Will this improve diagnosis?
+
+If any answer is unclear
+
+STOP
+
+Review the platform observability architecture before adding telemetry.
+
+# End of Part 3
+## Part 4 - Observability Governance & Repository Intelligence
+
+## Observability Governance Philosophy
+
+Observability is a platform capability.
+
+Observability protects
+
+- Platform Reliability
+- Business Operations
+- Customer Experience
+- AI Systems
+- Distributed Systems
+- Operational Excellence
+
+Telemetry is part of the architecture.
+
+Telemetry is never optional.
+
+---
+
+## Observability Lifecycle
+
+Every telemetry implementation follows
+
+Requirements
+
+↓
+
+Architecture
+
+↓
+
+Instrumentation
+
+↓
+
+Code Review
+
+↓
+
+Testing
+
+↓
+
+Deployment
+
+↓
+
+Monitoring
+
+↓
+
+Alerting
+
+↓
+
+Incident Response
+
+↓
+
+Continuous Improvement
+
+Observability evolves with the platform.
+
+---
+
+## Telemetry Ownership
+
+Every service owns
+
+Application Logs
+
+Business Metrics
+
+Distributed Traces
+
+Health Indicators
+
+Alerts
+
+Dashboards
+
+Runbooks
+
+Every telemetry artifact has one owner.
+
+Ownership is never shared.
+
+---
+
+## Repository Intelligence Workflow
+
+Before creating
+
+Logger
+
+Metric
+
+Counter
+
+Gauge
+
+Histogram
+
+Trace
+
+Span
+
+Dashboard
+
+Alert
+
+Runbook
+
+Search the repository.
+
+Verify
+
+Existing Logger
+
+Existing Metric
+
+Existing Dashboard
+
+Existing Alert
+
+Existing Trace
+
+Existing Instrumentation
+
+Reuse before creating.
+
+Avoid duplicate telemetry.
+
+---
+
+## Dashboard Governance
+
+Every dashboard defines
+
+Owner
+
+Purpose
+
+Business Capability
+
+Service
+
+Data Source
+
+Refresh Interval
+
+Alert Links
+
+Runbook Links
+
+Dashboards must answer operational questions.
+
+---
+
+## Alert Governance
+
+Every alert defines
+
+Severity
+
+Owner
+
+Business Impact
+
+Threshold
+
+Escalation Path
+
+Runbook
+
+Recovery Action
+
+Alerts must be actionable.
+
+Never alert without ownership.
+
+---
+
+## Alert Severity
+
+Define
+
+Critical
+
+High
+
+Medium
+
+Low
+
+Informational
+
+Severity reflects business impact.
+
+---
+
+## Runbooks
+
+Every critical alert has a runbook.
+
+Runbooks include
+
+Symptoms
+
+Possible Causes
+
+Diagnostic Steps
+
+Recovery Steps
+
+Escalation Contacts
+
+Verification Steps
+
+Runbooks reduce recovery time.
+
+---
+
+## Incident Response
+
+Every incident records
+
+Incident ID
+
+Severity
+
+Start Time
+
+End Time
+
+Affected Services
+
+Affected Tenants
+
+Root Cause
+
+Resolution
+
+Corrective Actions
+
+Lessons Learned
+
+Incidents improve the platform.
+
+---
+
+## Telemetry Retention
+
+Define retention for
+
+Application Logs
+
+Business Logs
+
+Security Logs
+
+Audit Logs
+
+Metrics
+
+Traces
+
+Business KPIs
+
+Retention follows
+
+Business Requirements
+
+Compliance Requirements
+
+Storage Policies
+
+---
+
+## Metrics Governance
+
+Every metric defines
+
+Name
+
+Description
+
+Unit
+
+Labels
+
+Owner
+
+Purpose
+
+Collection Frequency
+
+Metrics without purpose are prohibited.
+
+---
+
+## Label Standards
+
+Allowed labels
+
+service_name
+
+bounded_context
+
+tenant_id
+
+organization_id
+
+environment
+
+version
+
+operation
+
+status
+
+Avoid high-cardinality labels that degrade performance.
+
+---
+
+## Trace Governance
+
+Every distributed trace propagates
+
+trace_id
+
+span_id
+
+correlation_id
+
+tenant_id
+
+Trace continuity is mandatory.
+
+Broken traces must be treated as defects.
+
+---
+
+## Log Governance
+
+Every structured log includes
+
+timestamp
+
+level
+
+service_name
+
+correlation_id
+
+trace_id
+
+tenant_id
+
+operation
+
+message
+
+Never log
+
+Passwords
+
+Secrets
+
+JWT
+
+Refresh Tokens
+
+PII
+
+Sensitive prompt content
+
+---
+
+## Business KPI Governance
+
+Every KPI defines
+
+Owner
+
+Business Definition
+
+Calculation
+
+Refresh Frequency
+
+Target
+
+Alert Threshold
+
+KPIs remain consistent across dashboards.
+
+---
+
+## AI Observability Governance
+
+Every AI capability monitors
+
+Token Usage
+
+Prompt Latency
+
+Completion Latency
+
+Provider Failures
+
+Fallback Usage
+
+Prompt Injection Attempts
+
+Knowledge Retrieval
+
+Model Version
+
+AI telemetry supports operational and financial visibility.
+
+---
+
+## Platform Health Governance
+
+Every platform component reports
+
+Availability
+
+Latency
+
+Error Rate
+
+Throughput
+
+Capacity
+
+Dependency Status
+
+Health indicators remain standardized.
+
+---
+
+## Capacity Planning
+
+Continuously evaluate
+
+CPU
+
+Memory
+
+Storage
+
+Kafka Throughput
+
+Database Growth
+
+Redis Usage
+
+AI Token Consumption
+
+S3 Storage
+
+Capacity planning prevents outages.
+
+---
+
+## Compliance
+
+Observability complies with
+
+Retention Policies
+
+Audit Requirements
+
+Security Standards
+
+Privacy Requirements
+
+Tenant Isolation
+
+Compliance is verified regularly.
+
+---
+
+## Technical Debt
+
+Reject
+
+Unused Metrics
+
+Unused Dashboards
+
+Duplicate Alerts
+
+Duplicate Loggers
+
+Unreferenced Traces
+
+Stale Runbooks
+
+Anonymous Dashboards
+
+Every telemetry artifact must have value.
+
+---
+
+## Observability Anti-Patterns
+
+Reject
+
+Logging Everything
+
+Logging Secrets
+
+Missing Correlation IDs
+
+Missing Tenant IDs
+
+Duplicate Metrics
+
+Duplicate Dashboards
+
+Broken Traces
+
+Alert Storms
+
+Unowned Alerts
+
+Observability must remain maintainable.
+
+---
+
+## Architecture Review Checklist
+
+Before implementation verify
+
+✓ Logs implemented
+
+✓ Metrics implemented
+
+✓ Traces implemented
+
+✓ Correlation IDs propagated
+
+✓ Dashboards created
+
+✓ Alerts configured
+
+✓ Runbooks documented
+
+✓ Repository searched
+
+✓ Existing telemetry reused
+
+✓ Business KPIs defined
+
+✓ Retention policy documented
+
+---
+
+## Agent Decision Tree
+
+Before adding telemetry ask
+
+1. Is this business critical?
+
+2. Is telemetry already available?
+
+3. Should this be a log?
+
+4. Should this be a metric?
+
+5. Should this be a trace?
+
+6. Is a dashboard required?
+
+7. Is an alert required?
+
+8. Can existing telemetry be reused?
+
+9. Does this improve diagnosis?
+
+10. Does this comply with observability standards?
+
+If any answer is unclear
+
+STOP
+
+Review the observability architecture before adding instrumentation.
+
+---
+
+## Mandatory Rules
+
+### MUST
+
+- Emit structured JSON logs.
+- Propagate correlation_id, trace_id, and tenant_id.
+- Instrument critical business operations.
+- Monitor business KPIs alongside infrastructure metrics.
+- Create dashboards for every production service.
+- Create actionable alerts with documented runbooks.
+- Monitor AI, Kafka, Workflow, Database, Redis, and S3.
+- Search the repository before creating telemetry.
+
+### MUST NOT
+
+- Log secrets, passwords, tokens, or sensitive PII.
+- Create duplicate metrics or dashboards.
+- Break distributed trace propagation.
+- Deploy services without health endpoints.
+- Ignore telemetry ownership.
+- Create alerts without an owner or runbook.
+- Instrument everything without purpose.
+- Use inconsistent metric or label names.
+- Aggregate telemetry in ways that violate tenant isolation.
+- Treat observability as an afterthought.
+
+---
+
+## Final Principle
+
+Never design observability from
+
+Monitoring Tools
+
+Dashboards
+
+Loggers
+
+Metrics Libraries
+
+Tracing Frameworks
+
+Always design observability from
+
+Business Capability
+
+↓
+
+Business Event
+
+↓
+
+Service Behaviour
+
+↓
+
+Telemetry
+
+↓
+
+Monitoring
+
+↓
+
+Alerting
+
+↓
+
+Diagnosis
+
+↓
+
+Recovery
+
+↓
+
+Continuous Improvement
+
+Business drives observability.
+
+Observability protects the platform.
+
+The platform enables the business.
+
+# End of Enterprise Observability Governance v2

@@ -1,0 +1,177 @@
+{
+  "info": {
+    "name": "Identity Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "AI Sales Platform authentication APIs.\n\nDefault flow (aisales.auth.require-email-verification-for-login=true):\n1. Register (no tokens returned; a verification email is logged by notification-service on port 8090).\n2. Copy the token from the notification-service console log (or the identity-service log if fallback-logging kicked in) into 'Verify Email'.\n3. Login → tokens auto-saved → List Sessions / Get Subscription.\n\nRequires identity-service on http://localhost:8081 and notification-service on http://localhost:8090, both with profile=local."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081" },
+    { "key": "testEmail", "value": "admin@acme.com" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "tenantId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Register",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.collectionVariables.set('testEmail', 'user' + Date.now() + '@test.com');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.test('Register succeeded', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+              "if (json.data && json.data.authentication) {",
+              "  pm.collectionVariables.set('accessToken', json.data.authentication.accessToken);",
+              "  pm.collectionVariables.set('refreshToken', json.data.authentication.refreshToken);",
+              "  pm.collectionVariables.set('tenantId', json.data.authentication.tenantId);",
+              "} else if (json.data && json.data.accessToken) {",
+              "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+              "  pm.collectionVariables.set('refreshToken', json.data.refreshToken);",
+              "  pm.collectionVariables.set('tenantId', json.data.tenantId);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"Admin\",\n  \"lastName\": \"User\",\n  \"companyName\": \"Acme Corp\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Login",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const json = pm.response.json();",
+            "pm.test('Login succeeded', () => pm.response.to.have.status(200));",
+            "if (json.data) {",
+            "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+            "  pm.collectionVariables.set('refreshToken', json.data.refreshToken);",
+            "  pm.collectionVariables.set('tenantId', json.data.tenantId);",
+            "}"
+          ]
+        }
+      }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"Password123!\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Refresh Token",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/auth/refresh",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/auth/logout",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Verify Email",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/auth/verify-email",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"verification-token-from-email\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Forgot Password",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/auth/forgot-password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{testEmail}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Reset Password",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/auth/reset-password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"reset-token-from-email\",\n  \"newPassword\": \"NewPassword123!\"\n}"
+        }
+      }
+    },
+    {
+      "name": "List Sessions",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/api/v1/auth/sessions"
+      }
+    },
+    {
+      "name": "Get Subscription",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/api/v1/subscriptions/current"
+      }
+    },
+    {
+      "name": "Upgrade to Premium",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/api/v1/subscriptions/upgrade?externalSubscriptionId=sub_test_123"
+      }
+    },
+    {
+      "name": "Check Feature",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/api/v1/features/workflow.automation"
+      }
+    }
+  ]
+}

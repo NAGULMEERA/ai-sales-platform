@@ -1,0 +1,1 @@
+Skill: Generate Entity, DTO, Repository, Service, Controller, Validation, Tests.

@@ -1,0 +1,650 @@
+```md
+---
+description: Enterprise Plugin Architecture Standards
+globs:
+  - "**/*.java"
+  - "**/*.kt"
+alwaysApply: true
+priority: 14
+---
+
+# ============================================================================
+# Rule 14 - Plugin Architecture Standards
+# ============================================================================
+
+## Purpose
+
+The AI Sales Employee Platform is a plugin-based SaaS platform.
+
+Platform Core
+
+↓
+
+Industry Plugin
+
+↓
+
+Tenant Configuration
+
+↓
+
+Business Customization
+
+Platform Core must never depend on a specific industry.
+
+------------------------------------------------------------------------------
+
+# Platform Philosophy
+
+Platform provides
+
+Authentication
+
+Authorization
+
+Workflow
+
+AI
+
+Notifications
+
+Media
+
+Billing
+
+Conversation
+
+Customer
+
+Lead
+
+Reporting
+
+Plugin provides
+
+Business Rules
+
+Catalog
+
+Fields
+
+Validation
+
+AI Prompts
+
+Workflow Extensions
+
+Industry Integrations
+
+Never mix these responsibilities.
+
+------------------------------------------------------------------------------
+
+# Core Principle
+
+Platform
+
+Must know
+
+Nothing
+
+About
+
+Real Estate
+
+Education
+
+Healthcare
+
+Insurance
+
+Automobile
+
+Banking
+
+All industry knowledge belongs inside plugins.
+
+------------------------------------------------------------------------------
+
+# Plugin Examples
+
+Supported
+
+Real Estate Plugin
+
+Automobile Plugin
+
+Education Plugin
+
+Healthcare Plugin
+
+Insurance Plugin
+
+Recruitment Plugin
+
+Travel Plugin
+
+Future industries
+
+Must require
+
+No Platform Core modification.
+
+------------------------------------------------------------------------------
+
+# Platform Core Responsibilities
+
+Core owns
+
+Authentication
+
+Authorization
+
+Users
+
+Tenants
+
+Organizations
+
+Workflow Engine
+
+AI Engine
+
+Notification Engine
+
+Conversation Engine
+
+Media Engine
+
+Billing
+
+Audit
+
+Observability
+
+Plugin Registry
+
+Configuration
+
+------------------------------------------------------------------------------
+
+# Plugin Responsibilities
+
+Plugin owns
+
+Business Catalog
+
+Business Rules
+
+Custom Entities
+
+Validation
+
+Prompt Templates
+
+Workflow Extensions
+
+Industry Integrations
+
+Reports
+
+Dashboards
+
+Search Filters
+
+------------------------------------------------------------------------------
+
+# Plugin Isolation
+
+Plugins
+
+Must not
+
+Access another plugin's database
+
+Modify another plugin
+
+Depend on another plugin implementation
+
+Communicate only through
+
+Contracts
+
+Events
+
+Extension Points
+
+------------------------------------------------------------------------------
+
+# Extension Points
+
+Platform exposes
+
+REST Contracts
+
+Events
+
+Plugin SDK
+
+Workflow Hooks
+
+AI Hooks
+
+Notification Hooks
+
+Validation Hooks
+
+Search Hooks
+
+Never modify Platform Core for a new plugin.
+
+------------------------------------------------------------------------------
+
+# Plugin SDK
+
+Plugins interact with Platform only through SDKs.
+
+Examples
+
+plugin-sdk
+
+workflow-sdk
+
+notification-sdk
+
+event-sdk
+
+ai-sdk
+
+media-sdk
+
+Never access internal platform classes directly.
+
+------------------------------------------------------------------------------
+
+# Database Ownership
+
+Each plugin owns
+
+Its own schema
+
+or
+
+Its own database
+
+Never
+
+Share plugin tables
+
+Share plugin repositories
+
+Cross-plugin joins
+
+------------------------------------------------------------------------------
+
+# AI Extensions
+
+Plugins may contribute
+
+Prompt Templates
+
+Knowledge Bases
+
+Embedding Sources
+
+AI Tools
+
+Recommendation Rules
+
+Prompt Versions
+
+Platform AI executes them.
+
+------------------------------------------------------------------------------
+
+# Workflow Extensions
+
+Plugins may register
+
+Workflow Steps
+
+Business Rules
+
+Human Tasks
+
+Timers
+
+Compensation Logic
+
+Platform Workflow Engine coordinates execution.
+
+------------------------------------------------------------------------------
+
+# Event Extensions
+
+Plugins may publish
+
+Industry Events
+
+Example
+
+PropertyListed
+
+VehicleSold
+
+StudentEnrolled
+
+PolicyIssued
+
+PatientRegistered
+
+Platform events remain generic.
+
+------------------------------------------------------------------------------
+
+# UI Extensions
+
+Plugins may contribute
+
+Menus
+
+Pages
+
+Forms
+
+Dashboards
+
+Widgets
+
+Reports
+
+Platform UI loads dynamically.
+
+------------------------------------------------------------------------------
+
+# Configuration
+
+Every plugin
+
+Supports
+
+Enable
+
+Disable
+
+Tenant Scope
+
+Version
+
+Configuration
+
+Feature Flags
+
+Never require redeployment to enable a plugin.
+
+------------------------------------------------------------------------------
+
+# Tenant Plugin Assignment
+
+Each tenant
+
+May enable
+
+One
+
+or
+
+Many
+
+Plugins
+
+Example
+
+Tenant A
+
+Real Estate
+
+Tenant B
+
+Education
+
+Tenant C
+
+Insurance
+
+Tenant D
+
+Real Estate
+
++
+
+Insurance
+
+Platform supports multiple plugin combinations.
+
+------------------------------------------------------------------------------
+
+# Plugin Versioning
+
+Every plugin
+
+Has
+
+pluginId
+
+version
+
+minimumPlatformVersion
+
+supportedPlatformVersion
+
+migrationVersion
+
+Never overwrite plugin versions.
+
+------------------------------------------------------------------------------
+
+# Plugin Lifecycle
+
+States
+
+INSTALLED
+
+REGISTERED
+
+ENABLED
+
+DISABLED
+
+UPGRADING
+
+FAILED
+
+UNINSTALLED
+
+Never invent additional lifecycle states without approval.
+
+------------------------------------------------------------------------------
+
+# Security
+
+Plugins
+
+Must inherit
+
+Authentication
+
+Authorization
+
+RBAC
+
+Tenant Isolation
+
+Audit
+
+Plugins cannot weaken platform security.
+
+------------------------------------------------------------------------------
+
+# Observability
+
+Every plugin
+
+Exports
+
+Metrics
+
+Logs
+
+Tracing
+
+Health
+
+Business Metrics
+
+Platform dashboards include plugin metrics.
+
+------------------------------------------------------------------------------
+
+# Performance
+
+Plugins
+
+Must be
+
+Lazy Loaded
+
+Stateless
+
+Horizontally Scalable
+
+Cache Aware
+
+Never reduce platform startup performance significantly.
+
+------------------------------------------------------------------------------
+
+# Testing
+
+Every plugin
+
+Requires
+
+Unit Tests
+
+Integration Tests
+
+Contract Tests
+
+Compatibility Tests
+
+Upgrade Tests
+
+Tenant Isolation Tests
+
+------------------------------------------------------------------------------
+
+# Backward Compatibility
+
+Plugins
+
+Must support
+
+Rolling Upgrades
+
+Backward Compatible APIs
+
+Event Versioning
+
+Migration Scripts
+
+Avoid breaking existing tenants.
+
+------------------------------------------------------------------------------
+
+# Plugin Packaging
+
+Recommended structure
+
+plugins/
+
+  real-estate-plugin/
+
+  automobile-plugin/
+
+  education-plugin/
+
+  healthcare-plugin/
+
+  insurance-plugin/
+
+Each plugin contains
+
+domain
+
+application
+
+api
+
+events
+
+workflow
+
+ai
+
+config
+
+resources
+
+------------------------------------------------------------------------------
+
+# Review Checklist
+
+Before approving verify
+
+✓ No Core Modification
+
+✓ Correct SDK Usage
+
+✓ Database Isolation
+
+✓ Tenant Isolation
+
+✓ Event Compatibility
+
+✓ Workflow Extension
+
+✓ AI Extension
+
+✓ Versioning
+
+✓ Security
+
+✓ Observability
+
+✓ Performance
+
+------------------------------------------------------------------------------
+
+# Agent Decision Tree
+
+Before generating a feature ask
+
+1. Is this platform functionality?
+2. Is this industry functionality?
+3. Can this become a plugin?
+4. Does Platform Core need modification?
+5. Is an extension point sufficient?
+6. Is an SDK available?
+7. Does the plugin own its data?
+8. Is tenant isolation preserved?
+9. Is the plugin independently deployable?
+10. Is backward compatibility maintained?
+
+If Platform Core must change for an industry-specific feature
+
+STOP
+
+Redesign using a plugin extension.
+
+Never couple Platform Core to a business domain.

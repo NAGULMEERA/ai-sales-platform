@@ -1,0 +1,9 @@
+Project: AI Sales Employee Platform
+
+Architecture:
+- DDD
+- Clean Architecture
+- Hexagonal Architecture
+- Multi-tenant
+- Plugin based
+- Event driven where appropriate

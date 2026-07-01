@@ -1,0 +1,2638 @@
+---
+description: Enterprise Workflow Governance Standards v2
+globs:
+  - "**/*.java"
+  - "**/*.kt"
+  - "**/workflow/**"
+alwaysApply: true
+priority: 10
+---
+
+# Rule 10 - Enterprise Workflow Governance v2
+
+## Related Rules
+
+- Rule 01 - Enterprise Microservice Policy
+- Rule 02 - Enterprise DDD
+- Rule 03 - Enterprise Event Governance
+- Rule 04 - Enterprise REST API Governance
+- Rule 05 - Enterprise Database Governance
+- Rule 06 - Enterprise Security Governance
+- Rule 07 - Enterprise Testing Governance
+- Rule 08 - Enterprise Observability Governance
+- Rule 09 - Enterprise AI Engineering Governance
+
+---
+
+# Part 1 - Workflow Architecture
+
+## Purpose
+
+Workflow coordinates business processes.
+
+Workflow does not contain business rules.
+
+Business Services own decisions.
+
+Workflow coordinates execution.
+
+---
+
+## Workflow Philosophy
+
+Business Event
+
+↓
+
+Workflow
+
+↓
+
+Business Services
+
+↓
+
+AI Services
+
+↓
+
+External Systems
+
+↓
+
+Notifications
+
+↓
+
+Completion
+
+Workflow orchestrates.
+
+Business Services execute.
+
+---
+
+## Workflow Responsibilities
+
+Workflow coordinates
+
+Business Processes
+
+Long Running Operations
+
+Retries
+
+Compensation
+
+Approvals
+
+Timers
+
+AI Orchestration
+
+Human Tasks
+
+Workflow never owns business state.
+
+---
+
+## Workflow Ownership
+
+Workflow owns
+
+Execution State
+
+Task State
+
+Timers
+
+Retries
+
+Compensation
+
+Workflow Context
+
+Execution History
+
+Business Services own business data.
+
+---
+
+## Workflow Architecture
+
+Client
+
+↓
+
+Gateway
+
+↓
+
+Business Service
+
+↓
+
+Workflow Engine
+
+↓
+
+Business Services
+
+↓
+
+Events
+
+↓
+
+Completion
+
+Workflow remains an orchestration layer.
+
+---
+
+## Workflow Types
+
+Supported workflows
+
+Business Workflows
+
+AI Workflows
+
+Approval Workflows
+
+Notification Workflows
+
+Integration Workflows
+
+Plugin Workflows
+
+Long Running Workflows
+
+Scheduled Workflows
+
+Each workflow has one responsibility.
+
+---
+
+## Workflow Boundaries
+
+Workflow coordinates
+
+Business Services
+
+AI Services
+
+Notifications
+
+External APIs
+
+Plugins
+
+Workflow never replaces
+
+Aggregates
+
+Domain Services
+
+Application Services
+
+---
+
+## Long Running Processes
+
+Use workflows for
+
+Lead Qualification
+
+Property Matching
+
+Document Processing
+
+Approval Chains
+
+Payment Processing
+
+Media Processing
+
+Customer Onboarding
+
+Long-running processes never block REST requests.
+
+---
+
+## Workflow Engine
+
+The Workflow Engine manages
+
+Execution
+
+Persistence
+
+Recovery
+
+Retry
+
+Timers
+
+Compensation
+
+Parallel Tasks
+
+Workflow definitions remain independent of business logic.
+
+---
+
+## Workflow Context
+
+Workflow context includes
+
+workflow_id
+
+correlation_id
+
+trace_id
+
+tenant_id
+
+organization_id
+
+initiator
+
+current_state
+
+Variables remain minimal and business relevant.
+
+---
+
+## State Management
+
+Every workflow defines
+
+Initial State
+
+Intermediate States
+
+Terminal State
+
+Failure State
+
+Compensation State
+
+State transitions are explicit.
+
+---
+
+## Event Driven Workflows
+
+Workflow starts from
+
+REST Commands
+
+Domain Events
+
+Integration Events
+
+Scheduled Events
+
+Webhook Events
+
+Workflow reacts to events.
+
+---
+
+## Human Tasks
+
+Workflow supports
+
+Approvals
+
+Manual Review
+
+Escalation
+
+Assignment
+
+Delegation
+
+Human interaction remains auditable.
+
+---
+
+## Approval Workflows
+
+Approval workflows define
+
+Approver
+
+Approval Rules
+
+Timeout
+
+Escalation
+
+Rejection
+
+Completion
+
+Approval logic remains outside UI.
+
+---
+
+## AI Workflow Integration
+
+Workflow coordinates
+
+Prompt Execution
+
+Knowledge Retrieval
+
+Tool Calling
+
+AI Validation
+
+Human Approval
+
+AI recommendations are validated before execution.
+
+---
+
+## External Integrations
+
+Workflow coordinates
+
+WhatsApp
+
+Email
+
+SMS
+
+Voice
+
+Payment
+
+Calendar
+
+CRM
+
+Failures trigger retries or compensation.
+
+---
+
+## Multi-Tenant Workflow
+
+Every workflow resolves
+
+tenant_id
+
+organization_id
+
+user_id
+
+permissions
+
+Workflow execution never crosses tenant boundaries.
+
+---
+
+## Workflow Events
+
+Workflow publishes
+
+WorkflowStarted
+
+TaskStarted
+
+TaskCompleted
+
+WorkflowCompleted
+
+WorkflowFailed
+
+WorkflowCompensated
+
+Events support observability and auditing.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Workflow
+
+Task
+
+State
+
+Approval
+
+Timer
+
+Retry Policy
+
+Compensation
+
+Search the repository.
+
+Questions
+
+Does this workflow already exist?
+
+Can an existing workflow evolve?
+
+Can an existing task be reused?
+
+Can an existing approval process be extended?
+
+Reuse before creating.
+
+---
+
+## Architecture Review Checklist
+
+Before implementation verify
+
+✓ Business process identified
+
+✓ Workflow ownership defined
+
+✓ Business logic separated
+
+✓ State transitions defined
+
+✓ AI integration reviewed
+
+✓ Approval process defined
+
+✓ Tenant isolation preserved
+
+✓ Events identified
+
+✓ Repository searched
+
+✓ Existing workflows evaluated
+
+---
+
+## Decision Tree
+
+Before implementing a workflow ask
+
+1. Is this a long-running business process?
+
+2. Does this require orchestration?
+
+3. Does a workflow already exist?
+
+4. Are multiple services involved?
+
+5. Is AI involved?
+
+6. Is human approval required?
+
+7. Are retries required?
+
+8. Is compensation required?
+
+9. Is tenant isolation preserved?
+
+10. Can existing workflows be reused?
+
+If any answer is unclear
+
+STOP
+
+Review the workflow architecture before implementation.
+
+# End of Part 1
+## Part 2 - Workflow Engineering Standards
+
+## Workflow Engineering Philosophy
+
+Workflow coordinates
+
+Business Services
+
+AI Services
+
+External Systems
+
+Human Tasks
+
+Plugins
+
+Workflow never contains
+
+Business Rules
+
+Database Logic
+
+Authorization Logic
+
+Domain Validation
+
+Business Services remain authoritative.
+
+---
+
+## Workflow Definition
+
+Every workflow defines
+
+Workflow ID
+
+Business Purpose
+
+Owner
+
+Version
+
+Trigger
+
+States
+
+Transitions
+
+Timeouts
+
+Retries
+
+Compensation
+
+Completion Criteria
+
+Workflow definitions are version-controlled.
+
+---
+
+## Workflow Versioning
+
+Every workflow change creates
+
+New Version
+
+Change Log
+
+Migration Strategy
+
+Compatibility Review
+
+Never modify production workflows directly.
+
+---
+
+## State Machine
+
+Every workflow defines
+
+Start State
+
+Intermediate States
+
+Waiting States
+
+Approval States
+
+Failure State
+
+Compensation State
+
+Completed State
+
+State transitions are explicit.
+
+Never use implicit transitions.
+
+---
+
+## State Transition Rules
+
+Transitions require
+
+Current State
+
+Trigger
+
+Validation
+
+Authorization
+
+Target State
+
+Audit Record
+
+Invalid transitions are rejected.
+
+---
+
+## Workflow Variables
+
+Workflow variables include
+
+workflow_id
+
+tenant_id
+
+organization_id
+
+correlation_id
+
+trace_id
+
+initiator
+
+business_reference
+
+Variables remain
+
+Minimal
+
+Immutable where possible
+
+Business Meaningful
+
+Never store business entities inside workflow variables.
+
+---
+
+## Workflow Persistence
+
+Persist
+
+Current State
+
+Execution History
+
+Retry Count
+
+Variables
+
+Task Status
+
+Compensation Status
+
+Execution survives service restarts.
+
+---
+
+## Workflow Triggers
+
+Workflows start from
+
+REST Commands
+
+Kafka Events
+
+Scheduled Jobs
+
+Webhook Events
+
+Manual Requests
+
+AI Recommendations
+
+Each workflow has one primary trigger.
+
+---
+
+## Task Types
+
+Supported task types
+
+Service Task
+
+AI Task
+
+Human Task
+
+Timer Task
+
+Event Task
+
+Notification Task
+
+Plugin Task
+
+Script tasks are prohibited.
+
+Business logic belongs in Business Services.
+
+---
+
+## Service Tasks
+
+Service Tasks invoke
+
+Business Services
+
+Search Service
+
+Notification Service
+
+Media Service
+
+Billing Service
+
+AI Service
+
+Service Tasks never execute business logic directly.
+
+---
+
+## AI Tasks
+
+AI Tasks perform
+
+Prompt Execution
+
+Knowledge Retrieval
+
+Embedding Search
+
+Tool Calling
+
+Response Validation
+
+AI Tasks never update business state directly.
+
+---
+
+## Human Tasks
+
+Human Tasks support
+
+Approval
+
+Review
+
+Assignment
+
+Escalation
+
+Rejection
+
+Delegation
+
+Human actions are fully audited.
+
+---
+
+## Timer Tasks
+
+Timer Tasks support
+
+Follow-up
+
+Reminder
+
+Retry Delay
+
+Escalation
+
+Expiration
+
+SLA Monitoring
+
+Timers are durable.
+
+---
+
+## Parallel Execution
+
+Parallel tasks
+
+Execute independently.
+
+Synchronization occurs through
+
+Join Points
+
+Completion Rules
+
+Timeout Rules
+
+Parallel execution must be deterministic.
+
+---
+
+## Conditional Branching
+
+Branches depend on
+
+Business Outcome
+
+Approval Result
+
+AI Confidence
+
+Workflow Variables
+
+Event Results
+
+Branch conditions remain explicit.
+
+---
+
+## Retry Policy
+
+Retries apply only to
+
+Network Failures
+
+Temporary Provider Failures
+
+External APIs
+
+Kafka Failures
+
+S3 Failures
+
+Do not retry
+
+Business Validation Failures
+
+Authorization Failures
+
+Invalid Requests
+
+Retries use exponential backoff.
+
+---
+
+## Timeout Handling
+
+Every long-running task defines
+
+Timeout
+
+Retry Strategy
+
+Escalation
+
+Compensation
+
+Timeouts are mandatory.
+
+---
+
+## Compensation
+
+Compensation reverses
+
+Notifications
+
+Reservations
+
+Temporary Allocations
+
+External Requests
+
+Compensation never replaces business rollback.
+
+---
+
+## Idempotency
+
+Workflow execution is idempotent.
+
+Duplicate
+
+Commands
+
+Events
+
+Webhooks
+
+Retries
+
+must not execute business operations twice.
+
+---
+
+## Event Integration
+
+Workflow publishes
+
+WorkflowStarted
+
+TaskStarted
+
+TaskCompleted
+
+TaskFailed
+
+WorkflowCompleted
+
+WorkflowFailed
+
+WorkflowCancelled
+
+Events follow Rule 03.
+
+---
+
+## AI Integration
+
+Workflow coordinates
+
+Prompt
+
+Retriever
+
+Embedding Search
+
+Tool Calling
+
+Human Approval
+
+Business Validation
+
+AI recommendations are validated before execution.
+
+---
+
+## Plugin Integration
+
+Workflow invokes
+
+Capability Plugins
+
+Industry Plugins
+
+Workflow Engine never depends on plugin implementation.
+
+Plugins remain replaceable.
+
+---
+
+## Error Handling
+
+Handle
+
+Business Errors
+
+Infrastructure Errors
+
+Provider Errors
+
+Timeouts
+
+Retries
+
+Compensation
+
+Escalation
+
+Workflow failures remain observable.
+
+---
+
+## Audit Trail
+
+Record
+
+Workflow ID
+
+Current State
+
+Previous State
+
+User
+
+Task
+
+Execution Time
+
+Retry Count
+
+Approval
+
+Decision
+
+Every workflow action is auditable.
+
+---
+
+## Workflow Security
+
+Validate
+
+Authentication
+
+Authorization
+
+Tenant Ownership
+
+Permissions
+
+Business Context
+
+Security follows Rule 06.
+
+---
+
+## Workflow Performance
+
+Measure
+
+Execution Time
+
+Task Duration
+
+Queue Time
+
+Retry Count
+
+Timeout Count
+
+Compensation Duration
+
+Performance objectives are measurable.
+
+---
+
+## Workflow Testing
+
+Validate
+
+State Transitions
+
+Retries
+
+Timeouts
+
+Compensation
+
+Parallel Tasks
+
+Approval Flow
+
+AI Tasks
+
+Plugin Tasks
+
+Workflow testing follows Rule 07.
+
+---
+
+## Workflow Observability
+
+Observe
+
+Workflow Started
+
+Workflow Completed
+
+Task Duration
+
+Failure Rate
+
+Retry Count
+
+Queue Time
+
+Human Wait Time
+
+Workflow telemetry follows Rule 08.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Workflow
+
+Task
+
+State
+
+Transition
+
+Retry Policy
+
+Timer
+
+Compensation
+
+Approval
+
+Variable
+
+Search the repository.
+
+Questions
+
+Does this workflow already exist?
+
+Can an existing workflow evolve?
+
+Can an existing task be reused?
+
+Can an existing retry strategy be reused?
+
+Reuse before creating.
+
+---
+
+## Review Checklist
+
+Before implementation verify
+
+✓ Workflow versioned
+
+✓ States defined
+
+✓ Transitions explicit
+
+✓ Retries configured
+
+✓ Timeouts defined
+
+✓ Compensation implemented
+
+✓ AI integration reviewed
+
+✓ Tenant isolation verified
+
+✓ Observability included
+
+✓ Repository searched
+
+---
+
+## Agent Decision Tree
+
+Before implementing a workflow ask
+
+1. Is a workflow actually required?
+
+2. Does one already exist?
+
+3. Are states clearly defined?
+
+4. Are transitions explicit?
+
+5. Are retries required?
+
+6. Is compensation required?
+
+7. Is AI involved?
+
+8. Are human tasks required?
+
+9. Is tenant isolation preserved?
+
+10. Can existing workflow components be reused?
+
+If any answer is unclear
+
+STOP
+
+Review the workflow engineering standards before implementation.
+
+# End of Part 2
+## Part 3 - Platform Workflow Architecture
+
+## Platform Workflow Philosophy
+
+Platform workflows orchestrate
+
+Business Services
+
+AI Services
+
+External Systems
+
+Plugins
+
+Human Tasks
+
+Platform workflows never contain
+
+Business Rules
+
+Database Logic
+
+Authorization Logic
+
+Platform workflows coordinate execution.
+
+Business Services execute business logic.
+
+---
+
+## Lead Lifecycle Workflow
+
+Lead Created
+
+↓
+
+Lead Validation
+
+↓
+
+AI Qualification
+
+↓
+
+Property Matching
+
+↓
+
+Lead Scoring
+
+↓
+
+Assignment
+
+↓
+
+WhatsApp Follow-up
+
+↓
+
+Appointment Scheduling
+
+↓
+
+Lead Converted
+
+Business decisions remain inside Business Services.
+
+---
+
+## AI Workflow
+
+AI Workflow coordinates
+
+Prompt Rendering
+
+↓
+
+Knowledge Retrieval
+
+↓
+
+Embedding Search
+
+↓
+
+Tool Calling
+
+↓
+
+Response Validation
+
+↓
+
+Human Approval (when required)
+
+↓
+
+Business Service
+
+AI responses are validated before execution.
+
+---
+
+## Multi-Agent Workflow
+
+Workflow coordinates
+
+Lead Qualification Agent
+
+↓
+
+Property Recommendation Agent
+
+↓
+
+Conversation Agent
+
+↓
+
+Scheduling Agent
+
+↓
+
+Notification Agent
+
+↓
+
+Analytics Agent
+
+Each agent owns one responsibility.
+
+Agents never invoke each other directly.
+
+---
+
+## Human Approval Workflow
+
+Approval Workflow
+
+↓
+
+Manager Review
+
+↓
+
+Approve
+
+↓
+
+Reject
+
+↓
+
+Escalate
+
+↓
+
+Complete
+
+Approval decisions remain auditable.
+
+---
+
+## WhatsApp Workflow
+
+Workflow coordinates
+
+Lead Message
+
+↓
+
+Intent Detection
+
+↓
+
+Knowledge Retrieval
+
+↓
+
+AI Response
+
+↓
+
+Business Validation
+
+↓
+
+WhatsApp Delivery
+
+↓
+
+Conversation Update
+
+WhatsApp interactions remain workflow driven.
+
+---
+
+## Voice AI Workflow
+
+Speech
+
+↓
+
+Speech-to-Text
+
+↓
+
+Intent Detection
+
+↓
+
+AI Processing
+
+↓
+
+Business Service
+
+↓
+
+Text-to-Speech
+
+↓
+
+Voice Response
+
+Voice orchestration remains independent.
+
+---
+
+## Knowledge Processing Workflow
+
+Document Upload
+
+↓
+
+Validation
+
+↓
+
+Parsing
+
+↓
+
+Chunking
+
+↓
+
+Embedding Generation
+
+↓
+
+pgvector Storage
+
+↓
+
+Metadata Storage
+
+↓
+
+Search Index Update
+
+Knowledge ingestion is asynchronous.
+
+---
+
+## Search Index Workflow
+
+Business Event
+
+↓
+
+Projection Update
+
+↓
+
+Search Index
+
+↓
+
+Verification
+
+↓
+
+Search Available
+
+Search indexes remain eventually consistent.
+
+---
+
+## Notification Workflow
+
+Workflow coordinates
+
+Email
+
+SMS
+
+WhatsApp
+
+Push
+
+Voice
+
+Retry
+
+Escalation
+
+Notifications remain asynchronous.
+
+---
+
+## Billing Workflow
+
+Workflow coordinates
+
+Subscription
+
+↓
+
+Payment
+
+↓
+
+Invoice
+
+↓
+
+Usage Update
+
+↓
+
+Receipt
+
+↓
+
+Notification
+
+Billing workflows remain auditable.
+
+---
+
+## Media Workflow
+
+Media Upload
+
+↓
+
+Validation
+
+↓
+
+Virus Scan
+
+↓
+
+S3 Upload
+
+↓
+
+Metadata Persistence
+
+↓
+
+Thumbnail Generation
+
+↓
+
+Completion
+
+Binary storage remains outside PostgreSQL.
+
+---
+
+## Plugin Workflow
+
+Workflow invokes
+
+Capability Plugin
+
+↓
+
+Industry Plugin
+
+↓
+
+Business Service
+
+↓
+
+Completion
+
+Workflow depends only on plugin contracts.
+
+---
+
+## External Integration Workflow
+
+Workflow coordinates
+
+CRM
+
+Calendar
+
+Payment Gateway
+
+Maps
+
+OCR
+
+Translation
+
+Retries
+
+Fallbacks
+
+External failures never corrupt business state.
+
+---
+
+## Event-Driven Workflow
+
+REST Command
+
+↓
+
+Business Service
+
+↓
+
+Domain Event
+
+↓
+
+Kafka
+
+↓
+
+Workflow
+
+↓
+
+Business Services
+
+↓
+
+Completion
+
+Events remain the primary workflow trigger.
+
+---
+
+## Saga Workflow
+
+Workflow coordinates
+
+Service A
+
+↓
+
+Service B
+
+↓
+
+Service C
+
+↓
+
+Failure
+
+↓
+
+Compensation
+
+↓
+
+Recovery
+
+Distributed transactions remain consistent.
+
+---
+
+## Outbox Workflow
+
+Business Transaction
+
+↓
+
+Outbox
+
+↓
+
+Publisher
+
+↓
+
+Kafka
+
+↓
+
+Consumer
+
+↓
+
+Workflow
+
+Every committed transaction publishes exactly one event.
+
+---
+
+## Inbox Workflow
+
+Kafka Event
+
+↓
+
+Inbox
+
+↓
+
+Duplicate Detection
+
+↓
+
+Processing
+
+↓
+
+Completion
+
+↓
+
+Audit
+
+Inbox processing is idempotent.
+
+---
+
+## Scheduled Workflow
+
+Scheduled workflows support
+
+Daily Reports
+
+Data Cleanup
+
+Reminder Messages
+
+Subscription Renewal
+
+Knowledge Reindexing
+
+Workflow execution remains durable.
+
+---
+
+## AI + Workflow Integration
+
+Workflow coordinates
+
+AI
+
+↓
+
+Business Validation
+
+↓
+
+Approval
+
+↓
+
+Notification
+
+↓
+
+Analytics
+
+AI never bypasses workflow.
+
+---
+
+## Multi-Tenant Workflow
+
+Every workflow resolves
+
+tenant_id
+
+organization_id
+
+user_id
+
+permissions
+
+Workflow execution remains tenant isolated.
+
+---
+
+## Workflow Observability
+
+Observe
+
+Workflow Started
+
+Workflow Completed
+
+Task Duration
+
+Retry Count
+
+Queue Time
+
+AI Duration
+
+Approval Duration
+
+Compensation Duration
+
+Observability follows Rule 08.
+
+---
+
+## Workflow Security
+
+Validate
+
+Authentication
+
+Authorization
+
+Tenant Isolation
+
+Permissions
+
+Plugin Access
+
+Tool Permissions
+
+Security follows Rule 06.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Workflow
+
+Saga
+
+Task
+
+Approval
+
+Retry Policy
+
+Plugin Workflow
+
+AI Workflow
+
+Notification Workflow
+
+Search the repository.
+
+Questions
+
+Does this workflow already exist?
+
+Can an existing workflow evolve?
+
+Can an existing Saga be reused?
+
+Can an existing approval process be extended?
+
+Reuse before creating.
+
+---
+
+## Platform Review Checklist
+
+Before implementation verify
+
+✓ Lead workflow defined
+
+✓ AI workflow reviewed
+
+✓ Multi-Agent workflow defined
+
+✓ Search workflow implemented
+
+✓ Notification workflow implemented
+
+✓ Saga implemented
+
+✓ Outbox integrated
+
+✓ Inbox integrated
+
+✓ Tenant isolation verified
+
+✓ Observability included
+
+✓ Repository searched
+
+---
+
+## Agent Decision Tree
+
+Before implementing a platform workflow ask
+
+1. Is this a business workflow?
+
+2. Is AI involved?
+
+3. Is Saga required?
+
+4. Is Outbox required?
+
+5. Is Inbox required?
+
+6. Is Human Approval required?
+
+7. Is Plugin integration required?
+
+8. Does this workflow already exist?
+
+9. Can an existing workflow be reused?
+
+10. Does it preserve tenant isolation?
+
+If any answer is unclear
+
+STOP
+
+Review the platform workflow architecture before implementation.
+
+# End of Part 3
+## Part 4 - Workflow Governance & Repository Intelligence
+
+## Workflow Governance Philosophy
+
+Workflow is an architectural capability.
+
+Workflow governs
+
+Business Processes
+
+AI Orchestration
+
+Distributed Execution
+
+Human Approvals
+
+Platform Automation
+
+Workflow coordinates execution.
+
+Business Services own business rules.
+
+---
+
+## Workflow Lifecycle
+
+Every workflow follows
+
+Business Requirement
+
+↓
+
+Architecture Review
+
+↓
+
+Workflow Design
+
+↓
+
+Implementation
+
+↓
+
+Testing
+
+↓
+
+Deployment
+
+↓
+
+Monitoring
+
+↓
+
+Continuous Improvement
+
+Workflows evolve through controlled governance.
+
+---
+
+## Workflow Ownership
+
+Every workflow has
+
+Business Owner
+
+Technical Owner
+
+Workflow Owner
+
+Approval Owner
+
+Business Capability
+
+Bounded Context
+
+One workflow has one owner.
+
+Shared ownership is prohibited.
+
+---
+
+## Workflow Registry
+
+Every workflow is registered.
+
+Registry includes
+
+Workflow ID
+
+Workflow Name
+
+Business Capability
+
+Bounded Context
+
+Owner
+
+Trigger
+
+States
+
+Events
+
+Version
+
+Dependencies
+
+Status
+
+The registry is the authoritative source.
+
+---
+
+## Workflow Versioning
+
+Every workflow change creates
+
+New Version
+
+Migration Strategy
+
+Compatibility Review
+
+Change History
+
+Rollback Strategy
+
+Never modify production workflows directly.
+
+---
+
+## Workflow Review Board
+
+Major workflow changes require review of
+
+Architecture
+
+DDD Boundaries
+
+Business Ownership
+
+Workflow Complexity
+
+Retry Strategy
+
+Compensation
+
+Security
+
+Observability
+
+Testing
+
+Review before production deployment.
+
+---
+
+## State Governance
+
+Every workflow defines
+
+Start State
+
+Intermediate States
+
+Waiting States
+
+Approval States
+
+Failure State
+
+Compensation State
+
+Completed State
+
+Cancelled State
+
+State transitions remain explicit.
+
+---
+
+## Task Governance
+
+Every task defines
+
+Task Type
+
+Owner
+
+Purpose
+
+Timeout
+
+Retry Policy
+
+Compensation Strategy
+
+Completion Criteria
+
+Tasks remain independent.
+
+---
+
+## Retry Governance
+
+Retries define
+
+Retry Count
+
+Backoff Strategy
+
+Maximum Duration
+
+Failure Behaviour
+
+Escalation Policy
+
+Retries never hide business failures.
+
+---
+
+## Compensation Governance
+
+Compensation defines
+
+Trigger
+
+Owner
+
+Execution Order
+
+Recovery Strategy
+
+Audit Record
+
+Compensation reverses workflow side effects.
+
+Compensation never replaces business validation.
+
+---
+
+## Human Task Governance
+
+Human tasks define
+
+Approver
+
+Role
+
+Escalation
+
+Timeout
+
+Delegation
+
+Approval Criteria
+
+Human interaction remains auditable.
+
+---
+
+## AI Workflow Governance
+
+Every AI workflow defines
+
+Prompt Version
+
+Knowledge Source
+
+Retriever
+
+Model
+
+Validation Rules
+
+Fallback
+
+Human Approval
+
+AI follows Rule 09.
+
+---
+
+## Event Governance
+
+Every workflow event defines
+
+Event Name
+
+Version
+
+Producer
+
+Consumer
+
+Schema
+
+Retry Strategy
+
+Idempotency
+
+Events follow Rule 03.
+
+---
+
+## Security Governance
+
+Every workflow validates
+
+Authentication
+
+Authorization
+
+Tenant Ownership
+
+Permissions
+
+Workflow Variables
+
+Security follows Rule 06.
+
+---
+
+## Multi-Tenant Governance
+
+Every workflow resolves
+
+tenant_id
+
+organization_id
+
+user_id
+
+permissions
+
+Workflow state
+
+Workflow variables
+
+Workflow history
+
+remain tenant isolated.
+
+Cross-tenant workflow execution is prohibited.
+
+---
+
+## Observability Governance
+
+Every workflow records
+
+Workflow Started
+
+Workflow Completed
+
+Execution Time
+
+Retry Count
+
+Compensation Count
+
+Failure Count
+
+Queue Time
+
+Approval Duration
+
+Workflow telemetry follows Rule 08.
+
+---
+
+## Performance Governance
+
+Every workflow defines
+
+Latency Target
+
+Timeout
+
+Queue Target
+
+Retry Budget
+
+Compensation Time
+
+Performance objectives are measurable.
+
+---
+
+## Workflow KPIs
+
+Track
+
+Workflow Success Rate
+
+Workflow Failure Rate
+
+Average Execution Time
+
+Retry Rate
+
+Approval Duration
+
+Compensation Rate
+
+Automation Rate
+
+Business Completion Rate
+
+KPIs measure workflow effectiveness.
+
+---
+
+## Compliance
+
+Workflow complies with
+
+Audit Requirements
+
+Security Policies
+
+Retention Policies
+
+Tenant Isolation
+
+Business Regulations
+
+Compliance is continuously verified.
+
+---
+
+## Workflow Audit Trail
+
+Every execution records
+
+Workflow ID
+
+Execution ID
+
+Current State
+
+Previous State
+
+Initiator
+
+Task
+
+Decision
+
+Timestamp
+
+Retry Count
+
+Approval
+
+Compensation
+
+Complete workflow history is retained.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Workflow
+
+State
+
+Task
+
+Transition
+
+Retry Policy
+
+Compensation
+
+Approval Flow
+
+Saga
+
+Timer
+
+Variable
+
+Search the repository.
+
+Questions
+
+Does this workflow already exist?
+
+Can an existing workflow evolve?
+
+Can an existing task be reused?
+
+Can an existing approval process be reused?
+
+Can an existing Saga be extended?
+
+Reuse before creating.
+
+Avoid duplicate workflows.
+
+---
+
+## Technical Debt
+
+Reject
+
+Duplicate Workflows
+
+Duplicate States
+
+Duplicate Approval Flows
+
+Duplicate Retry Policies
+
+Unused Workflow Definitions
+
+Hardcoded Workflow IDs
+
+Undocumented Workflow Changes
+
+Every exception requires documented justification.
+
+---
+
+## Workflow Anti-Patterns
+
+Reject
+
+Business Logic Inside Workflows
+
+Database Access Inside Workflows
+
+Calling Repositories Directly
+
+Long Synchronous REST Chains
+
+Infinite Retries
+
+Missing Compensation
+
+Implicit State Transitions
+
+Shared Mutable Workflow Context
+
+Cross-Tenant Workflow Execution
+
+Workflow orchestration must remain clean.
+
+---
+
+## Architecture Review Checklist
+
+Before implementation verify
+
+✓ Workflow owner defined
+
+✓ Business capability identified
+
+✓ States defined
+
+✓ Tasks defined
+
+✓ Retries configured
+
+✓ Compensation implemented
+
+✓ AI integration reviewed
+
+✓ Security validated
+
+✓ Observability enabled
+
+✓ Tenant isolation verified
+
+✓ Repository searched
+
+---
+
+## Agent Decision Tree
+
+Before implementing a workflow ask
+
+1. Is a workflow actually required?
+
+2. Does an existing workflow already exist?
+
+3. Can an existing workflow evolve?
+
+4. Are state transitions explicit?
+
+5. Are retries required?
+
+6. Is compensation required?
+
+7. Is AI involved?
+
+8. Is human approval required?
+
+9. Is tenant isolation preserved?
+
+10. Does this comply with workflow governance?
+
+If any answer is unclear
+
+STOP
+
+Review the workflow governance before implementation.
+
+---
+
+## Mandatory Rules
+
+### MUST
+
+- Keep business rules inside Business Services.
+- Version every workflow.
+- Define explicit state transitions.
+- Configure retries with exponential backoff.
+- Implement compensation for distributed workflows.
+- Audit every workflow execution.
+- Enforce tenant isolation.
+- Instrument workflow execution with logs, metrics, and traces.
+- Search the repository before creating new workflows.
+- Test every workflow before deployment.
+
+### MUST NOT
+
+- Place business logic inside workflow definitions.
+- Access databases directly from workflow tasks.
+- Call repositories from workflow engines.
+- Use infinite retries.
+- Skip compensation for distributed operations.
+- Share mutable workflow state across executions.
+- Execute workflows across tenant boundaries.
+- Duplicate workflows, states, or approval flows.
+- Bypass Business Services or Domain rules.
+- Deploy workflows without monitoring and audit trails.
+
+---
+
+## Final Principle
+
+Never design workflows from
+
+Workflow Engine Features
+
+State Machine APIs
+
+BPMN Diagrams
+
+Technology Choices
+
+Always design workflows from
+
+Business Capability
+
+↓
+
+Business Process
+
+↓
+
+Business Events
+
+↓
+
+Business Services
+
+↓
+
+AI Services
+
+↓
+
+Human Tasks
+
+↓
+
+Workflow Orchestration
+
+↓
+
+Observability
+
+↓
+
+Audit Trail
+
+↓
+
+Continuous Improvement
+
+Business drives workflows.
+
+Workflows coordinate execution.
+
+Business Services own decisions.
+
+Architecture protects the platform.
+
+# End of Enterprise Workflow Governance v2

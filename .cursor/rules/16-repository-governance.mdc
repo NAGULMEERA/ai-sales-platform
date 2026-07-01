@@ -1,0 +1,609 @@
+```md
+---
+description: Enterprise Repository Governance Standards
+globs:
+  - "**/*.java"
+  - "**/*.kt"
+  - "**/*.xml"
+  - "**/*.md"
+alwaysApply: true
+priority: 16
+---
+
+# ============================================================================
+# Rule 16 - Repository Governance Standards
+# ============================================================================
+
+## Purpose
+
+Protect the repository architecture.
+
+The repository is a long-term product.
+
+Every new file, package, module, service and dependency must have
+a clearly defined owner.
+
+Never add code simply because it compiles.
+
+------------------------------------------------------------------------------
+
+# Repository Philosophy
+
+Business Capability
+
+↓
+
+Bounded Context
+
+↓
+
+Microservice
+
+↓
+
+Module
+
+↓
+
+Package
+
+↓
+
+Class
+
+Never reverse this order.
+
+------------------------------------------------------------------------------
+
+# Repository Layout
+
+The repository is organized into
+
+common/
+
+services/
+
+plugins/
+
+infrastructure/
+
+docs/
+
+monitoring/
+
+kubernetes/
+
+scripts/
+
+tools/
+
+.cursor/
+
+Never introduce top-level folders without architectural approval.
+
+------------------------------------------------------------------------------
+
+# Module Ownership
+
+Every module
+
+Has exactly one owner.
+
+Examples
+
+common-core
+
+Platform
+
+Lead Service
+
+Lead Domain
+
+Workflow Service
+
+Workflow Domain
+
+Real Estate Plugin
+
+Real Estate Domain
+
+Never create shared ownership.
+
+------------------------------------------------------------------------------
+
+# Business Logic
+
+Business logic belongs only inside
+
+Business Services
+
+or
+
+Industry Plugins
+
+Never place business logic inside
+
+common-*
+
+SDKs
+
+Utilities
+
+Infrastructure
+
+------------------------------------------------------------------------------
+
+# Common Modules
+
+Allowed
+
+common-core
+
+common-events
+
+common-contracts
+
+common-security
+
+common-observability
+
+common-testing
+
+common-clients
+
+Never create
+
+common-utils
+
+common-helper
+
+shared-business
+
+misc
+
+global
+
+These become dumping grounds.
+
+------------------------------------------------------------------------------
+
+# What Belongs In Common
+
+Allowed
+
+Annotations
+
+Exceptions
+
+Base Classes
+
+Utilities
+
+DTO Contracts
+
+Events
+
+Security
+
+Observability
+
+Validation
+
+Constants
+
+Never
+
+Lead
+
+Customer
+
+Property
+
+Workflow Rules
+
+Repositories
+
+Business Services
+
+Domain Models
+
+------------------------------------------------------------------------------
+
+# Service Ownership
+
+Every business capability belongs to one service.
+
+Example
+
+Lead
+
+↓
+
+Lead Service
+
+Customer
+
+↓
+
+Customer Service
+
+Conversation
+
+↓
+
+Conversation Service
+
+Billing
+
+↓
+
+Billing Service
+
+AI
+
+↓
+
+AI Service
+
+Never duplicate ownership.
+
+------------------------------------------------------------------------------
+
+# Plugin Ownership
+
+Industry-specific functionality belongs inside plugins.
+
+Platform Core
+
+Must not know
+
+Real Estate
+
+Healthcare
+
+Education
+
+Insurance
+
+Automobile
+
+Banking
+
+If code contains industry terminology
+
+It probably belongs in a plugin.
+
+------------------------------------------------------------------------------
+
+# SDK Usage
+
+Use SDKs for cross-service capabilities.
+
+Examples
+
+ai-sdk
+
+workflow-sdk
+
+notification-sdk
+
+plugin-sdk
+
+event-sdk
+
+media-sdk
+
+Never access another service implementation directly.
+
+------------------------------------------------------------------------------
+
+# Dependency Direction
+
+Allowed
+
+Service
+
+↓
+
+common-*
+
+Service
+
+↓
+
+SDK
+
+Service
+
+↓
+
+REST Contract
+
+Service
+
+↓
+
+Events
+
+Forbidden
+
+common
+
+↓
+
+service
+
+Plugin
+
+↓
+
+Platform internals
+
+Service
+
+↓
+
+Another service implementation
+
+Circular dependencies
+
+------------------------------------------------------------------------------
+
+# Package Structure
+
+Every service
+
+domain/
+
+application/
+
+api/
+
+repository/
+
+events/
+
+integration/
+
+security/
+
+config/
+
+mapper/
+
+Never invent package structures.
+
+------------------------------------------------------------------------------
+
+# Module Creation
+
+Before creating a module ask
+
+1. Is there an existing owner?
+2. Can an existing module own this?
+3. Is it reusable?
+4. Is it business specific?
+5. Is it platform specific?
+
+Create a new module only when justified.
+
+------------------------------------------------------------------------------
+
+# Duplicate Detection
+
+Before generating code search for
+
+Existing DTO
+
+Existing Event
+
+Existing API
+
+Existing Mapper
+
+Existing Entity
+
+Existing Utility
+
+Never duplicate functionality.
+
+------------------------------------------------------------------------------
+
+# Shared Contracts
+
+Cross-service communication
+
+Uses
+
+Contracts
+
+Events
+
+SDKs
+
+Never share entities.
+
+------------------------------------------------------------------------------
+
+# Repository Naming
+
+Service Modules
+
+lead-service
+
+customer-service
+
+workflow-service
+
+Plugins
+
+real-estate-plugin
+
+education-plugin
+
+insurance-plugin
+
+SDKs
+
+ai-sdk
+
+workflow-sdk
+
+media-sdk
+
+Keep naming consistent.
+
+------------------------------------------------------------------------------
+
+# Versioning
+
+Every module
+
+Must define
+
+Version
+
+Compatibility
+
+Migration strategy
+
+Breaking change policy
+
+------------------------------------------------------------------------------
+
+# Documentation
+
+Every module contains
+
+README.md
+
+Purpose
+
+Owner
+
+Responsibilities
+
+Dependencies
+
+Public APIs
+
+Events
+
+Configuration
+
+Deployment notes
+
+------------------------------------------------------------------------------
+
+# Architecture Decision Records
+
+Require ADRs for
+
+New microservice
+
+New plugin
+
+New shared module
+
+New SDK
+
+New infrastructure component
+
+New persistence technology
+
+Never introduce structural changes without documenting them.
+
+------------------------------------------------------------------------------
+
+# Technical Debt
+
+Reject
+
+Temporary folders
+
+Random utilities
+
+Copy-paste modules
+
+Duplicate SDKs
+
+Unused abstractions
+
+Anonymous TODOs
+
+Every exception must be tracked.
+
+------------------------------------------------------------------------------
+
+# Repository Metrics
+
+Track
+
+Module Count
+
+Dependency Graph
+
+Circular Dependencies
+
+Unused Modules
+
+Duplicate Code
+
+Build Time
+
+Test Coverage
+
+Architecture Violations
+
+Review regularly.
+
+------------------------------------------------------------------------------
+
+# Review Checklist
+
+Before approving verify
+
+✓ Correct bounded context
+
+✓ Correct service owner
+
+✓ Correct module
+
+✓ No duplicate functionality
+
+✓ No circular dependency
+
+✓ No business logic in common
+
+✓ Correct SDK usage
+
+✓ Plugin boundaries respected
+
+✓ Documentation updated
+
+✓ ADR required?
+
+------------------------------------------------------------------------------
+
+# Agent Decision Tree
+
+Before generating any code ask
+
+1. Which bounded context owns this?
+2. Which microservice owns it?
+3. Which Maven module owns it?
+4. Which package owns it?
+5. Does it belong in a plugin?
+6. Should an SDK be used?
+7. Does this duplicate existing code?
+8. Does this introduce a new dependency?
+9. Is the dependency direction correct?
+10. Does this violate repository governance?
+
+If any answer is unclear
+
+STOP
+
+Determine ownership before generating code.
+
+Never generate code with ambiguous ownership.

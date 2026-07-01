@@ -1,0 +1,15 @@
+{
+  "title": "AI Metrics Dashboard",
+  "panels": [
+    {
+      "title": "LLM Request Latency",
+      "type": "graph",
+      "targets": [{"expr": "histogram_quantile(0.95, rate(ai_llm_request_duration_seconds_bucket[5m]))"}]
+    },
+    {
+      "title": "Token Usage",
+      "type": "stat",
+      "targets": [{"expr": "sum(ai_tokens_used_total)"}]
+    }
+  ]
+}

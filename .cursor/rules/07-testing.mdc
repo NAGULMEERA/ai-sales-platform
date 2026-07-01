@@ -1,0 +1,2357 @@
+---
+description: Enterprise Testing Governance Standards v2
+globs:
+  - "**/*.java"
+  - "**/*Test.java"
+  - "**/*IT.java"
+  - "**/*Tests.java"
+alwaysApply: true
+priority: 7
+---
+
+# Rule 07 - Enterprise Testing Governance v2
+
+## Related Rules
+
+- Rule 01 - Enterprise Microservice Policy
+- Rule 02 - Enterprise DDD
+- Rule 03 - Enterprise Event Governance
+- Rule 04 - Enterprise REST API Governance
+- Rule 05 - Enterprise Database Governance
+- Rule 06 - Enterprise Security Governance
+
+---
+
+# Part 1 - Testing Architecture
+
+## Purpose
+
+Testing verifies that the platform behaves correctly.
+
+Testing protects
+
+- Business Rules
+- Domain Models
+- APIs
+- Events
+- Workflows
+- AI
+- Multi-Tenancy
+- Security
+
+Testing is part of development.
+
+Testing is never optional.
+
+---
+
+## Testing Philosophy
+
+Business Requirement
+
+↓
+
+Architecture
+
+↓
+
+Implementation
+
+↓
+
+Testing
+
+↓
+
+Deployment
+
+↓
+
+Monitoring
+
+Testing validates business behaviour.
+
+It does not simply increase code coverage.
+
+---
+
+## Testing Pyramid
+
+Every service follows
+
+Unit Tests
+
+↓
+
+Component Tests
+
+↓
+
+Integration Tests
+
+↓
+
+Contract Tests
+
+↓
+
+End-to-End Tests
+
+Higher levels execute fewer tests.
+
+Lower levels execute more tests.
+
+---
+
+## Testing Ownership
+
+Every Microservice owns
+
+Unit Tests
+
+Integration Tests
+
+Repository Tests
+
+API Tests
+
+Security Tests
+
+Event Tests
+
+No service relies on another service to validate its business rules.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Test Class
+
+Mock
+
+Fixture
+
+Factory
+
+Test Data
+
+Test Container
+
+Utility
+
+Search the repository.
+
+Questions
+
+Does a similar test already exist?
+
+Can an existing fixture be reused?
+
+Can an existing factory be extended?
+
+Can an existing utility be reused?
+
+Reuse before creating.
+
+---
+
+## Test Categories
+
+Every test belongs to one category.
+
+Unit Tests
+
+Component Tests
+
+Integration Tests
+
+Contract Tests
+
+API Tests
+
+Repository Tests
+
+Workflow Tests
+
+AI Tests
+
+Security Tests
+
+Performance Tests
+
+End-to-End Tests
+
+Observability Tests
+
+Each test has one clear purpose.
+
+---
+
+## Unit Testing
+
+Unit tests validate
+
+Business Logic
+
+Domain Rules
+
+Value Objects
+
+Aggregates
+
+Policies
+
+Utilities
+
+Unit tests never require
+
+Database
+
+Kafka
+
+Redis
+
+S3
+
+Network
+
+External APIs
+
+---
+
+## Component Testing
+
+Component tests validate
+
+Application Services
+
+Controllers
+
+Message Handlers
+
+Configuration
+
+Security Filters
+
+Components execute with limited infrastructure.
+
+---
+
+## Integration Testing
+
+Integration tests validate
+
+PostgreSQL
+
+Redis
+
+Kafka
+
+Flyway
+
+S3 Integration
+
+External APIs
+
+Spring Context
+
+Use realistic infrastructure.
+
+Avoid unnecessary mocking.
+
+---
+
+## Contract Testing
+
+Contract tests verify
+
+REST APIs
+
+Events
+
+DTOs
+
+OpenAPI Contracts
+
+Plugin Contracts
+
+Public contracts must remain stable.
+
+---
+
+## API Testing
+
+Validate
+
+Endpoints
+
+Authentication
+
+Authorization
+
+Validation
+
+Error Responses
+
+Pagination
+
+Filtering
+
+Sorting
+
+Versioning
+
+Every public API requires automated tests.
+
+---
+
+## Repository Testing
+
+Validate
+
+Queries
+
+Indexes
+
+Transactions
+
+Mappings
+
+Constraints
+
+Repository tests verify persistence behaviour.
+
+---
+
+## Event Testing
+
+Validate
+
+Event Publishing
+
+Event Consumption
+
+Serialization
+
+Schema Compatibility
+
+Idempotency
+
+Retry Behaviour
+
+DLQ Behaviour
+
+Every published event must be tested.
+
+---
+
+## Workflow Testing
+
+Validate
+
+Workflow Execution
+
+State Transitions
+
+Retries
+
+Compensation
+
+Timers
+
+Approval Flows
+
+Workflow behaviour must be deterministic.
+
+---
+
+## Security Testing
+
+Validate
+
+Authentication
+
+Authorization
+
+RBAC
+
+Tenant Isolation
+
+Permission Checks
+
+Security Headers
+
+Security tests are mandatory.
+
+---
+
+## Multi-Tenant Testing
+
+Every business feature verifies
+
+tenant_id
+
+organization_id
+
+Tenant Isolation
+
+Permission Boundaries
+
+Cross-Tenant Protection
+
+Cross-tenant access must fail.
+
+---
+
+## Test Data Strategy
+
+Test data must be
+
+Deterministic
+
+Repeatable
+
+Isolated
+
+Version Controlled
+
+Easy to Understand
+
+Never depend on production data.
+
+---
+
+## Test Naming
+
+Use descriptive names.
+
+Examples
+
+shouldCreateLead()
+
+shouldRejectUnauthorizedUser()
+
+shouldPublishLeadCreatedEvent()
+
+shouldPreventCrossTenantAccess()
+
+Avoid
+
+test1()
+
+sampleTest()
+
+check()
+
+Names describe business behaviour.
+
+---
+
+## Test Independence
+
+Every test
+
+Creates its own data.
+
+Executes independently.
+
+Cleans its own state.
+
+Tests never depend on execution order.
+
+---
+
+## Architecture Review Checklist
+
+Before implementing tests verify
+
+✓ Business rule identified
+
+✓ Correct test category selected
+
+✓ Repository searched
+
+✓ Existing fixtures reused
+
+✓ Tenant isolation verified
+
+✓ Security covered
+
+✓ Events covered
+
+✓ Integration requirements identified
+
+✓ Test data isolated
+
+✓ Assertions validate business behaviour
+
+---
+
+## Decision Tree
+
+Before creating a test ask
+
+1. What business behaviour is being validated?
+
+2. Which test category is appropriate?
+
+3. Does a similar test already exist?
+
+4. Can existing fixtures be reused?
+
+5. Is infrastructure required?
+
+6. Is tenant isolation required?
+
+7. Is security involved?
+
+8. Are events involved?
+
+9. Does this validate business behaviour?
+
+10. Can repository reuse reduce duplication?
+
+If any answer is unclear
+
+STOP
+
+Review the testing architecture before implementing tests.
+
+# End of Part 1
+## Part 2 - Testing Standards
+
+## Testing Standards Philosophy
+
+Testing validates
+
+Business Behaviour
+
+Security
+
+Reliability
+
+Performance
+
+Contracts
+
+Data Integrity
+
+Every implementation must be testable.
+
+Design for testability.
+
+Never design code that cannot be tested.
+
+---
+
+## Testing Frameworks
+
+Approved frameworks
+
+JUnit 5
+
+Mockito
+
+AssertJ
+
+Spring Boot Test
+
+Testcontainers
+
+MockMvc
+
+WireMock
+
+Awaitility
+
+REST Assured
+
+Use approved frameworks consistently.
+
+---
+
+## Unit Testing Standards
+
+Unit Tests validate
+
+Business Rules
+
+Aggregates
+
+Entities
+
+Value Objects
+
+Policies
+
+Utility Classes
+
+Domain Services
+
+Never mock
+
+Domain Objects
+
+Value Objects
+
+Business Rules
+
+Mock only external dependencies.
+
+---
+
+## Service Testing
+
+Application Services validate
+
+Business Logic
+
+Transaction Boundaries
+
+Events
+
+Security Rules
+
+Tenant Rules
+
+Services are tested independently.
+
+---
+
+## Controller Testing
+
+Validate
+
+HTTP Methods
+
+Status Codes
+
+Headers
+
+Validation
+
+Authentication
+
+Authorization
+
+DTO Mapping
+
+Error Responses
+
+Controllers never contain business logic.
+
+Controller tests verify contracts.
+
+---
+
+## Repository Testing
+
+Repository tests validate
+
+CRUD Operations
+
+Custom Queries
+
+Pagination
+
+Sorting
+
+Filtering
+
+Transactions
+
+Indexes
+
+Optimistic Locking
+
+Repository tests use a real PostgreSQL database.
+
+---
+
+## Database Testing
+
+Use Testcontainers.
+
+Never use
+
+H2
+
+HSQL
+
+SQLite
+
+for production persistence testing.
+
+Production behaviour must match test behaviour.
+
+---
+
+## Flyway Testing
+
+Every integration test
+
+Starts with
+
+Flyway Migration
+
+Latest Schema
+
+Clean Database
+
+Migration failures block deployment.
+
+---
+
+## Kafka Testing
+
+Validate
+
+Publishing
+
+Consumption
+
+Retry
+
+DLQ
+
+Ordering
+
+Serialization
+
+Schema Compatibility
+
+Idempotency
+
+Kafka tests use embedded Kafka or Testcontainers.
+
+---
+
+## Redis Testing
+
+Validate
+
+Caching
+
+Expiration
+
+Invalidation
+
+Distributed Locks
+
+Rate Limiting
+
+Redis behaviour must be deterministic.
+
+---
+
+## REST API Testing
+
+Validate
+
+Authentication
+
+Authorization
+
+Validation
+
+Pagination
+
+Filtering
+
+Sorting
+
+Headers
+
+Rate Limiting
+
+Versioning
+
+OpenAPI Contract
+
+REST APIs are business contracts.
+
+---
+
+## DTO Testing
+
+Validate
+
+Serialization
+
+Deserialization
+
+Validation Rules
+
+Required Fields
+
+Optional Fields
+
+Backward Compatibility
+
+DTOs remain stable.
+
+---
+
+## Mapper Testing
+
+Validate
+
+Entity Mapping
+
+DTO Mapping
+
+Null Handling
+
+Enum Mapping
+
+Collection Mapping
+
+Never trust generated mappings without tests.
+
+---
+
+## Validation Testing
+
+Validate
+
+Bean Validation
+
+Business Validation
+
+Aggregate Invariants
+
+Tenant Validation
+
+Permission Validation
+
+Every validation rule requires automated tests.
+
+---
+
+## Security Testing
+
+Validate
+
+JWT
+
+OAuth2
+
+RBAC
+
+Permissions
+
+Tenant Isolation
+
+CORS
+
+CSRF
+
+Security Headers
+
+Unauthorized Access
+
+Forbidden Access
+
+Security failures must be tested.
+
+---
+
+## Exception Testing
+
+Validate
+
+Business Exceptions
+
+Validation Exceptions
+
+Authorization Failures
+
+Resource Not Found
+
+Conflict
+
+Internal Errors
+
+Error responses remain standardized.
+
+---
+
+## External API Testing
+
+Use
+
+WireMock
+
+MockWebServer
+
+Validate
+
+Retries
+
+Timeouts
+
+Circuit Breakers
+
+Fallbacks
+
+Error Mapping
+
+Never depend on external environments.
+
+---
+
+## File Upload Testing
+
+Validate
+
+File Size
+
+Content Type
+
+Virus Scan Result
+
+Checksum
+
+Upload Failure
+
+S3 Upload
+
+Metadata Persistence
+
+Large files require dedicated testing.
+
+---
+
+## Configuration Testing
+
+Validate
+
+Application Properties
+
+Profiles
+
+Feature Flags
+
+Bean Creation
+
+Configuration Binding
+
+Configuration failures must fail fast.
+
+---
+
+## Scheduler Testing
+
+Validate
+
+Cron Execution
+
+Retry
+
+Distributed Locking
+
+Failure Recovery
+
+Time-based workflows require automated tests.
+
+---
+
+## Test Data Management
+
+Use
+
+Builders
+
+Object Mothers
+
+Factories
+
+Fixtures
+
+Testcontainers
+
+Avoid duplicated test setup.
+
+---
+
+## Assertions
+
+Assert
+
+Business Behaviour
+
+State Changes
+
+Published Events
+
+Database State
+
+Responses
+
+Permissions
+
+Avoid unnecessary assertions.
+
+Every assertion verifies business intent.
+
+---
+
+## Code Coverage
+
+Coverage measures
+
+Confidence
+
+Not quality.
+
+Focus on
+
+Critical Business Logic
+
+Security
+
+Events
+
+Workflows
+
+AI
+
+High coverage without meaningful assertions is unacceptable.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Test
+
+Fixture
+
+Builder
+
+Factory
+
+Mock
+
+Container
+
+Utility
+
+Search the repository.
+
+Questions
+
+Does this already exist?
+
+Can it be reused?
+
+Can it be extended?
+
+Reuse before creating.
+
+---
+
+## Review Checklist
+
+Before implementation verify
+
+✓ Correct framework selected
+
+✓ Unit tests implemented
+
+✓ Integration tests implemented
+
+✓ PostgreSQL tested with Testcontainers
+
+✓ Flyway tested
+
+✓ Kafka tested
+
+✓ Security tested
+
+✓ API contracts tested
+
+✓ Test data reusable
+
+✓ Repository searched
+
+---
+
+## Agent Decision Tree
+
+Before implementing tests ask
+
+1. Is this business logic?
+
+2. Is infrastructure required?
+
+3. Can Unit Tests validate this?
+
+4. Is Integration Testing required?
+
+5. Is PostgreSQL involved?
+
+6. Is Kafka involved?
+
+7. Is Redis involved?
+
+8. Is Security involved?
+
+9. Can existing fixtures be reused?
+
+10. Does this validate business behaviour?
+
+If any answer is unclear
+
+STOP
+
+Review the testing strategy before implementing tests.
+
+# End of Part 2
+## Part 3 - Platform Testing
+
+## Platform Testing Philosophy
+
+Platform testing validates
+
+Business Workflows
+
+Distributed Systems
+
+AI
+
+Events
+
+Plugins
+
+Infrastructure
+
+Security
+
+Platform behaviour must be verified as a whole.
+
+Individual services passing tests does not guarantee platform correctness.
+
+---
+
+## AI Testing
+
+Validate
+
+Prompt Templates
+
+Prompt Variables
+
+Prompt Versioning
+
+Context Construction
+
+Knowledge Retrieval
+
+Output Parsing
+
+Confidence Thresholds
+
+Provider Failover
+
+AI behaviour must be deterministic where business rules require it.
+
+---
+
+## Prompt Testing
+
+Validate
+
+Variable Replacement
+
+Prompt Rendering
+
+Template Version
+
+System Instructions
+
+User Instructions
+
+Prompt Length
+
+Token Limits
+
+Never deploy untested prompt templates.
+
+---
+
+## Prompt Injection Testing
+
+Validate protection against
+
+Direct Prompt Injection
+
+Indirect Prompt Injection
+
+Instruction Override
+
+Context Poisoning
+
+Tool Abuse
+
+Prompt Injection tests are mandatory.
+
+---
+
+## AI Output Validation
+
+Validate
+
+JSON Structure
+
+Required Fields
+
+Data Types
+
+Business Rules
+
+Permission Rules
+
+Tenant Ownership
+
+Confidence Score
+
+Business Services validate AI responses before execution.
+
+---
+
+## RAG Testing
+
+Validate
+
+Document Retrieval
+
+Embedding Similarity
+
+Knowledge Ranking
+
+Chunk Selection
+
+Context Assembly
+
+Tenant Filtering
+
+Permission Filtering
+
+Cross-tenant retrieval must fail.
+
+---
+
+## Vector Database Testing
+
+Validate
+
+Embedding Storage
+
+Similarity Search
+
+Metadata Filtering
+
+Tenant Isolation
+
+Search Accuracy
+
+Vector Index Updates
+
+pgvector behaviour must remain deterministic.
+
+---
+
+## Workflow Testing
+
+Validate
+
+Workflow Definitions
+
+State Transitions
+
+Approval Flow
+
+Retry Logic
+
+Timers
+
+Compensation
+
+Parallel Execution
+
+Workflow execution must remain predictable.
+
+---
+
+## Saga Testing
+
+Validate
+
+Distributed Transactions
+
+Compensation Events
+
+Rollback Behaviour
+
+Failure Recovery
+
+Partial Success
+
+Saga orchestration must be fully tested.
+
+---
+
+## Event Testing
+
+Validate
+
+Event Publishing
+
+Event Consumption
+
+Ordering
+
+Retry
+
+DLQ
+
+Outbox
+
+Inbox
+
+Schema Compatibility
+
+Events must remain idempotent.
+
+---
+
+## Outbox Testing
+
+Validate
+
+Event Persistence
+
+Retry
+
+Duplicate Prevention
+
+Transaction Consistency
+
+Outbox Polling
+
+Every committed transaction publishes exactly one event.
+
+---
+
+## Inbox Testing
+
+Validate
+
+Duplicate Detection
+
+Processed Messages
+
+Idempotency
+
+Replay Protection
+
+Retry Behaviour
+
+Inbox processing must remain deterministic.
+
+---
+
+## Search Testing
+
+Validate
+
+Index Creation
+
+Projection Updates
+
+Autocomplete
+
+Filtering
+
+Ranking
+
+Search Consistency
+
+Search projections remain eventually consistent.
+
+---
+
+## Media Testing
+
+Validate
+
+S3 Upload
+
+S3 Download
+
+Pre-Signed URLs
+
+Metadata Persistence
+
+File Validation
+
+Virus Scan Status
+
+Large File Upload
+
+Binary files never reside in PostgreSQL.
+
+---
+
+## Notification Testing
+
+Validate
+
+Email
+
+SMS
+
+WhatsApp
+
+Push Notification
+
+Voice
+
+Retry
+
+Template Rendering
+
+Delivery Status
+
+Notification failures must not affect business transactions.
+
+---
+
+## Plugin Testing
+
+Industry Plugins validate
+
+Business Behaviour
+
+Tenant Isolation
+
+Plugin Configuration
+
+API Contracts
+
+Capability Plugins validate
+
+Reusable Integrations
+
+Platform Compatibility
+
+Plugins never break Platform Core.
+
+---
+
+## External Integration Testing
+
+Validate
+
+Authentication
+
+Authorization
+
+Retries
+
+Timeouts
+
+Fallbacks
+
+Webhook Processing
+
+Rate Limiting
+
+Every external integration requires automated tests.
+
+---
+
+## Multi-Tenant Testing
+
+Validate
+
+Tenant Resolution
+
+Tenant Isolation
+
+Permission Boundaries
+
+Cross-Tenant Access
+
+Data Leakage
+
+Every platform capability enforces tenant isolation.
+
+---
+
+## Performance Testing
+
+Validate
+
+Response Time
+
+Concurrency
+
+Database Throughput
+
+Kafka Throughput
+
+Redis Performance
+
+Workflow Throughput
+
+Search Performance
+
+Performance targets must be measurable.
+
+---
+
+## Load Testing
+
+Validate
+
+Concurrent Users
+
+Concurrent Requests
+
+Large Imports
+
+Bulk Processing
+
+Queue Processing
+
+System behaviour under expected production load.
+
+---
+
+## Stress Testing
+
+Validate
+
+Traffic Spikes
+
+Resource Exhaustion
+
+Queue Saturation
+
+Database Saturation
+
+Graceful Degradation
+
+The platform must fail safely.
+
+---
+
+## Chaos Testing
+
+Validate
+
+Kafka Failure
+
+Redis Failure
+
+Database Failure
+
+S3 Failure
+
+External API Failure
+
+Node Failure
+
+Recovery Behaviour
+
+Platform resilience must be verified.
+
+---
+
+## Observability Testing
+
+Validate
+
+Metrics
+
+Logs
+
+Traces
+
+Correlation IDs
+
+Trace IDs
+
+Tenant IDs
+
+Business Events
+
+Every critical operation must be observable.
+
+---
+
+## Security Testing
+
+Validate
+
+Authentication
+
+Authorization
+
+RBAC
+
+Tenant Isolation
+
+JWT
+
+Rate Limiting
+
+Secret Protection
+
+Prompt Injection
+
+Security testing is continuous.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Platform Test
+
+AI Test
+
+Workflow Test
+
+Saga Test
+
+Kafka Test
+
+Plugin Test
+
+Fixture
+
+Builder
+
+Factory
+
+Search the repository.
+
+Questions
+
+Does this test already exist?
+
+Can an existing fixture be reused?
+
+Can an existing platform test be extended?
+
+Reuse before creating.
+
+---
+
+## Platform Review Checklist
+
+Before implementation verify
+
+✓ AI tested
+
+✓ Prompt Injection tested
+
+✓ RAG tested
+
+✓ Kafka tested
+
+✓ Workflow tested
+
+✓ Saga tested
+
+✓ Outbox tested
+
+✓ Inbox tested
+
+✓ Multi-Tenant isolation tested
+
+✓ Plugin compatibility tested
+
+✓ Performance validated
+
+✓ Repository searched
+
+---
+
+## Agent Decision Tree
+
+Before implementing platform tests ask
+
+1. Is AI involved?
+
+2. Is RAG involved?
+
+3. Is Kafka involved?
+
+4. Is Workflow involved?
+
+5. Is Saga involved?
+
+6. Is S3 involved?
+
+7. Is this Plugin-specific?
+
+8. Is Tenant Isolation required?
+
+9. Does a similar platform test already exist?
+
+10. Can existing fixtures be reused?
+
+If any answer is unclear
+
+STOP
+
+Review the platform testing strategy before implementing tests.
+
+# End of Part 3
+## Part 4 - Testing Governance & Repository Intelligence
+
+## Testing Governance Philosophy
+
+Testing is a permanent architectural capability.
+
+Testing protects
+
+- Business Behaviour
+- Service Boundaries
+- Security
+- Multi-Tenant Isolation
+- AI
+- Events
+- Platform Reliability
+
+Testing is part of every feature.
+
+Testing is never postponed until the end.
+
+---
+
+## Testing Lifecycle
+
+Every feature follows
+
+Requirements
+
+↓
+
+Architecture
+
+↓
+
+Implementation
+
+↓
+
+Unit Testing
+
+↓
+
+Integration Testing
+
+↓
+
+Platform Testing
+
+↓
+
+Performance Testing
+
+↓
+
+Security Testing
+
+↓
+
+Deployment
+
+↓
+
+Production Monitoring
+
+Testing exists throughout the software lifecycle.
+
+---
+
+## Test Ownership
+
+Every microservice owns
+
+Unit Tests
+
+Repository Tests
+
+Service Tests
+
+API Tests
+
+Security Tests
+
+Event Tests
+
+Workflow Tests
+
+Platform teams own
+
+Performance Tests
+
+Chaos Tests
+
+End-to-End Tests
+
+Shared testing responsibility is prohibited.
+
+---
+
+## Repository Intelligence Workflow
+
+Before creating
+
+Test
+
+Fixture
+
+Builder
+
+Factory
+
+Mock
+
+WireMock Stub
+
+Testcontainer
+
+Utility
+
+Search the repository.
+
+Verify
+
+Existing Test
+
+Existing Fixture
+
+Existing Builder
+
+Existing Factory
+
+Existing Mock
+
+Existing Utility
+
+Existing Platform Test
+
+Reuse before creating.
+
+Avoid duplicate test implementations.
+
+---
+
+## Test Coverage Strategy
+
+Coverage focuses on
+
+Business Rules
+
+Aggregates
+
+Application Services
+
+REST APIs
+
+Events
+
+Security
+
+Tenant Isolation
+
+AI
+
+Workflows
+
+Coverage percentage is not the goal.
+
+Business confidence is the goal.
+
+---
+
+## Regression Testing
+
+Every release validates
+
+Business Rules
+
+REST APIs
+
+Events
+
+Database Migrations
+
+Security
+
+Tenant Isolation
+
+Plugin Compatibility
+
+Regression suites execute automatically.
+
+---
+
+## Continuous Integration Testing
+
+Every Pull Request executes
+
+Compilation
+
+Static Analysis
+
+Unit Tests
+
+Integration Tests
+
+Security Tests
+
+Architecture Validation
+
+No code merges with failing tests.
+
+---
+
+## Release Validation
+
+Every release validates
+
+REST Contracts
+
+Event Contracts
+
+Flyway Migrations
+
+Kafka Compatibility
+
+Plugin Compatibility
+
+Performance
+
+Security
+
+Observability
+
+Release validation is mandatory.
+
+---
+
+## Flaky Test Policy
+
+Flaky tests
+
+Must be investigated immediately.
+
+Never ignore
+
+Random failures
+
+Timing failures
+
+Order-dependent tests
+
+Intermittent failures
+
+Stable test suites are mandatory.
+
+---
+
+## Performance Benchmarks
+
+Continuously validate
+
+API Response Time
+
+Database Performance
+
+Kafka Throughput
+
+Redis Latency
+
+Workflow Performance
+
+Search Latency
+
+AI Response Time
+
+Performance regressions block releases.
+
+---
+
+## Mutation Testing
+
+Critical business logic should be evaluated using mutation testing where practical.
+
+Mutation testing validates
+
+Business Rules
+
+Aggregates
+
+Domain Services
+
+Validation Logic
+
+High code coverage without meaningful assertions is insufficient.
+
+---
+
+## Test Data Governance
+
+Test data must be
+
+Isolated
+
+Repeatable
+
+Version Controlled
+
+Deterministic
+
+Representative
+
+Never reuse production data unless properly anonymized and approved.
+
+---
+
+## Contract Governance
+
+Public contracts include
+
+REST APIs
+
+Kafka Events
+
+Plugin Contracts
+
+DTOs
+
+OpenAPI Specifications
+
+Breaking changes require
+
+Review
+
+Versioning
+
+Compatibility Testing
+
+---
+
+## Security Testing Governance
+
+Every release validates
+
+Authentication
+
+Authorization
+
+RBAC
+
+Tenant Isolation
+
+JWT
+
+Secret Protection
+
+Rate Limiting
+
+Prompt Injection
+
+Security regressions block releases.
+
+---
+
+## AI Testing Governance
+
+Every AI capability validates
+
+Prompt Templates
+
+Prompt Injection Protection
+
+Output Validation
+
+Knowledge Retrieval
+
+Tenant Filtering
+
+Model Configuration
+
+Provider Failover
+
+AI behaviour must remain predictable for business-critical operations.
+
+---
+
+## Platform Compatibility
+
+Validate compatibility across
+
+Platform Core
+
+Industry Plugins
+
+Capability Plugins
+
+External Integrations
+
+Workflow Engine
+
+AI Service
+
+Search Service
+
+Platform evolution must not break existing plugins.
+
+---
+
+## Observability Validation
+
+Every release verifies
+
+Metrics
+
+Logs
+
+Distributed Traces
+
+Correlation IDs
+
+Trace IDs
+
+Tenant IDs
+
+Audit Events
+
+Observability is part of testing.
+
+---
+
+## Architecture Compliance
+
+Verify
+
+DDD Rules
+
+Microservice Boundaries
+
+Aggregate Ownership
+
+REST Standards
+
+Database Standards
+
+Security Standards
+
+Testing validates architectural compliance.
+
+---
+
+## Technical Debt
+
+Reject
+
+Ignored Tests
+
+Disabled Tests
+
+Commented Tests
+
+Duplicate Tests
+
+Copy-Paste Fixtures
+
+Unused Mocks
+
+Obsolete Test Data
+
+Every exception requires documented justification.
+
+---
+
+## Testing Anti-Patterns
+
+Reject
+
+Testing Private Methods
+
+Testing Framework Internals
+
+Implementation-Only Assertions
+
+Sleeping Threads
+
+Random Test Data
+
+Shared Mutable Test State
+
+Production Database Usage
+
+Hardcoded Secrets
+
+Testing must verify observable business behaviour.
+
+---
+
+## Architecture Review Checklist
+
+Before approving implementation verify
+
+✓ Unit tests implemented
+
+✓ Integration tests implemented
+
+✓ Platform tests implemented
+
+✓ Security tests implemented
+
+✓ AI tests implemented
+
+✓ Multi-Tenant isolation verified
+
+✓ Performance validated
+
+✓ Regression suite updated
+
+✓ Repository searched
+
+✓ Existing fixtures reused
+
+✓ Architecture compliance verified
+
+---
+
+## Agent Decision Tree
+
+Before creating a test ask
+
+1. What business behaviour is being verified?
+
+2. Does a test already exist?
+
+3. Can an existing fixture be reused?
+
+4. Is this Unit, Integration or Platform testing?
+
+5. Is Security involved?
+
+6. Is AI involved?
+
+7. Is Kafka involved?
+
+8. Is Tenant Isolation involved?
+
+9. Is this covered by an existing regression suite?
+
+10. Does this validate business behaviour rather than implementation?
+
+If any answer is unclear
+
+STOP
+
+Review the testing architecture before implementing tests.
+
+---
+
+## Mandatory Rules
+
+### MUST
+
+- Test every business rule.
+- Test every public REST API.
+- Test every published and consumed event.
+- Test every Flyway migration.
+- Test tenant isolation.
+- Test authentication and authorization.
+- Test AI output validation.
+- Test workflow execution.
+- Use Testcontainers for infrastructure integration tests.
+- Search the repository before creating new test utilities.
+
+### MUST NOT
+
+- Test implementation details instead of business behaviour.
+- Depend on test execution order.
+- Share mutable test data between tests.
+- Use production databases for automated testing.
+- Ignore flaky tests.
+- Disable failing tests without documented approval.
+- Duplicate fixtures, builders, or mocks.
+- Skip security or tenant isolation tests.
+- Merge code with failing automated tests.
+- Treat code coverage as the only quality metric.
+
+---
+
+## Final Principle
+
+Never write tests for
+
+Framework Behaviour
+
+Library Internals
+
+Implementation Details
+
+Private Methods
+
+Always write tests for
+
+Business Requirements
+
+↓
+
+Business Rules
+
+↓
+
+Domain Behaviour
+
+↓
+
+REST Contracts
+
+↓
+
+Events
+
+↓
+
+Security
+
+↓
+
+Tenant Isolation
+
+↓
+
+Platform Behaviour
+
+↓
+
+Production Confidence
+
+Business behaviour drives testing.
+
+Testing protects architecture.
+
+Architecture protects the platform.
+
+# End of Enterprise Testing Governance v2

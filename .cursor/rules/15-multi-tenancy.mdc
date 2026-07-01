@@ -1,0 +1,618 @@
+```md
+---
+description: Enterprise Multi-Tenancy Standards
+globs:
+  - "**/*.java"
+  - "**/*.kt"
+  - "**/*.yaml"
+  - "**/*.properties"
+alwaysApply: true
+priority: 15
+---
+
+# ============================================================================
+# Rule 15 - Enterprise Multi-Tenancy Standards
+# ============================================================================
+
+## Purpose
+
+The AI Sales Employee Platform is a multi-tenant SaaS.
+
+Tenant isolation is a platform requirement.
+
+Every feature must preserve
+
+- Security
+- Isolation
+- Performance
+- Scalability
+- Auditability
+
+Never allow data leakage between tenants.
+
+------------------------------------------------------------------------------
+
+# Tenant Philosophy
+
+Everything belongs to a tenant unless explicitly global.
+
+Every request
+
+↓
+
+Exactly One Tenant
+
+Every resource
+
+↓
+
+Exactly One Owner
+
+Never process business data without tenant context.
+
+------------------------------------------------------------------------------
+
+# Tenant Identification
+
+Primary source
+
+JWT
+
+Claim
+
+tenantId
+
+Fallback
+
+Authenticated platform context
+
+Never trust
+
+HTTP query parameter
+
+Request body
+
+Client supplied tenant id
+
+------------------------------------------------------------------------------
+
+# Tenant Context
+
+Every request establishes
+
+TenantContext
+
+Containing
+
+tenantId
+
+organizationId
+
+userId
+
+roles
+
+permissions
+
+locale
+
+timezone
+
+Every downstream component uses TenantContext.
+
+------------------------------------------------------------------------------
+
+# API Layer
+
+Every secured endpoint
+
+Requires
+
+Authentication
+
+Tenant Resolution
+
+Authorization
+
+Ownership Validation
+
+Never process requests without tenant context.
+
+------------------------------------------------------------------------------
+
+# Service Layer
+
+Every application service
+
+Receives tenant context.
+
+Business logic never queries data outside the active tenant.
+
+------------------------------------------------------------------------------
+
+# Database Strategy
+
+Business tables
+
+Must contain
+
+tenant_id
+
+Reference tables may be global only if approved.
+
+Never create tenant-less business tables.
+
+------------------------------------------------------------------------------
+
+# Database Per Service
+
+Every microservice
+
+Owns
+
+Its own database
+
+or
+
+Its own schema
+
+Tenant isolation must exist independently inside every service.
+
+------------------------------------------------------------------------------
+
+# Query Rules
+
+Every repository query
+
+Must filter
+
+tenant_id
+
+Never rely on client-side filtering.
+
+Avoid repository methods that can bypass tenant filtering.
+
+------------------------------------------------------------------------------
+
+# Row Level Security
+
+Prefer PostgreSQL RLS for critical business tables.
+
+Policies enforce
+
+tenant_id
+
+Application validation and RLS complement each other.
+
+------------------------------------------------------------------------------
+
+# Cache
+
+Redis keys
+
+Must include
+
+tenantId
+
+Example
+
+tenant:1001:lead:qualified:12345
+
+Never create shared cache keys for tenant-owned data.
+
+------------------------------------------------------------------------------
+
+# Kafka
+
+Every event
+
+Must include
+
+tenantId
+
+correlationId
+
+eventVersion
+
+Consumers validate tenant context before processing.
+
+Never publish tenant-less business events.
+
+------------------------------------------------------------------------------
+
+# Workflow
+
+Every workflow execution
+
+Belongs to one tenant.
+
+Workflow state
+
+Timers
+
+Retries
+
+Compensations
+
+Human tasks
+
+Remain tenant scoped.
+
+------------------------------------------------------------------------------
+
+# AI
+
+Every AI request
+
+Includes
+
+tenantId
+
+Prompt execution
+
+Knowledge retrieval
+
+Embeddings
+
+Vector search
+
+Recommendations
+
+Must be tenant isolated.
+
+Never retrieve another tenant's knowledge base.
+
+------------------------------------------------------------------------------
+
+# pgvector
+
+Every embedding
+
+Stores
+
+tenant_id
+
+Every vector search filters by tenant_id before similarity search.
+
+Never perform global semantic search on tenant-owned data.
+
+------------------------------------------------------------------------------
+
+# Media Storage
+
+Store files in
+
+S3
+
+Organize by tenant.
+
+Example
+
+tenant-1001/
+
+lead-service/
+
+lead-123/
+
+documents/
+
+agreement.pdf
+
+Never mix tenant media.
+
+------------------------------------------------------------------------------
+
+# Plugin Architecture
+
+Plugins
+
+Inherit tenant context automatically.
+
+Plugins cannot bypass platform tenant validation.
+
+Each plugin stores tenant-owned business data separately.
+
+------------------------------------------------------------------------------
+
+# Security
+
+Tenant validation occurs before
+
+Business validation.
+
+Reject requests with
+
+Missing tenant
+
+Invalid tenant
+
+Tenant mismatch
+
+Unauthorized tenant access
+
+------------------------------------------------------------------------------
+
+# Scheduled Jobs
+
+Background jobs
+
+Always execute within a tenant context.
+
+Never run global jobs over tenant-owned data unless explicitly designed.
+
+------------------------------------------------------------------------------
+
+# Notifications
+
+Email
+
+SMS
+
+WhatsApp
+
+Push
+
+Voice
+
+Always validate tenant ownership before sending.
+
+------------------------------------------------------------------------------
+
+# Billing
+
+Billing
+
+Subscriptions
+
+Invoices
+
+Usage
+
+Always isolated by tenant.
+
+Never aggregate billing using operational queries across tenant databases.
+
+------------------------------------------------------------------------------
+
+# Analytics
+
+Operational reporting
+
+Tenant scoped.
+
+Cross-tenant analytics
+
+Allowed only through dedicated analytics pipelines with proper authorization.
+
+------------------------------------------------------------------------------
+
+# Observability
+
+Every log
+
+Includes
+
+tenantId
+
+Every metric
+
+Supports tenant filtering where appropriate.
+
+Every trace propagates
+
+tenantId
+
+Never lose tenant identity during distributed tracing.
+
+------------------------------------------------------------------------------
+
+# Audit
+
+Audit every
+
+Authentication
+
+Authorization
+
+Sensitive Update
+
+Permission Change
+
+Data Export
+
+AI Prompt Execution
+
+Media Download
+
+Include
+
+tenantId
+
+userId
+
+correlationId
+
+------------------------------------------------------------------------------
+
+# Testing
+
+Verify
+
+REST isolation
+
+Database isolation
+
+Redis isolation
+
+Kafka isolation
+
+Workflow isolation
+
+AI isolation
+
+S3 isolation
+
+Plugin isolation
+
+Background job isolation
+
+------------------------------------------------------------------------------
+
+# Performance
+
+Design for
+
+Thousands of tenants
+
+Millions of records
+
+Horizontal scaling
+
+Noisy-neighbor protection
+
+Never assume a small tenant count.
+
+------------------------------------------------------------------------------
+
+# Data Migration
+
+Tenant migrations
+
+Must be
+
+Auditable
+
+Retryable
+
+Idempotent
+
+Rollback capable
+
+Never migrate multiple tenants in a single transaction.
+
+------------------------------------------------------------------------------
+
+# Tenant Lifecycle
+
+Supported states
+
+PROVISIONING
+
+ACTIVE
+
+SUSPENDED
+
+MAINTENANCE
+
+DEACTIVATED
+
+DELETED
+
+Platform components must respect tenant state.
+
+------------------------------------------------------------------------------
+
+# Tenant Provisioning
+
+Provisioning creates
+
+Tenant
+
+Default Users
+
+Default Roles
+
+Plugin Configuration
+
+Storage Paths
+
+Database Seed Data
+
+Feature Flags
+
+Workflow Configuration
+
+Audit Entries
+
+Provisioning must be idempotent.
+
+------------------------------------------------------------------------------
+
+# Tenant Offboarding
+
+Offboarding performs
+
+Access Revocation
+
+Workflow Shutdown
+
+Media Retention
+
+Backup
+
+Retention Policy
+
+Deletion (if allowed)
+
+Audit Recording
+
+Respect legal retention requirements.
+
+------------------------------------------------------------------------------
+
+# Review Checklist
+
+Before approving verify
+
+✓ TenantContext established
+
+✓ JWT validated
+
+✓ tenant_id present
+
+✓ Repository filtered
+
+✓ Redis isolated
+
+✓ Kafka isolated
+
+✓ AI isolated
+
+✓ Workflow isolated
+
+✓ Plugin isolated
+
+✓ S3 isolated
+
+✓ Logs include tenantId
+
+✓ Metrics reviewed
+
+✓ Audit complete
+
+------------------------------------------------------------------------------
+
+# Agent Decision Tree
+
+Before generating any feature ask
+
+1. Which tenant owns this data?
+2. How is tenant context established?
+3. Is tenant validation performed?
+4. Does the database contain tenant_id?
+5. Does Redis isolate cache?
+6. Does Kafka carry tenantId?
+7. Does AI isolate knowledge?
+8. Does S3 isolate media?
+9. Does the workflow remain tenant scoped?
+10. Are logs and metrics tenant aware?
+11. Can any cross-tenant access occur?
+12. Does this scale to thousands of tenants?
+
+If any answer is NO
+
+STOP
+
+Redesign before implementation.
+
+Never generate code that risks tenant data leakage.

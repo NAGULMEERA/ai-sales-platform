@@ -1,0 +1,48 @@
+﻿server:
+  port: 8088
+
+spring:
+  application:
+    name: ai-service
+  config:
+    import: optional:configserver:http://localhost:8888
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ai_db
+    username: aisales
+    password: aisales
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+aisales:
+  ai:
+    embedding:
+      default-provider-kind: OPEN_SOURCE
+      default-model: BAAI/bge-m3
+      default-dimension: 1024
+      open-source:
+        enabled: true
+        base-url: http://localhost:8099
+        model: BAAI/bge-m3
+        dimension: 1024
+      commercial:
+        enabled: false
+        openai:
+          api-key: ${OPENAI_API_KEY:}
+          model: text-embedding-3-small
+          dimension: 1536

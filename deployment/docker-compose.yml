@@ -1,0 +1,9 @@
+version: '3.8'
+
+include:
+  - docker-compose-infra.yml
+  - docker-compose-services.yml
+
+networks:
+  aisales-network:
+    driver: bridge

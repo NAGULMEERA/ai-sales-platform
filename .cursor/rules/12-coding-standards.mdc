@@ -1,0 +1,758 @@
+```md
+---
+description: Enterprise Coding Standards
+globs:
+  - "**/*.java"
+  - "**/*.kt"
+alwaysApply: true
+priority: 12
+---
+
+# ============================================================================
+# Rule 12 - Enterprise Coding Standards
+# ============================================================================
+
+## Purpose
+
+Every line of code must be
+
+- Readable
+- Maintainable
+- Testable
+- Observable
+- Secure
+- Consistent
+
+Code should communicate business intent.
+
+Never write clever code.
+
+Write understandable code.
+
+------------------------------------------------------------------------------
+
+# Coding Philosophy
+
+Prefer
+
+Simple
+
+↓
+
+Readable
+
+↓
+
+Maintainable
+
+↓
+
+Performant
+
+Avoid
+
+Complex
+
+↓
+
+Smart
+
+↓
+
+Magic
+
+↓
+
+Hidden Behavior
+
+------------------------------------------------------------------------------
+
+# Java Version
+
+Always use
+
+Java 21
+
+Use modern Java features where appropriate
+
+- Records
+- Sealed Classes
+- Pattern Matching
+- Switch Expressions
+- Text Blocks
+- Virtual Threads (when approved)
+
+Never use deprecated APIs.
+
+------------------------------------------------------------------------------
+
+# SOLID
+
+Every implementation follows
+
+S
+
+Single Responsibility
+
+O
+
+Open Closed
+
+L
+
+Liskov
+
+I
+
+Interface Segregation
+
+D
+
+Dependency Inversion
+
+------------------------------------------------------------------------------
+
+# Clean Code
+
+Methods
+
+Small
+
+Classes
+
+Focused
+
+Variables
+
+Meaningful
+
+Packages
+
+Business Oriented
+
+Never create God Classes.
+
+------------------------------------------------------------------------------
+
+# Naming
+
+Classes
+
+LeadService
+
+CustomerAggregate
+
+WorkflowExecutor
+
+Methods
+
+qualifyLead()
+
+assignAgent()
+
+scheduleAppointment()
+
+Variables
+
+customerId
+
+tenantId
+
+leadScore
+
+Never
+
+temp
+
+obj
+
+data
+
+test1
+
+------------------------------------------------------------------------------
+
+# Package Structure
+
+Every service
+
+domain
+
+application
+
+api
+
+repository
+
+events
+
+mapper
+
+integration
+
+config
+
+security
+
+Never use package-by-layer across the repository.
+
+------------------------------------------------------------------------------
+
+# Constructor Injection
+
+Always
+
+Constructor Injection
+
+Never
+
+Field Injection
+
+Example
+
+Good
+
+private final LeadRepository repository;
+
+Bad
+
+@Autowired
+
+private LeadRepository repository;
+
+------------------------------------------------------------------------------
+
+# Immutability
+
+Prefer immutable objects.
+
+Use
+
+record
+
+Value Objects
+
+final fields
+
+Avoid mutable shared state.
+
+------------------------------------------------------------------------------
+
+# Records
+
+Use Java Records for
+
+DTO
+
+Events
+
+Commands
+
+Queries
+
+Responses
+
+Do not use records for JPA entities.
+
+------------------------------------------------------------------------------
+
+# Entities
+
+Entity responsibilities
+
+Business Rules
+
+State Changes
+
+Invariant Protection
+
+Never expose setters for unrestricted mutation.
+
+------------------------------------------------------------------------------
+
+# Services
+
+Application Services
+
+Coordinate
+
+Domain Services
+
+Contain domain behavior shared across aggregates
+
+Never create utility services with unrelated responsibilities.
+
+------------------------------------------------------------------------------
+
+# Interfaces
+
+Create interfaces only when
+
+Multiple implementations
+
+External contracts
+
+Testing boundary
+
+Do not create interfaces "just in case."
+
+------------------------------------------------------------------------------
+
+# Exceptions
+
+Use custom exceptions.
+
+Examples
+
+LeadNotFoundException
+
+DuplicateLeadException
+
+TenantAccessDeniedException
+
+Never throw generic Exception.
+
+------------------------------------------------------------------------------
+
+# Logging
+
+Use
+
+SLF4J
+
+Structured Logging
+
+Always log
+
+CorrelationId
+
+TenantId
+
+Business Event
+
+Never log
+
+Passwords
+
+Secrets
+
+Tokens
+
+------------------------------------------------------------------------------
+
+# Null Handling
+
+Never return null.
+
+Use
+
+Optional
+
+Empty Collections
+
+Meaningful Exceptions
+
+------------------------------------------------------------------------------
+
+# Collections
+
+Return
+
+List.of()
+
+Collections.emptyList()
+
+Immutable collections where possible.
+
+Never return null collections.
+
+------------------------------------------------------------------------------
+
+# Streams
+
+Use Streams
+
+For readable transformations.
+
+Do not use Streams if loops are clearer.
+
+Avoid deeply nested stream pipelines.
+
+------------------------------------------------------------------------------
+
+# Constants
+
+Use
+
+private static final
+
+Never hardcode
+
+URLs
+
+Roles
+
+Permissions
+
+Magic Numbers
+
+Configuration
+
+------------------------------------------------------------------------------
+
+# Configuration
+
+Use
+
+application.properties
+
+Environment Variables
+
+Spring ConfigurationProperties
+
+Never hardcode configuration values.
+
+------------------------------------------------------------------------------
+
+# Validation
+
+Always use
+
+Bean Validation
+
+@Valid
+
+@NotNull
+
+@NotBlank
+
+Never manually validate simple request objects.
+
+------------------------------------------------------------------------------
+
+# Transactions
+
+@Transactional
+
+Application Service only.
+
+Never
+
+Controller
+
+Repository
+
+Feign Client
+
+------------------------------------------------------------------------------
+
+# Mapping
+
+Use
+
+MapStruct
+
+Preferred
+
+Manual Mapper
+
+If mapping is simple
+
+Never map inside Controller.
+
+------------------------------------------------------------------------------
+
+# REST
+
+Controllers
+
+Only
+
+Validate
+
+Delegate
+
+Return DTO
+
+Never
+
+Business Logic
+
+Repository Calls
+
+------------------------------------------------------------------------------
+
+# Repository
+
+One Repository
+
+One Aggregate Root
+
+Never create GenericRepository.
+
+------------------------------------------------------------------------------
+
+# Events
+
+Business State Change
+
+↓
+
+Domain Event
+
+↓
+
+Integration Event
+
+↓
+
+Outbox
+
+Never publish Kafka directly from Controller.
+
+------------------------------------------------------------------------------
+
+# Async
+
+Use async for
+
+Media Processing
+
+Imports
+
+AI
+
+Workflow
+
+Notifications
+
+Avoid blocking long-running operations.
+
+------------------------------------------------------------------------------
+
+# Multi-Tenancy
+
+Every
+
+Query
+
+Cache Key
+
+Event
+
+Workflow
+
+Must include
+
+tenantId
+
+Never bypass tenant validation.
+
+------------------------------------------------------------------------------
+
+# Security
+
+Never
+
+Hardcode Secrets
+
+Bypass Authorization
+
+Skip Validation
+
+Trust Client Input
+
+------------------------------------------------------------------------------
+
+# Performance
+
+Avoid
+
+N+1 Queries
+
+SELECT *
+
+Nested Remote Calls
+
+Large Transactions
+
+Repeated AI Calls
+
+Repeated Embeddings
+
+------------------------------------------------------------------------------
+
+# Media
+
+Store
+
+Images
+
+Videos
+
+PDF
+
+Audio
+
+Reports
+
+↓
+
+S3
+
+Never store binary data in PostgreSQL.
+
+------------------------------------------------------------------------------
+
+# AI
+
+Never call
+
+OpenAI
+
+Gemini
+
+Claude
+
+Directly
+
+Always use
+
+AI Service
+
+Provider Abstraction
+
+------------------------------------------------------------------------------
+
+# Workflow
+
+Workflow coordinates.
+
+Business Services own state.
+
+Never move business rules into Workflow Service.
+
+------------------------------------------------------------------------------
+
+# Comments
+
+Comment
+
+Why
+
+Not
+
+What
+
+Good
+
+// Compensation required because billing may fail independently.
+
+Bad
+
+// Increment i
+
+------------------------------------------------------------------------------
+
+# TODO
+
+Allowed only when
+
+Linked to
+
+Issue
+
+Story
+
+ADR
+
+Never leave anonymous TODOs.
+
+------------------------------------------------------------------------------
+
+# Testing
+
+Every production class
+
+Requires
+
+Unit Test
+
+Critical flows
+
+Require
+
+Integration Tests
+
+Never merge untested code.
+
+------------------------------------------------------------------------------
+
+# Code Review Checklist
+
+Before approving verify
+
+✓ Correct package
+
+✓ Naming
+
+✓ Constructor Injection
+
+✓ DTO separation
+
+✓ Validation
+
+✓ Transactions
+
+✓ Events
+
+✓ Logging
+
+✓ Security
+
+✓ Performance
+
+✓ Tests
+
+✓ Tenant Isolation
+
+------------------------------------------------------------------------------
+
+# Refactoring
+
+Improve
+
+Readability
+
+Duplication
+
+Coupling
+
+Cohesion
+
+Do not refactor solely for personal style preferences.
+
+------------------------------------------------------------------------------
+
+# Agent Decision Tree
+
+Before generating code ask
+
+1. Does this follow DDD?
+2. Is the class in the correct package?
+3. Is constructor injection used?
+4. Is business logic inside the domain?
+5. Is validation complete?
+6. Is tenant isolation preserved?
+7. Are events used correctly?
+8. Are logs structured?
+9. Are tests required?
+10. Is the implementation readable six months from now?
+
+If any answer is NO
+
+Stop
+
+Redesign before generating code.
+
+Never generate code that violates platform standards.

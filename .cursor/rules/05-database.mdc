@@ -1,0 +1,2427 @@
+---
+description: Enterprise Database Governance Standards v2
+globs:
+  - "**/*.java"
+  - "**/*.sql"
+  - "**/db/migration/**"
+alwaysApply: true
+priority: 5
+---
+
+# Rule 05 - Enterprise Database Governance v2
+
+## Related Rules
+
+- Rule 01 - Enterprise Microservice Policy
+- Rule 02 - Enterprise DDD
+- Rule 03 - Enterprise Event Governance
+- Rule 04 - Enterprise REST API Governance
+- Rule 06 - Enterprise Security
+
+---
+
+# Part 1 - Database Architecture
+
+## Purpose
+
+The database is a strategic business asset.
+
+Databases must support
+
+- Domain-Driven Design
+- Microservices
+- Event-Driven Architecture
+- AI
+- Multi-Tenancy
+- Plugin Architecture
+- Scalability
+- Reliability
+- Long-term evolution
+
+Databases must never dictate architecture.
+
+Business architecture determines database architecture.
+
+---
+
+## Database Philosophy
+
+Business Capability
+
+↓
+
+Bounded Context
+
+↓
+
+Microservice
+
+↓
+
+Aggregate
+
+↓
+
+Database Schema
+
+↓
+
+Tables
+
+Business owns data.
+
+Applications access data.
+
+Services never own another service's data.
+
+---
+
+## Database Ownership
+
+Each database belongs to exactly one microservice.
+
+Each schema belongs to exactly one bounded context.
+
+Each table belongs to exactly one aggregate.
+
+Each aggregate belongs to exactly one service.
+
+Ownership is never shared.
+
+---
+
+## Database Per Service
+
+Every microservice owns its own database schema.
+
+Example
+
+Identity Service
+
+↓
+
+identity_schema
+
+Lead Service
+
+↓
+
+lead_schema
+
+Customer Service
+
+↓
+
+customer_schema
+
+Conversation Service
+
+↓
+
+conversation_schema
+
+Workflow Service
+
+↓
+
+workflow_schema
+
+Notification Service
+
+↓
+
+notification_schema
+
+Billing Service
+
+↓
+
+billing_schema
+
+AI Service
+
+↓
+
+ai_schema
+
+Search Service
+
+↓
+
+search_schema
+
+Media Service
+
+↓
+
+media_schema
+
+Platform Service
+
+↓
+
+platform_schema
+
+Plugins own their own schemas.
+
+---
+
+## Shared Database Policy
+
+Microservices never
+
+Read another service's tables.
+
+Write another service's tables.
+
+Join another service's tables.
+
+Modify another service's schema.
+
+Communication occurs through
+
+REST
+
+Events
+
+Read Models
+
+Never through database access.
+
+---
+
+## Aggregate Ownership
+
+Every Aggregate owns
+
+Its tables
+
+Its relationships
+
+Its constraints
+
+Its business invariants
+
+Only the owning microservice may modify aggregate data.
+
+---
+
+## Schema Ownership
+
+Every schema has
+
+Business Owner
+
+Technical Owner
+
+Bounded Context
+
+Owning Microservice
+
+No shared schema ownership is permitted.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Schema
+
+Table
+
+Column
+
+Index
+
+Constraint
+
+Repository
+
+Migration
+
+The agent must search the repository.
+
+Questions
+
+Does this aggregate already exist?
+
+Does another service own this data?
+
+Does this schema already exist?
+
+Can the existing model evolve?
+
+Would this duplicate business data?
+
+Reuse before creating.
+
+---
+
+## Database Categories
+
+Platform Data
+
+Business Data
+
+AI Data
+
+Workflow Data
+
+Configuration Data
+
+Plugin Data
+
+Audit Data
+
+Analytics Data
+
+Search Data
+
+Media Metadata
+
+Every table belongs to one category.
+
+---
+
+## Platform Data
+
+Platform stores
+
+Users
+
+Roles
+
+Permissions
+
+Tenants
+
+Organizations
+
+Configuration
+
+Feature Flags
+
+Plugins
+
+Platform data is industry independent.
+
+---
+
+## Business Data
+
+Business services own
+
+Leads
+
+Customers
+
+Appointments
+
+Tasks
+
+Activities
+
+Conversations
+
+Business data remains inside its bounded context.
+
+---
+
+## Plugin Data
+
+Industry plugins own their own schemas.
+
+Examples
+
+Real Estate
+
+↓
+
+Properties
+
+Projects
+
+Builders
+
+Site Visits
+
+Education
+
+↓
+
+Students
+
+Courses
+
+Admissions
+
+Healthcare
+
+↓
+
+Patients
+
+Doctors
+
+Medical Records
+
+Insurance
+
+↓
+
+Policies
+
+Claims
+
+Platform Core never owns industry-specific tables.
+
+---
+
+## Capability Plugin Data
+
+Capability plugins own reusable integration data.
+
+Examples
+
+WhatsApp
+
+Email
+
+SMS
+
+Voice
+
+Calendar
+
+Maps
+
+Payments
+
+OCR
+
+Translation
+
+Capability plugins remain reusable across industries.
+
+---
+
+## CQRS
+
+Write Models
+
+↓
+
+Business Services
+
+Read Models
+
+↓
+
+Search
+
+Reporting
+
+Dashboards
+
+Read models never become the source of truth.
+
+---
+
+## S3 vs Database
+
+Store in PostgreSQL
+
+Business Data
+
+Configuration
+
+Metadata
+
+Relationships
+
+Audit
+
+Store in S3
+
+Videos
+
+Images
+
+Documents
+
+PDFs
+
+Voice Recordings
+
+Large Attachments
+
+Store only object metadata inside PostgreSQL.
+
+---
+
+## Multi-Tenant Data
+
+Every business table contains
+
+tenant_id
+
+organization_id
+
+created_by
+
+updated_by
+
+Tenant isolation is mandatory.
+
+Cross-tenant access is prohibited.
+
+---
+
+## AI Data Separation
+
+AI data is isolated from transactional data.
+
+AI Service owns
+
+Prompt Templates
+
+Prompt Versions
+
+Embeddings
+
+Knowledge Base
+
+Conversations
+
+Model Configuration
+
+Token Usage
+
+Inference History
+
+Business services never own AI artifacts.
+
+---
+
+## Search Data
+
+Search Service owns
+
+Search Indexes
+
+Search Documents
+
+Autocomplete
+
+Search Projections
+
+Business services never query search tables directly.
+
+---
+
+## Workflow Data
+
+Workflow Service owns
+
+Workflow Definitions
+
+Workflow Executions
+
+Workflow Tasks
+
+Timers
+
+Retries
+
+Compensations
+
+Business services publish events.
+
+Workflow orchestrates processes.
+
+---
+
+## Event Data
+
+Every service owns
+
+Outbox Table
+
+Inbox Table
+
+Dead Letter Metadata
+
+Retry Metadata
+
+No shared event tables.
+
+---
+
+## Architecture Review Checklist
+
+Before creating database objects verify
+
+✓ Business Capability identified
+
+✓ Bounded Context identified
+
+✓ Aggregate identified
+
+✓ Owning Service identified
+
+✓ Schema ownership verified
+
+✓ Repository searched
+
+✓ Existing model evaluated
+
+✓ Multi-tenancy included
+
+✓ Data category identified
+
+✓ S3 decision evaluated
+
+---
+
+## Decision Tree
+
+Before creating a table ask
+
+1. Which business capability owns this?
+
+2. Which bounded context owns it?
+
+3. Which aggregate owns it?
+
+4. Which service owns it?
+
+5. Does the schema already exist?
+
+6. Can an existing table evolve?
+
+7. Should this data live in PostgreSQL?
+
+8. Should this data live in S3?
+
+9. Is this AI data?
+
+10. Is this plugin data?
+
+If ownership is unclear
+
+STOP
+
+Review the architecture before creating database objects.
+
+# End of Part 1
+## Part 2 - Database Design Standards
+
+## Database Design Philosophy
+
+Database design must support
+
+- Business correctness
+- Scalability
+- Performance
+- Maintainability
+- Evolution
+- Tenant isolation
+
+Database schema follows the Domain Model.
+
+Never design databases from UI screens.
+
+Never design databases from REST APIs.
+
+---
+
+## Naming Standards
+
+Use
+
+snake_case
+
+Examples
+
+lead
+
+lead_status
+
+customer_address
+
+conversation_message
+
+workflow_execution
+
+Never use
+
+LeadTable
+
+tbl_lead
+
+LEAD_MASTER
+
+customerDetails
+
+Database naming must remain consistent.
+
+---
+
+## Table Naming
+
+Tables represent Aggregates or Aggregate Components.
+
+Examples
+
+lead
+
+customer
+
+appointment
+
+conversation
+
+workflow_execution
+
+notification
+
+Never create
+
+generic_data
+
+master_table
+
+temp_table
+
+common_table
+
+Table names must describe business meaning.
+
+---
+
+## Column Naming
+
+Use
+
+snake_case
+
+Examples
+
+tenant_id
+
+organization_id
+
+lead_id
+
+created_at
+
+updated_at
+
+created_by
+
+updated_by
+
+deleted_at
+
+version
+
+Avoid abbreviations.
+
+Column names must be self-explanatory.
+
+---
+
+## Primary Keys
+
+Every table uses
+
+UUID
+
+Example
+
+id UUID PRIMARY KEY
+
+Never use auto-increment IDs for distributed services.
+
+UUIDs support
+
+Microservices
+
+Offline processing
+
+Event-driven architecture
+
+Data migration
+
+---
+
+## Foreign Keys
+
+Allowed
+
+Within the same bounded context.
+
+Forbidden
+
+Across microservices.
+
+Never reference another service's tables.
+
+Cross-service relationships are maintained through
+
+REST
+
+Events
+
+Identifiers
+
+---
+
+## Aggregate Boundaries
+
+Relationships remain inside the Aggregate.
+
+Never create cross-aggregate write dependencies.
+
+Aggregate consistency belongs to the owning service.
+
+---
+
+## Audit Columns
+
+Every business table contains
+
+id
+
+tenant_id
+
+organization_id
+
+created_at
+
+created_by
+
+updated_at
+
+updated_by
+
+version
+
+Optional
+
+deleted_at
+
+deleted_by
+
+Audit information is mandatory.
+
+---
+
+## Optimistic Locking
+
+Every mutable aggregate includes
+
+version
+
+Optimistic locking prevents lost updates.
+
+Never rely solely on last-write-wins.
+
+---
+
+## Soft Delete
+
+Use
+
+deleted_at
+
+deleted_by
+
+Never permanently remove business records unless required by business policy.
+
+Hard deletes require explicit approval.
+
+---
+
+## Constraints
+
+Use database constraints for
+
+Primary Keys
+
+Foreign Keys (within the service)
+
+Unique Constraints
+
+Check Constraints
+
+Not Null Constraints
+
+Business invariants remain in the Domain Model.
+
+---
+
+## Unique Constraints
+
+Examples
+
+email
+
+tenant_id + external_reference
+
+tenant_id + code
+
+tenant_id + phone_number
+
+Always include tenant context where uniqueness is tenant-specific.
+
+---
+
+## Index Strategy
+
+Indexes must support
+
+Primary Keys
+
+Foreign Keys
+
+Tenant filtering
+
+Search predicates
+
+Ordering
+
+Frequently queried columns
+
+Avoid unnecessary indexes.
+
+Every index has a maintenance cost.
+
+---
+
+## Composite Indexes
+
+Examples
+
+tenant_id + status
+
+tenant_id + created_at
+
+tenant_id + customer_id
+
+tenant_id + updated_at
+
+Composite indexes should match common query patterns.
+
+---
+
+## JSONB Usage
+
+Use JSONB only for
+
+Dynamic configuration
+
+Plugin configuration
+
+Metadata
+
+AI model responses
+
+Provider-specific payloads
+
+Never store core business entities in JSONB.
+
+---
+
+## Enum Strategy
+
+Prefer
+
+Reference tables
+
+or
+
+Application enums
+
+Avoid database enums when values evolve frequently.
+
+Choose the approach that best supports future changes.
+
+---
+
+## Flyway
+
+Every schema change requires
+
+Versioned migration
+
+Descriptive migration name
+
+Rollback strategy where practical
+
+Never modify an applied migration.
+
+Create a new migration instead.
+
+---
+
+## Migration Rules
+
+Allowed
+
+Add tables
+
+Add nullable columns
+
+Add indexes
+
+Add optional fields
+
+Forbidden
+
+Modify historical migrations
+
+Drop columns without migration planning
+
+Rename columns directly in production
+
+Breaking changes require staged migrations.
+
+---
+
+## Default Values
+
+Database defaults are allowed only for
+
+created_at
+
+updated_at
+
+version
+
+Boolean flags where appropriate
+
+Avoid business defaults inside the database.
+
+Business defaults belong in the application.
+
+---
+
+## Transactions
+
+Transactions remain
+
+Inside one microservice.
+
+Never attempt distributed database transactions.
+
+Cross-service consistency uses
+
+Events
+
+Saga
+
+Workflow
+
+---
+
+## Read Optimization
+
+Optimize reads using
+
+Indexes
+
+Read models
+
+Caching
+
+Search projections
+
+Never denormalize transactional data without a documented reason.
+
+---
+
+## Write Optimization
+
+Prioritize
+
+Correctness
+
+Consistency
+
+Idempotency
+
+Business invariants
+
+Over premature optimization.
+
+---
+
+## Data Integrity
+
+Database guarantees
+
+Structural integrity
+
+Domain guarantees
+
+Business integrity
+
+Application Services and Aggregates enforce business rules.
+
+---
+
+## Performance
+
+Review
+
+Slow queries
+
+Missing indexes
+
+Large tables
+
+Query plans
+
+Lock contention
+
+Deadlocks
+
+Performance must be monitored continuously.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Table
+
+Column
+
+Index
+
+Constraint
+
+Migration
+
+The agent must search the repository.
+
+Questions
+
+Does this table already exist?
+
+Does this aggregate already own the data?
+
+Can the existing schema evolve?
+
+Is a migration sufficient?
+
+Avoid duplicate database structures.
+
+---
+
+## Review Checklist
+
+Before implementing verify
+
+✓ Naming follows standards
+
+✓ UUID primary key
+
+✓ Tenant columns included
+
+✓ Audit columns included
+
+✓ Optimistic locking included
+
+✓ Appropriate constraints defined
+
+✓ Index strategy documented
+
+✓ JSONB usage justified
+
+✓ Flyway migration prepared
+
+✓ Repository searched
+
+---
+
+## Agent Decision Tree
+
+Before creating database objects ask
+
+1. Does the Aggregate already exist?
+
+2. Does the table already exist?
+
+3. Can an existing column be reused?
+
+4. Is UUID being used?
+
+5. Are tenant columns present?
+
+6. Are audit columns present?
+
+7. Is JSONB really required?
+
+8. Is an index required?
+
+9. Is Flyway migration required?
+
+10. Will this introduce duplicate data?
+
+If any answer is unclear
+
+STOP
+
+Review the database design before implementation.
+
+# End of Part 2
+## Part 3 - Platform Data Architecture
+
+## Platform Data Philosophy
+
+Different platform capabilities have different storage requirements.
+
+Never force all data into relational tables.
+
+Choose the appropriate storage model based on the nature of the data.
+
+Business data belongs in PostgreSQL.
+
+Large binary objects belong in S3.
+
+Vector data belongs in pgvector.
+
+Search projections belong in the Search Service.
+
+---
+
+## Business Data
+
+Business Services own
+
+Leads
+
+Customers
+
+Appointments
+
+Tasks
+
+Activities
+
+Conversations
+
+Opportunities
+
+Business data is the system of record.
+
+Business Services are the only source of truth.
+
+---
+
+## AI Data
+
+AI Service owns
+
+Prompt Templates
+
+Prompt Versions
+
+Model Configuration
+
+Conversation Context
+
+Knowledge References
+
+Embeddings
+
+Inference History
+
+Token Usage
+
+Provider Configuration
+
+AI artifacts remain isolated from transactional business data.
+
+---
+
+## Knowledge Base
+
+Knowledge documents include
+
+PDF
+
+Word
+
+Excel
+
+Markdown
+
+Text
+
+Policies
+
+FAQs
+
+Business Manuals
+
+Knowledge documents are stored in S3.
+
+Metadata is stored in PostgreSQL.
+
+Embeddings are stored using pgvector.
+
+---
+
+## Vector Database
+
+Use pgvector for
+
+Embeddings
+
+Semantic Search
+
+Knowledge Retrieval
+
+RAG
+
+Similarity Search
+
+Recommendation Engine
+
+Never use pgvector for transactional business data.
+
+---
+
+## Search Data
+
+Search Service owns
+
+Search Documents
+
+Search Projections
+
+Autocomplete
+
+Faceted Search
+
+Search Statistics
+
+Indexes
+
+Business Services never query search tables directly.
+
+Search data is eventually consistent.
+
+---
+
+## Media Storage
+
+Media includes
+
+Images
+
+Videos
+
+Voice Recordings
+
+PDF
+
+Documents
+
+Presentations
+
+Spreadsheets
+
+Large Attachments
+
+Binary content belongs in S3.
+
+Only metadata belongs in PostgreSQL.
+
+---
+
+## Media Metadata
+
+Database stores
+
+Media ID
+
+Tenant ID
+
+Object Key
+
+Bucket Name
+
+Content Type
+
+Size
+
+Checksum
+
+Upload Status
+
+Created By
+
+Created At
+
+Never store binary objects inside PostgreSQL.
+
+---
+
+## Workflow Data
+
+Workflow Service owns
+
+Workflow Definitions
+
+Workflow Executions
+
+Workflow Tasks
+
+Workflow Variables
+
+Timers
+
+Retries
+
+Compensations
+
+Approval Tasks
+
+Workflow history remains immutable.
+
+---
+
+## Notification Data
+
+Notification Service owns
+
+Email Queue
+
+SMS Queue
+
+WhatsApp Queue
+
+Push Notifications
+
+Voice Calls
+
+Templates
+
+Delivery Status
+
+Retry History
+
+Notification data is operational.
+
+Business Services own business state.
+
+---
+
+## Billing Data
+
+Billing Service owns
+
+Plans
+
+Subscriptions
+
+Invoices
+
+Payments
+
+Credits
+
+Usage Records
+
+Coupons
+
+Billing Events
+
+Financial data requires immutable audit history.
+
+---
+
+## Authentication Data
+
+Identity Service owns
+
+Users
+
+Roles
+
+Permissions
+
+OAuth Clients
+
+Refresh Tokens
+
+Sessions
+
+API Keys
+
+Authentication data is never duplicated across services.
+
+---
+
+## Tenant Data
+
+Platform owns
+
+Tenants
+
+Organizations
+
+Subscription Tier
+
+Tenant Configuration
+
+Feature Flags
+
+Branding
+
+Domains
+
+Tenant metadata remains centralized.
+
+---
+
+## Plugin Data
+
+Every Industry Plugin owns its own schema.
+
+Examples
+
+Real Estate
+
+Properties
+
+Projects
+
+Builders
+
+Site Visits
+
+Education
+
+Students
+
+Courses
+
+Admissions
+
+Healthcare
+
+Patients
+
+Doctors
+
+Medical Records
+
+Insurance
+
+Policies
+
+Claims
+
+Platform Core never stores industry-specific data.
+
+---
+
+## Capability Plugin Data
+
+Capability Plugins own
+
+WhatsApp Configuration
+
+Email Configuration
+
+SMS Providers
+
+Voice Providers
+
+Calendar Integrations
+
+Maps Integration
+
+OCR Configuration
+
+Translation Providers
+
+Capability plugins remain reusable across all industries.
+
+---
+
+## Event Storage
+
+Every microservice owns
+
+Outbox Events
+
+Inbox Events
+
+Processed Messages
+
+Retry Metadata
+
+DLQ Metadata
+
+Never share event tables across services.
+
+---
+
+## Audit Data
+
+Audit Service owns
+
+Audit Logs
+
+Security Events
+
+User Activity
+
+Permission Changes
+
+Configuration Changes
+
+Business Services publish audit events.
+
+Audit records remain immutable.
+
+---
+
+## Configuration Data
+
+Platform owns
+
+Application Configuration
+
+Feature Flags
+
+Plugin Configuration
+
+Environment Configuration
+
+Provider Configuration
+
+Secrets references
+
+Sensitive secrets belong in Vault or Secret Manager.
+
+Never store secrets in database tables.
+
+---
+
+## Analytics Data
+
+Analytics owns
+
+KPIs
+
+Dashboards
+
+Aggregated Metrics
+
+Historical Trends
+
+Business Reports
+
+Analytics data is derived.
+
+Transactional systems remain the source of truth.
+
+---
+
+## Read Models
+
+Read Models support
+
+Dashboards
+
+Reporting
+
+Search
+
+Analytics
+
+Customer 360
+
+Recommendations
+
+Read Models
+
+Are rebuilt when necessary.
+
+Never update Read Models directly.
+
+---
+
+## Multi-Tenant Data
+
+Every business table contains
+
+tenant_id
+
+organization_id
+
+Every query filters by
+
+tenant_id
+
+Cross-tenant joins are prohibited.
+
+Tenant isolation is mandatory.
+
+---
+
+## Data Lifecycle
+
+Business Data
+
+↓
+
+Operational Database
+
+↓
+
+Events
+
+↓
+
+Read Models
+
+↓
+
+Analytics
+
+↓
+
+Archive
+
+↓
+
+Retention Policy
+
+Every data category has a defined lifecycle.
+
+---
+
+## Repository Intelligence
+
+Before creating
+
+Schema
+
+Table
+
+Projection
+
+Embedding Store
+
+Knowledge Store
+
+Media Metadata
+
+Workflow Table
+
+The agent must search the repository.
+
+Questions
+
+Does this capability already own storage?
+
+Does another service already store this data?
+
+Can an existing schema evolve?
+
+Should this data remain relational?
+
+Should it be stored in S3?
+
+Should it be indexed using pgvector?
+
+Reuse existing storage before introducing new structures.
+
+---
+
+## Platform Review Checklist
+
+Before implementation verify
+
+✓ Correct data owner
+
+✓ Correct storage technology
+
+✓ AI data separated
+
+✓ Media stored in S3
+
+✓ Metadata stored in PostgreSQL
+
+✓ Search projections separated
+
+✓ Workflow ownership verified
+
+✓ Plugin ownership verified
+
+✓ Tenant isolation verified
+
+✓ Repository searched
+
+---
+
+## Agent Decision Tree
+
+Before creating storage ask
+
+1. Is this business data?
+
+2. Is this AI data?
+
+3. Is this workflow data?
+
+4. Is this search data?
+
+5. Is this media?
+
+6. Is this analytics?
+
+7. Is this plugin data?
+
+8. Should it be stored in PostgreSQL?
+
+9. Should it be stored in S3?
+
+10. Should it use pgvector?
+
+If ownership or storage technology is unclear
+
+STOP
+
+Review the platform architecture before creating database objects.
+
+# End of Part 3
+## Part 4 - Database Governance & Repository Intelligence
+
+## Database Governance Philosophy
+
+Databases are long-lived business assets.
+
+Code changes frequently.
+
+Database structures evolve carefully.
+
+Every schema change must preserve
+
+- Data integrity
+- Business correctness
+- Service ownership
+- Tenant isolation
+- Backward compatibility
+
+Database changes require architectural review.
+
+---
+
+## Database Lifecycle
+
+Every database object follows
+
+Draft
+
+↓
+
+Architecture Review
+
+↓
+
+Approved
+
+↓
+
+Migration Created
+
+↓
+
+Code Review
+
+↓
+
+Testing
+
+↓
+
+Deployment
+
+↓
+
+Monitoring
+
+↓
+
+Optimization
+
+↓
+
+Deprecation
+
+↓
+
+Removal
+
+Never create unmanaged database objects.
+
+---
+
+## Database Registry
+
+Every schema must be documented.
+
+Registry includes
+
+Schema Name
+
+Owning Service
+
+Business Capability
+
+Bounded Context
+
+Aggregate
+
+Database Owner
+
+Migration History
+
+Related APIs
+
+Related Events
+
+Storage Technology
+
+Retention Policy
+
+PII Classification
+
+Every database object has a documented owner.
+
+---
+
+## Repository Intelligence Workflow
+
+Before creating
+
+Schema
+
+Table
+
+Column
+
+Constraint
+
+Index
+
+View
+
+Materialized View
+
+Migration
+
+Search the repository.
+
+Verify
+
+Existing Aggregate
+
+Existing Schema
+
+Existing Table
+
+Existing Migration
+
+Existing Read Model
+
+Existing Event
+
+Existing API
+
+Existing Plugin
+
+Reuse existing structures whenever possible.
+
+Never duplicate business data.
+
+---
+
+## Flyway Governance
+
+All schema changes
+
+Must use Flyway.
+
+Every migration
+
+Must be
+
+Versioned
+
+Immutable
+
+Reviewed
+
+Tested
+
+Documented
+
+Never edit an applied migration.
+
+Always create a new migration.
+
+---
+
+## Migration Strategy
+
+Preferred order
+
+Add
+
+↓
+
+Deploy
+
+↓
+
+Migrate Data
+
+↓
+
+Update Application
+
+↓
+
+Remove Legacy
+
+Avoid destructive schema changes.
+
+Support rolling deployments.
+
+---
+
+## Backward Compatibility
+
+Allowed
+
+Add nullable columns
+
+Add indexes
+
+Add tables
+
+Add constraints
+
+Forbidden
+
+Rename columns directly
+
+Drop required columns
+
+Change primary keys
+
+Change data meaning
+
+Breaking database changes require staged migrations.
+
+---
+
+## Data Retention
+
+Every table defines
+
+Retention Policy
+
+Archive Strategy
+
+Deletion Policy
+
+Legal Requirements
+
+Business Requirements
+
+Retention is documented.
+
+Never retain data indefinitely without justification.
+
+---
+
+## Data Archival
+
+Archive
+
+Completed Workflows
+
+Historical Notifications
+
+Audit Logs
+
+Old Analytics
+
+Expired Sessions
+
+Archived data remains searchable when required.
+
+---
+
+## Backup and Recovery
+
+Every service defines
+
+Backup Frequency
+
+Recovery Point Objective (RPO)
+
+Recovery Time Objective (RTO)
+
+Backup Verification
+
+Restore Procedure
+
+Backups must be tested regularly.
+
+---
+
+## Performance Governance
+
+Continuously monitor
+
+Slow Queries
+
+Table Growth
+
+Index Usage
+
+Deadlocks
+
+Lock Contention
+
+Connection Pool Usage
+
+Vacuum Statistics
+
+Execution Plans
+
+Performance problems must be investigated proactively.
+
+---
+
+## Index Governance
+
+Every index requires
+
+Business Justification
+
+Query Pattern
+
+Maintenance Review
+
+Unused indexes
+
+Must be removed.
+
+Excessive indexing reduces write performance.
+
+---
+
+## Security Governance
+
+Protect
+
+PII
+
+Financial Data
+
+Authentication Data
+
+Business Secrets
+
+Use
+
+Encryption at Rest
+
+Encryption in Transit
+
+Least Privilege
+
+Row-Level Security (where appropriate)
+
+Never expose sensitive data unnecessarily.
+
+---
+
+## Sensitive Data
+
+Examples
+
+Passwords
+
+Refresh Tokens
+
+API Keys
+
+Government IDs
+
+Financial Information
+
+Personal Contact Details
+
+Sensitive data must never be logged.
+
+Sensitive data must never be stored in plain text.
+
+---
+
+## Multi-Tenant Governance
+
+Every business query
+
+Must resolve
+
+tenant_id
+
+organization_id
+
+Every write operation
+
+Must validate tenant ownership.
+
+Cross-tenant access is prohibited.
+
+---
+
+## Data Quality
+
+Validate
+
+Required Fields
+
+Reference Integrity
+
+Business Constraints
+
+Duplicate Prevention
+
+Consistency
+
+Data quality is continuously monitored.
+
+---
+
+## Observability
+
+Every service records
+
+Migration Execution
+
+Database Errors
+
+Slow Queries
+
+Connection Pool Metrics
+
+Query Latency
+
+Lock Wait Time
+
+Deadlocks
+
+Storage Growth
+
+Database health is continuously observable.
+
+---
+
+## Database Anti-Patterns
+
+Reject
+
+Shared Database
+
+Shared Schema
+
+Cross-Service Foreign Keys
+
+Business Logic in SQL Triggers
+
+Direct Database Integration
+
+Generic Tables
+
+Entity-Attribute-Value (EAV) for core business data
+
+Large Binary Objects in PostgreSQL
+
+Duplicated Business Data
+
+Database-driven architecture
+
+Architecture must remain service-driven.
+
+---
+
+## Architecture Review Checklist
+
+Before approving database changes verify
+
+✓ Business Capability identified
+
+✓ Owning Service identified
+
+✓ Aggregate identified
+
+✓ Schema ownership verified
+
+✓ Repository searched
+
+✓ Existing structures reused
+
+✓ Flyway migration created
+
+✓ Backward compatibility maintained
+
+✓ Tenant isolation preserved
+
+✓ Performance reviewed
+
+✓ Security reviewed
+
+✓ Backup strategy documented
+
+✓ Retention policy defined
+
+---
+
+## Agent Decision Tree
+
+Before creating any database object ask
+
+1. Which Business Capability owns this?
+
+2. Which Bounded Context owns it?
+
+3. Which Aggregate owns it?
+
+4. Which Service owns it?
+
+5. Does this schema already exist?
+
+6. Does this table already exist?
+
+7. Can an existing migration evolve?
+
+8. Is Flyway required?
+
+9. Is tenant isolation preserved?
+
+10. Is PostgreSQL the correct storage?
+
+11. Should this data be stored in S3?
+
+12. Should this use pgvector?
+
+13. Does this introduce duplicate business data?
+
+14. Does this violate service ownership?
+
+15. Is the migration backward compatible?
+
+If any answer is unclear
+
+STOP
+
+Review the database architecture before implementation.
+
+---
+
+## Mandatory Rules
+
+### MUST
+
+- Use one schema per microservice.
+- Use UUID primary keys.
+- Include tenant and audit columns on business tables.
+- Manage every schema change with Flyway.
+- Store binary files in S3 and metadata in PostgreSQL.
+- Store embeddings in pgvector.
+- Keep Outbox and Inbox tables within the owning service.
+- Search the repository before creating new database objects.
+
+### MUST NOT
+
+- Share databases across microservices.
+- Create cross-service foreign keys.
+- Store large binary objects in PostgreSQL.
+- Modify applied Flyway migrations.
+- Duplicate business data across services.
+- Store secrets or passwords in plain text.
+- Bypass aggregate ownership.
+- Let Platform Core own industry-specific tables.
+
+---
+
+## Final Principle
+
+Never design databases from
+
+REST APIs
+
+Controllers
+
+Repositories
+
+UI Screens
+
+Implementation Classes
+
+Always design databases from
+
+Business Capability
+
+↓
+
+Bounded Context
+
+↓
+
+Aggregate
+
+↓
+
+Microservice
+
+↓
+
+Database Schema
+
+↓
+
+Tables
+
+↓
+
+Flyway Migration
+
+↓
+
+Implementation
+
+Business drives data.
+
+Data supports services.
+
+Services own data.
+
+# End of Enterprise Database Governance v2

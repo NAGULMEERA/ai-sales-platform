@@ -1,0 +1,15 @@
+{
+  "title": "Business Metrics Dashboard",
+  "panels": [
+    {
+      "title": "Leads Created",
+      "type": "stat",
+      "targets": [{"expr": "sum(increase(leads_created_total[24h]))"}]
+    },
+    {
+      "title": "Appointments Booked",
+      "type": "stat",
+      "targets": [{"expr": "sum(increase(appointments_booked_total[24h]))"}]
+    }
+  ]
+}

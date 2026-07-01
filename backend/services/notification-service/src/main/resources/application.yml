@@ -1,0 +1,45 @@
+﻿server:
+  port: 8090
+
+spring:
+  application:
+    name: notification-service
+  profiles:
+    default: local
+  config:
+    import: optional:configserver:http://localhost:8888
+  datasource:
+    url: jdbc:postgresql://localhost:5432/aisales_notification
+    username: aisales
+    password: aisales
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+
+aisales:
+  security:
+    use-platform-defaults: false
+  notification:
+    delivery-mode: log
+    from-address: noreply@aisales.local
+    app-name: AI Sales Platform
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

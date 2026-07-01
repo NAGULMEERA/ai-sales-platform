@@ -1,0 +1,2845 @@
+```md
+---
+description: Enterprise Domain Driven Design Standards v2
+globs:
+  - "**/*.java"
+  - "**/*.kt"
+alwaysApply: true
+priority: 2
+---
+
+# Rule 02 - Enterprise Domain Driven Design v2
+# Part 1 - Strategic Domain Design
+
+# Purpose
+
+Domain Driven Design is the foundation of the AI Sales Employee Platform.
+
+Every feature starts with the business domain.
+
+Never start with
+
+Database
+
+↓
+
+API
+
+↓
+
+Entity
+
+↓
+
+Controller
+
+Always start with
+
+Business Problem
+
+↓
+
+Business Capability
+
+↓
+
+Domain
+
+↓
+
+Bounded Context
+
+↓
+
+Aggregate
+
+↓
+
+Implementation
+
+------------------------------------------------------------------------------
+
+# DDD Philosophy
+
+The software model must represent the business.
+
+Business language drives
+
+Architecture
+
+Database
+
+APIs
+
+Events
+
+AI
+
+Workflow
+
+Plugins
+
+Never allow technical implementation to define the domain.
+
+------------------------------------------------------------------------------
+
+# Ubiquitous Language
+
+Every bounded context owns its own language.
+
+Examples
+
+Lead Context
+
+Lead
+
+Lead Score
+
+Lead Status
+
+Lead Source
+
+Lead Qualification
+
+Customer Context
+
+Customer
+
+Prospect
+
+Buyer
+
+Seller
+
+Conversation Context
+
+Conversation
+
+Intent
+
+Message
+
+Summary
+
+Workflow Context
+
+Workflow
+
+Step
+
+Transition
+
+Compensation
+
+AI Context
+
+Prompt
+
+Embedding
+
+Recommendation
+
+Knowledge Base
+
+Token Usage
+
+Platform Core must never redefine another context's language.
+
+------------------------------------------------------------------------------
+
+# Domain Classification
+
+The platform consists of
+
+Core Domain
+
+Supporting Domains
+
+Generic Domains
+
+Platform Domains
+
+Industry Domains
+
+Capability Domains
+
+------------------------------------------------------------------------------
+
+# Core Domain
+
+Core Domain provides competitive advantage.
+
+Examples
+
+AI Lead Qualification
+
+AI Sales Automation
+
+Lead Conversion Intelligence
+
+Conversation Intelligence
+
+Workflow Automation
+
+Recommendation Engine
+
+Property Matching
+
+These domains receive the highest design attention.
+
+------------------------------------------------------------------------------
+
+# Supporting Domains
+
+Examples
+
+Billing
+
+Reporting
+
+Notification
+
+Audit
+
+Media
+
+Search
+
+Configuration
+
+Authentication
+
+These support the Core Domain but are not differentiators.
+
+------------------------------------------------------------------------------
+
+# Generic Domains
+
+Examples
+
+Logging
+
+Monitoring
+
+Security
+
+Scheduling
+
+Caching
+
+Infrastructure
+
+Reuse existing solutions whenever possible.
+
+------------------------------------------------------------------------------
+
+# Platform Domains
+
+Platform Core owns
+
+Authentication
+
+Authorization
+
+Tenant
+
+Users
+
+Workflow Engine
+
+AI Engine
+
+Notification Engine
+
+Media Engine
+
+Billing Framework
+
+Plugin Registry
+
+Configuration
+
+Platform domains remain industry independent.
+
+------------------------------------------------------------------------------
+
+# Industry Domains
+
+Industry Domains belong inside plugins.
+
+Examples
+
+Real Estate
+
+↓
+
+Property
+
+Builder
+
+Project
+
+Site Visit
+
+Education
+
+↓
+
+Student
+
+Course
+
+Admission
+
+Healthcare
+
+↓
+
+Patient
+
+Doctor
+
+Prescription
+
+Insurance
+
+↓
+
+Policy
+
+Claim
+
+Premium
+
+Never place industry concepts inside Platform Core.
+
+------------------------------------------------------------------------------
+
+# Capability Domains
+
+Capability Plugins provide reusable capabilities.
+
+Examples
+
+WhatsApp
+
+Voice AI
+
+Email
+
+SMS
+
+Calendar
+
+Maps
+
+Payment
+
+OCR
+
+CRM
+
+Capability plugins are reusable across industries.
+
+------------------------------------------------------------------------------
+
+# Business Capability Mapping
+
+Every feature maps to exactly one business capability.
+
+Business Capability
+
+↓
+
+Bounded Context
+
+↓
+
+Microservice
+
+↓
+
+Aggregate
+
+↓
+
+Database
+
+↓
+
+Events
+
+↓
+
+API
+
+Never create capabilities without ownership.
+
+------------------------------------------------------------------------------
+
+# Bounded Context
+
+Every bounded context owns
+
+Business Language
+
+Business Rules
+
+Aggregates
+
+Repositories
+
+Events
+
+Persistence
+
+APIs
+
+Validation
+
+AI Prompts
+
+Workflow Participation
+
+Search Model
+
+Bounded contexts never share ownership.
+
+------------------------------------------------------------------------------
+
+# Context Ownership
+
+Examples
+
+Lead Context
+
+↓
+
+Lead Service
+
+Customer Context
+
+↓
+
+Customer Service
+
+Conversation Context
+
+↓
+
+Conversation Service
+
+Workflow Context
+
+↓
+
+Workflow Service
+
+AI Context
+
+↓
+
+AI Service
+
+Billing Context
+
+↓
+
+Billing Service
+
+Search Context
+
+↓
+
+Search Service
+
+Media Context
+
+↓
+
+Media Service
+
+Notification Context
+
+↓
+
+Notification Service
+
+Ownership is exclusive.
+
+------------------------------------------------------------------------------
+
+# Context Independence
+
+Bounded Contexts communicate through
+
+REST
+
+Events
+
+SDKs
+
+Contracts
+
+Never
+
+Repositories
+
+Entities
+
+Database Tables
+
+Foreign Keys
+
+------------------------------------------------------------------------------
+
+# Context Maps
+
+Relationships between bounded contexts
+
+Customer/Supplier
+
+Conformist
+
+Published Language
+
+Open Host Service
+
+Anti-Corruption Layer
+
+Choose relationships intentionally.
+
+------------------------------------------------------------------------------
+
+# Anti-Corruption Layer
+
+Every external system
+
+Must translate
+
+External Model
+
+↓
+
+Internal Domain
+
+Examples
+
+Meta
+
+Google
+
+WhatsApp
+
+Payment Gateway
+
+CRM
+
+Never allow external DTOs into the domain model.
+
+------------------------------------------------------------------------------
+
+# Domain Ownership
+
+Every business concept has one owner.
+
+Examples
+
+Lead
+
+↓
+
+Lead Context
+
+Customer
+
+↓
+
+Customer Context
+
+Conversation
+
+↓
+
+Conversation Context
+
+Workflow
+
+↓
+
+Workflow Context
+
+Prompt
+
+↓
+
+AI Context
+
+Media
+
+↓
+
+Media Context
+
+Never duplicate ownership.
+
+------------------------------------------------------------------------------
+
+# Repository Intelligence
+
+Before creating any Domain Model ask
+
+Does it already exist?
+
+Which bounded context owns it?
+
+Is this Platform Core?
+
+Is this Industry Plugin?
+
+Is this Capability Plugin?
+
+Can an existing Aggregate evolve?
+
+Can an existing Context own it?
+
+Never create duplicate domain models.
+
+------------------------------------------------------------------------------
+
+# Plugin Aware DDD
+
+Platform Core
+
+Never owns
+
+Property
+
+Vehicle
+
+Student
+
+Patient
+
+Insurance Policy
+
+These belong to Industry Plugins.
+
+Platform Core owns reusable business capabilities only.
+
+------------------------------------------------------------------------------
+
+# Multi-Tenant Domain
+
+Every Aggregate belongs to one tenant.
+
+Every Event belongs to one tenant.
+
+Every Workflow belongs to one tenant.
+
+Every AI Recommendation belongs to one tenant.
+
+Tenant isolation is a domain invariant.
+
+------------------------------------------------------------------------------
+
+# AI Aware Domain
+
+AI
+
+Never owns business decisions.
+
+AI
+
+Recommends
+
+↓
+
+Aggregate
+
+Validates
+
+↓
+
+Business Decision
+
+AI cannot bypass domain rules.
+
+------------------------------------------------------------------------------
+
+# Architecture Decision Flow
+
+Business Goal
+
+↓
+
+Business Capability
+
+↓
+
+Bounded Context
+
+↓
+
+Aggregate
+
+↓
+
+Entity
+
+↓
+
+Value Object
+
+↓
+
+Repository
+
+↓
+
+Events
+
+↓
+
+Persistence
+
+↓
+
+Implementation
+
+Never reverse this order.
+
+------------------------------------------------------------------------------
+
+# Strategic Review Checklist
+
+Before implementation verify
+
+✓ Business capability identified
+
+✓ Ubiquitous language defined
+
+✓ Correct bounded context
+
+✓ Correct service owner
+
+✓ Plugin ownership verified
+
+✓ Context independence maintained
+
+✓ Anti-Corruption Layer required?
+
+✓ AI ownership verified
+
+✓ Tenant ownership verified
+
+✓ Repository searched for existing models
+
+------------------------------------------------------------------------------
+
+# Decision Tree
+
+Before generating any Domain Model ask
+
+1. Which business capability owns this?
+
+2. Which bounded context owns it?
+
+3. Which service owns it?
+
+4. Is this Platform Core?
+
+5. Is this Industry Plugin?
+
+6. Is this Capability Plugin?
+
+7. Does the model already exist?
+
+8. Can an existing Aggregate evolve?
+
+9. Does this violate DDD boundaries?
+
+10. Is ownership unambiguous?
+
+If any answer is unclear
+
+STOP
+
+Resolve domain ownership before implementation.
+
+# Rule 02 - Enterprise Domain Driven Design v2
+# Part 2 - Tactical Domain Design
+
+# Tactical DDD Philosophy
+
+Tactical DDD transforms business models into executable software.
+
+Every implementation must preserve
+
+- Business Consistency
+- Domain Integrity
+- Aggregate Boundaries
+- Invariants
+- Repository Ownership
+
+Never model the database.
+
+Model the business.
+
+------------------------------------------------------------------------------
+
+# Aggregate
+
+Aggregate is the consistency boundary.
+
+Every Aggregate
+
+Owns
+
+Business Rules
+
+State Changes
+
+Invariants
+
+Domain Events
+
+Aggregate Root
+
+Persistence
+
+Aggregate protects the business.
+
+Never bypass the Aggregate.
+
+------------------------------------------------------------------------------
+
+# Aggregate Root
+
+Only the Aggregate Root
+
+May
+
+Modify State
+
+Publish Domain Events
+
+Enforce Business Rules
+
+Coordinate Child Entities
+
+External services communicate only with the Aggregate Root.
+
+Never modify child entities directly.
+
+------------------------------------------------------------------------------
+
+# Aggregate Lifecycle
+
+Every Aggregate defines
+
+Created
+
+↓
+
+Validated
+
+↓
+
+Active
+
+↓
+
+Suspended
+
+↓
+
+Archived
+
+↓
+
+Deleted
+
+State transitions are explicit.
+
+Never allow invalid transitions.
+
+------------------------------------------------------------------------------
+
+# Aggregate Size
+
+Aggregates should remain
+
+Small
+
+Focused
+
+Transactional
+
+Never create large object graphs.
+
+One transaction
+
+One Aggregate
+
+Cross Aggregate consistency
+
+↓
+
+Events
+
+↓
+
+Saga
+
+------------------------------------------------------------------------------
+
+# Aggregate Ownership
+
+Every Aggregate belongs to
+
+Exactly One
+
+Bounded Context
+
+Exactly One
+
+Microservice
+
+Exactly One
+
+Database
+
+Exactly One
+
+Repository
+
+Exactly One
+
+Owner
+
+Never share Aggregates.
+
+------------------------------------------------------------------------------
+
+# Aggregate Invariants
+
+Every Aggregate protects
+
+Business Rules
+
+Examples
+
+Lead
+
+Cannot become Qualified
+
+Without Contact Information
+
+Appointment
+
+Cannot be Scheduled
+
+Without Customer Confirmation
+
+Invoice
+
+Cannot be Paid Twice
+
+Business invariants never exist inside Controllers.
+
+------------------------------------------------------------------------------
+
+# Entity
+
+Entities possess
+
+Identity
+
+Lifecycle
+
+Business Behavior
+
+Entities are not DTOs.
+
+Entities are not database records.
+
+Entities model business concepts.
+
+------------------------------------------------------------------------------
+
+# Entity Identity
+
+Entity identity
+
+Never changes.
+
+Examples
+
+LeadId
+
+CustomerId
+
+PropertyId
+
+AppointmentId
+
+WorkflowId
+
+Use surrogate identifiers internally.
+
+Never use mutable business attributes as identity.
+
+------------------------------------------------------------------------------
+
+# Value Object
+
+Value Objects
+
+Have
+
+No Identity
+
+Immutable State
+
+Business Meaning
+
+Examples
+
+Money
+
+Address
+
+PhoneNumber
+
+Email
+
+GeoLocation
+
+DateRange
+
+LeadScore
+
+Use Value Objects whenever identity is unnecessary.
+
+------------------------------------------------------------------------------
+
+# Value Object Rules
+
+Value Objects
+
+Must be
+
+Immutable
+
+Validated
+
+Self-Contained
+
+Equality Based
+
+Never expose setters.
+
+------------------------------------------------------------------------------
+
+# Domain Services
+
+Domain Services
+
+Contain business behavior
+
+That belongs to
+
+Multiple Aggregates
+
+Examples
+
+LeadMatchingPolicy
+
+PricingPolicy
+
+AssignmentPolicy
+
+EligibilityPolicy
+
+NotificationPolicy
+
+Never place orchestration inside Domain Services.
+
+------------------------------------------------------------------------------
+
+# Domain Policies
+
+Policies react to Domain Events.
+
+Example
+
+LeadQualified
+
+↓
+
+AutoAssignmentPolicy
+
+↓
+
+Assign Sales Agent
+
+Policies encapsulate business decisions.
+
+------------------------------------------------------------------------------
+
+# Specifications
+
+Use Specifications for
+
+Complex Business Rules
+
+Examples
+
+QualifiedLeadSpecification
+
+EligibleCustomerSpecification
+
+PropertyMatchSpecification
+
+LoanEligibilitySpecification
+
+Avoid large if-else chains.
+
+------------------------------------------------------------------------------
+
+# Repositories
+
+Each Aggregate
+
+Has
+
+One Repository
+
+Repository responsibilities
+
+Persist
+
+Load
+
+Delete
+
+Search Aggregate
+
+Repositories never contain business rules.
+
+------------------------------------------------------------------------------
+
+# Repository Rules
+
+Repository methods
+
+Return
+
+Aggregates
+
+Optional
+
+Collections
+
+Never expose database implementation details.
+
+Never call another service's repository.
+
+------------------------------------------------------------------------------
+
+# Domain Events
+
+Domain Events
+
+Represent business facts.
+
+Examples
+
+LeadCreated
+
+LeadQualified
+
+CustomerRegistered
+
+AppointmentScheduled
+
+ConversationStarted
+
+Events describe
+
+Something that happened.
+
+------------------------------------------------------------------------------
+
+# Integration Events
+
+Integration Events
+
+Cross service boundaries.
+
+Examples
+
+LeadQualifiedIntegrationEvent
+
+AppointmentBookedIntegrationEvent
+
+PaymentCompletedIntegrationEvent
+
+Never expose internal Domain Events externally.
+
+------------------------------------------------------------------------------
+
+# Event Versioning
+
+Every Integration Event includes
+
+eventId
+
+eventVersion
+
+occurredAt
+
+tenantId
+
+aggregateId
+
+correlationId
+
+Never introduce breaking event changes.
+
+------------------------------------------------------------------------------
+
+# Aggregate Communication
+
+Aggregates
+
+Never call
+
+Other Aggregates
+
+Directly
+
+Use
+
+Domain Events
+
+Application Services
+
+Saga
+
+Workflow
+
+------------------------------------------------------------------------------
+
+# CQRS
+
+Separate
+
+Command Model
+
+Read Model
+
+Commands
+
+Modify Aggregates
+
+Queries
+
+Read Projections
+
+Never update Aggregates from Read Models.
+
+------------------------------------------------------------------------------
+
+# Read Models
+
+Read Models
+
+May contain
+
+Denormalized Data
+
+Search Fields
+
+Analytics
+
+Dashboard Views
+
+Read Models are disposable.
+
+Aggregates remain the source of truth.
+
+------------------------------------------------------------------------------
+
+# Domain Validation
+
+Business validation belongs inside
+
+Aggregates
+
+Value Objects
+
+Specifications
+
+Never inside Controllers.
+
+------------------------------------------------------------------------------
+
+# Transactions
+
+One transaction
+
+One Aggregate
+
+Cross Aggregate consistency
+
+↓
+
+Eventually Consistent
+
+↓
+
+Events
+
+↓
+
+Saga
+
+Never use distributed transactions.
+
+------------------------------------------------------------------------------
+
+# Multi-Tenant Domain
+
+Every Aggregate contains
+
+tenantId
+
+Business invariants
+
+Are tenant scoped.
+
+Example
+
+Email uniqueness
+
+Within Tenant
+
+Not globally.
+
+------------------------------------------------------------------------------
+
+# AI-Aware Domain
+
+AI may
+
+Recommend
+
+Summarize
+
+Extract
+
+Classify
+
+Predict
+
+AI never
+
+Changes Aggregate State
+
+Aggregate validates AI recommendations before applying them.
+
+------------------------------------------------------------------------------
+
+# Workflow Integration
+
+Workflow coordinates
+
+Aggregate execution.
+
+Workflow
+
+Never modifies Aggregate internals.
+
+Aggregates remain autonomous.
+
+------------------------------------------------------------------------------
+
+# Plugin-Aware DDD
+
+Platform Aggregates
+
+Remain reusable.
+
+Industry Aggregates
+
+Remain inside plugins.
+
+Capability Plugins
+
+Never own business Aggregates.
+
+------------------------------------------------------------------------------
+
+# Repository Intelligence
+
+Before creating
+
+Aggregate
+
+Entity
+
+Value Object
+
+Repository
+
+Specification
+
+Domain Service
+
+Search the repository.
+
+If an equivalent model exists
+
+Extend
+
+Rather than duplicate.
+
+------------------------------------------------------------------------------
+
+# Tactical Review Checklist
+
+Before implementation verify
+
+✓ Aggregate identified
+
+✓ Aggregate Root defined
+
+✓ Invariants documented
+
+✓ Lifecycle defined
+
+✓ Repository owned
+
+✓ Domain Events defined
+
+✓ Integration Events separated
+
+✓ Specifications required?
+
+✓ AI validation included
+
+✓ Tenant isolation preserved
+
+✓ Repository searched
+
+------------------------------------------------------------------------------
+
+# Decision Tree
+
+Before creating a Domain Model ask
+
+1. Is this an Aggregate?
+
+2. Is identity required?
+
+3. Is a Value Object sufficient?
+
+4. Is a Domain Service required?
+
+5. Is a Specification cleaner?
+
+6. Which Aggregate owns this?
+
+7. Does it publish Domain Events?
+
+8. Does it require Integration Events?
+
+9. Is tenant isolation preserved?
+
+10. Does an equivalent model already exist?
+
+If any answer is unclear
+
+STOP
+
+Refine the domain model before implementation.
+
+# Rule 02 - Enterprise Domain Driven Design v2
+# Part 3 - AI Native Domain Design
+
+# AI Native Philosophy
+
+Artificial Intelligence is a domain capability.
+
+AI augments business decisions.
+
+AI never owns business decisions.
+
+Business Aggregates remain the source of truth.
+
+------------------------------------------------------------------------------
+
+# AI Responsibility
+
+AI owns
+
+Prompt Execution
+
+Recommendations
+
+Predictions
+
+Classification
+
+Extraction
+
+Summarization
+
+Semantic Search
+
+Embeddings
+
+Knowledge Retrieval
+
+Tool Calling
+
+AI never owns
+
+Business Rules
+
+Aggregate State
+
+Transactions
+
+Persistence
+
+Billing
+
+Workflow State
+
+Security Decisions
+
+------------------------------------------------------------------------------
+
+# AI Decision Model
+
+Correct
+
+Business Event
+
+↓
+
+AI Recommendation
+
+↓
+
+Aggregate Validation
+
+↓
+
+Business Rule Validation
+
+↓
+
+Decision
+
+↓
+
+Domain Event
+
+Incorrect
+
+Business Event
+
+↓
+
+AI
+
+↓
+
+Database Update
+
+Never allow AI to modify domain state directly.
+
+------------------------------------------------------------------------------
+
+# AI Service Ownership
+
+AI Service owns
+
+Prompt Registry
+
+Prompt Templates
+
+Prompt Versioning
+
+Prompt Execution
+
+Provider Routing
+
+Model Selection
+
+Token Tracking
+
+Embedding Generation
+
+Vector Search
+
+Knowledge Base
+
+AI Evaluation
+
+AI Cost
+
+Prompt Cache
+
+Provider Failover
+
+Business Services
+
+Never communicate directly with LLM Providers.
+
+------------------------------------------------------------------------------
+
+# Prompt Ownership
+
+Every Prompt
+
+Has
+
+PromptId
+
+Owner
+
+Version
+
+Description
+
+Model
+
+Temperature
+
+CreatedBy
+
+Status
+
+Prompt History
+
+Prompts belong to AI Service.
+
+Never hardcode prompts inside business services.
+
+------------------------------------------------------------------------------
+
+# Prompt Lifecycle
+
+Draft
+
+↓
+
+Review
+
+↓
+
+Approved
+
+↓
+
+Published
+
+↓
+
+Deprecated
+
+↓
+
+Archived
+
+Every prompt is versioned.
+
+Never overwrite production prompts.
+
+------------------------------------------------------------------------------
+
+# AI Provider Abstraction
+
+Supported Providers
+
+OpenAI
+
+Gemini
+
+Azure OpenAI
+
+Claude
+
+Future Models
+
+Business Services communicate only through AI Service.
+
+Never couple business logic to a specific provider.
+
+------------------------------------------------------------------------------
+
+# Retrieval Augmented Generation
+
+RAG Pipeline
+
+Document
+
+↓
+
+Apache Tika
+
+↓
+
+Chunking
+
+↓
+
+Embedding
+
+↓
+
+pgvector
+
+↓
+
+Semantic Search
+
+↓
+
+Prompt
+
+↓
+
+LLM
+
+↓
+
+Validated Response
+
+Every stage is owned by AI Service.
+
+------------------------------------------------------------------------------
+
+# Knowledge Ownership
+
+Knowledge belongs to
+
+Exactly One Tenant
+
+Exactly One Domain
+
+Exactly One Plugin
+
+Never build a global knowledge base.
+
+------------------------------------------------------------------------------
+
+# Embedding Ownership
+
+Embeddings belong to
+
+AI Service
+
+Business Services
+
+Never generate embeddings.
+
+Embeddings are infrastructure artifacts.
+
+------------------------------------------------------------------------------
+
+# Vector Search
+
+Every search
+
+Must filter by
+
+tenantId
+
+pluginId
+
+documentType
+
+permissions
+
+Never perform cross-tenant vector search.
+
+------------------------------------------------------------------------------
+
+# Chunking Policy
+
+Chunk Size
+
+500-1000 Tokens
+
+Overlap
+
+50-100 Tokens
+
+Preserve document structure.
+
+Avoid arbitrary splitting.
+
+------------------------------------------------------------------------------
+
+# AI Recommendations
+
+AI may recommend
+
+Lead Qualification
+
+Lead Score
+
+Property Match
+
+Conversation Summary
+
+Intent
+
+Follow-up Suggestion
+
+Risk Score
+
+Appointment Recommendation
+
+Business Aggregates validate every recommendation.
+
+------------------------------------------------------------------------------
+
+# AI Confidence
+
+Every recommendation includes
+
+Confidence
+
+Reasoning Summary
+
+Model
+
+Prompt Version
+
+Execution Time
+
+Business Services decide acceptable confidence thresholds.
+
+------------------------------------------------------------------------------
+
+# Human In The Loop
+
+Low Confidence
+
+↓
+
+Human Review
+
+↓
+
+Approval
+
+↓
+
+Aggregate Update
+
+AI never bypasses mandatory human approvals.
+
+------------------------------------------------------------------------------
+
+# Tool Calling
+
+Approved Tools
+
+Customer Search
+
+Property Search
+
+Knowledge Search
+
+Calendar
+
+Workflow
+
+Notification
+
+Never expose unrestricted tool execution.
+
+Every tool is permission checked.
+
+------------------------------------------------------------------------------
+
+# AI Workflow
+
+AI participates
+
+Inside Workflows
+
+Example
+
+Lead Created
+
+↓
+
+AI Qualification
+
+↓
+
+Business Validation
+
+↓
+
+Property Matching
+
+↓
+
+AI Recommendation
+
+↓
+
+Workflow Decision
+
+↓
+
+Appointment
+
+Workflow coordinates.
+
+AI advises.
+
+------------------------------------------------------------------------------
+
+# AI Domain Events
+
+Examples
+
+PromptExecuted
+
+RecommendationGenerated
+
+EmbeddingCreated
+
+KnowledgeIndexed
+
+VectorSearchCompleted
+
+PromptFailed
+
+ProviderFallbackActivated
+
+Domain events describe AI activities.
+
+------------------------------------------------------------------------------
+
+# AI Validation
+
+Validate
+
+JSON Schema
+
+Required Fields
+
+Confidence
+
+Business Rules
+
+Tenant Context
+
+Permission
+
+Never trust raw LLM responses.
+
+------------------------------------------------------------------------------
+
+# Hallucination Protection
+
+AI responses
+
+Never become domain truth.
+
+Always validate
+
+IDs
+
+Dates
+
+Amounts
+
+Business Rules
+
+References
+
+Hallucinated output is rejected.
+
+------------------------------------------------------------------------------
+
+# AI Cost Governance
+
+Track
+
+Prompt Tokens
+
+Completion Tokens
+
+Embedding Tokens
+
+Requests
+
+Average Cost
+
+Provider Cost
+
+Cache Hit Ratio
+
+AI Cost is a domain metric.
+
+------------------------------------------------------------------------------
+
+# AI Observability
+
+Track
+
+Prompt Version
+
+Model
+
+Provider
+
+Latency
+
+Retries
+
+Fallback
+
+Cost
+
+Token Usage
+
+Errors
+
+Confidence
+
+Every AI execution is observable.
+
+------------------------------------------------------------------------------
+
+# Multi Tenant AI
+
+Every AI Request
+
+Contains
+
+tenantId
+
+pluginId
+
+correlationId
+
+userId
+
+Knowledge retrieval is tenant isolated.
+
+Never expose another tenant's knowledge.
+
+------------------------------------------------------------------------------
+
+# Plugin Aware AI
+
+Industry Plugins
+
+May contribute
+
+Prompt Templates
+
+Knowledge Sources
+
+AI Tools
+
+Embeddings
+
+Recommendation Policies
+
+Platform AI executes them.
+
+------------------------------------------------------------------------------
+
+# Capability Plugin AI
+
+Capability Plugins
+
+May expose
+
+OCR
+
+Speech To Text
+
+Text To Speech
+
+Translation
+
+Vision
+
+These remain reusable across industries.
+
+------------------------------------------------------------------------------
+
+# AI Security
+
+Never expose
+
+System Prompts
+
+API Keys
+
+Provider Credentials
+
+Private Documents
+
+Tenant Data
+
+Internal Instructions
+
+Prompt Injection must be detected.
+
+------------------------------------------------------------------------------
+
+# AI Repository Intelligence
+
+Before creating
+
+Prompt
+
+Embedding
+
+Knowledge Source
+
+AI Tool
+
+Search the repository.
+
+Reuse existing assets whenever possible.
+
+------------------------------------------------------------------------------
+
+# AI Review Checklist
+
+Before implementation verify
+
+✓ Prompt Versioned
+
+✓ Provider Abstracted
+
+✓ AI Service Owns Execution
+
+✓ Aggregate Validates Output
+
+✓ Tenant Isolation
+
+✓ Confidence Handling
+
+✓ Human Approval
+
+✓ Observability
+
+✓ Cost Tracking
+
+✓ Repository Search Completed
+
+------------------------------------------------------------------------------
+
+# Decision Tree
+
+Before adding AI ask
+
+1. Can deterministic logic solve this?
+
+2. Does AI add business value?
+
+3. Which Aggregate validates output?
+
+4. Is RAG required?
+
+5. Is Prompt Versioned?
+
+6. Is Knowledge Tenant Scoped?
+
+7. Is AI Observable?
+
+8. Is Cost Acceptable?
+
+9. Is Human Approval Needed?
+
+10. Can Repository Assets Be Reused?
+
+If any answer is NO
+
+STOP
+
+Redesign before introducing AI.
+
+# Rule 02 - Enterprise Domain Driven Design v2
+# Part 4 - Domain Governance & Repository Intelligence
+
+# Domain Governance Philosophy
+
+The Domain Model is the heart of the platform.
+
+Every architectural decision must preserve
+
+- Business Meaning
+- Domain Integrity
+- Aggregate Consistency
+- Bounded Context Independence
+- Repository Governance
+
+The domain evolves continuously.
+
+Architecture must evolve without becoming inconsistent.
+
+------------------------------------------------------------------------------
+
+# Repository Intelligence
+
+Before creating
+
+Aggregate
+
+Entity
+
+Value Object
+
+Repository
+
+Specification
+
+Policy
+
+Factory
+
+Domain Event
+
+Integration Event
+
+Search the repository.
+
+Questions
+
+Does this already exist?
+
+Can it be extended?
+
+Can it be reused?
+
+Would a duplicate be created?
+
+Never create duplicate domain models.
+
+------------------------------------------------------------------------------
+
+# Aggregate Review
+
+Before creating an Aggregate ask
+
+Is this truly a consistency boundary?
+
+Does it own business rules?
+
+Can invariants be enforced?
+
+Can it remain small?
+
+Does it belong to one Bounded Context?
+
+Can it evolve independently?
+
+If the answer is NO
+
+Redesign the Aggregate.
+
+------------------------------------------------------------------------------
+
+# Aggregate Ownership
+
+Every Aggregate owns
+
+Business Rules
+
+State
+
+Lifecycle
+
+Domain Events
+
+Repository
+
+Persistence
+
+Validation
+
+No Aggregate owns another Aggregate.
+
+Cross Aggregate communication
+
+↓
+
+Events
+
+↓
+
+Saga
+
+------------------------------------------------------------------------------
+
+# Aggregate Evolution
+
+Aggregates evolve by
+
+Adding behavior
+
+Adding invariants
+
+Publishing new events
+
+Versioning APIs
+
+Never evolve by exposing internal state.
+
+------------------------------------------------------------------------------
+
+# Context Evolution
+
+Bounded Contexts evolve independently.
+
+Changes inside one context
+
+Must not require
+
+Database changes
+
+Repository changes
+
+Entity changes
+
+Inside another context.
+
+Maintain loose coupling.
+
+------------------------------------------------------------------------------
+
+# Domain Evolution
+
+Business rules change.
+
+Model the change.
+
+Never bypass the domain model.
+
+When requirements evolve
+
+Refactor the Aggregate
+
+Not the Controller.
+
+------------------------------------------------------------------------------
+
+# Domain Policies
+
+Policies represent business decisions.
+
+Policies
+
+React to Domain Events.
+
+Examples
+
+LeadQualified
+
+↓
+
+AssignmentPolicy
+
+↓
+
+Assign Sales Agent
+
+CustomerRegistered
+
+↓
+
+WelcomePolicy
+
+↓
+
+Create Onboarding Workflow
+
+Policies remain inside the owning Bounded Context.
+
+------------------------------------------------------------------------------
+
+# Factories
+
+Factories create complex Aggregates.
+
+Factories
+
+Validate
+
+Initialize
+
+Enforce Invariants
+
+Factories never contain business workflows.
+
+------------------------------------------------------------------------------
+
+# Specifications
+
+Specifications represent reusable business rules.
+
+Examples
+
+QualifiedLeadSpecification
+
+EligibleCustomerSpecification
+
+AvailablePropertySpecification
+
+LoanEligibleSpecification
+
+Avoid duplicate validation logic.
+
+------------------------------------------------------------------------------
+
+# Event Evolution
+
+Every Integration Event
+
+Has
+
+Version
+
+Owner
+
+Schema
+
+Compatibility
+
+Deprecation Strategy
+
+Migration Strategy
+
+Events evolve without breaking consumers.
+
+------------------------------------------------------------------------------
+
+# Published Language
+
+Every Bounded Context exposes
+
+REST DTO
+
+Events
+
+SDK
+
+Documentation
+
+Never expose
+
+Entities
+
+Repositories
+
+Internal Models
+
+Internal Exceptions
+
+------------------------------------------------------------------------------
+
+# Context Mapping
+
+Relationships
+
+Customer/Supplier
+
+Published Language
+
+Conformist
+
+Partnership
+
+Open Host Service
+
+Anti-Corruption Layer
+
+Choose relationships intentionally.
+
+Never allow accidental coupling.
+
+------------------------------------------------------------------------------
+
+# Plugin Governance
+
+Industry Plugins
+
+Own Industry Domains.
+
+Capability Plugins
+
+Own Reusable Capabilities.
+
+Platform Core
+
+Owns Platform Domains.
+
+Never mix ownership.
+
+------------------------------------------------------------------------------
+
+# AI Governance
+
+AI belongs to AI Context.
+
+AI never owns
+
+Lead
+
+Customer
+
+Workflow
+
+Billing
+
+Media
+
+Business Aggregates validate AI output.
+
+------------------------------------------------------------------------------
+
+# Workflow Governance
+
+Workflow coordinates.
+
+Aggregates decide.
+
+Business Services execute.
+
+Workflow never owns
+
+Business Rules
+
+Repositories
+
+Entities
+
+------------------------------------------------------------------------------
+
+# Repository Governance
+
+Allowed
+
+One Aggregate
+
+↓
+
+One Repository
+
+↓
+
+One Database
+
+↓
+
+One Service
+
+Forbidden
+
+Shared Repositories
+
+Shared Aggregates
+
+Cross Service Repositories
+
+Cross Service Entities
+
+------------------------------------------------------------------------------
+
+# Naming Standards
+
+Aggregate
+
+Lead
+
+Customer
+
+Conversation
+
+Appointment
+
+Value Object
+
+Money
+
+Address
+
+LeadScore
+
+Email
+
+PhoneNumber
+
+Specification
+
+QualifiedLeadSpecification
+
+Repository
+
+LeadRepository
+
+Policy
+
+AssignmentPolicy
+
+Factory
+
+LeadFactory
+
+Keep naming consistent.
+
+------------------------------------------------------------------------------
+
+# Architecture Review
+
+Before approving a feature answer
+
+Who owns this Aggregate?
+
+Who owns the Repository?
+
+Which Context owns it?
+
+Which Service owns it?
+
+Which Plugin owns it?
+
+Does it already exist?
+
+Can it evolve?
+
+Will it introduce coupling?
+
+Architecture review is mandatory.
+
+------------------------------------------------------------------------------
+
+# Anti Patterns
+
+Reject
+
+Anemic Domain Model
+
+God Aggregate
+
+Shared Entity
+
+Shared Repository
+
+Generic Business Service
+
+Cross Service Database Access
+
+Business Logic in Controllers
+
+Business Logic in DTOs
+
+Business Logic in Repositories
+
+Aggregate bypass
+
+AI directly modifying Aggregates
+
+Plugin leaking into Platform Core
+
+------------------------------------------------------------------------------
+
+# Technical Debt
+
+Reject
+
+Temporary Domain Models
+
+Duplicate Specifications
+
+Duplicate Policies
+
+Duplicate Aggregates
+
+Unused Entities
+
+Unused Events
+
+Anonymous TODOs
+
+Every exception must be documented.
+
+------------------------------------------------------------------------------
+
+# Domain Documentation
+
+Every Bounded Context contains
+
+README
+
+Purpose
+
+Owner
+
+Aggregates
+
+Events
+
+Repositories
+
+APIs
+
+Dependencies
+
+External Integrations
+
+Plugin Dependencies
+
+Keep documentation synchronized with implementation.
+
+------------------------------------------------------------------------------
+
+# DDD Review Checklist
+
+Before implementation verify
+
+✓ Business Capability identified
+
+✓ Bounded Context identified
+
+✓ Aggregate defined
+
+✓ Aggregate Root defined
+
+✓ Invariants documented
+
+✓ Value Objects used
+
+✓ Specifications identified
+
+✓ Policies identified
+
+✓ Domain Events defined
+
+✓ Integration Events defined
+
+✓ AI validation included
+
+✓ Workflow boundaries respected
+
+✓ Tenant isolation verified
+
+✓ Plugin ownership verified
+
+✓ Repository searched
+
+✓ No duplicate models
+
+------------------------------------------------------------------------------
+
+# Architecture Agent Decision Tree
+
+Before generating any domain code ask
+
+1. Which Business Capability owns this?
+
+2. Which Bounded Context owns this?
+
+3. Which Aggregate owns it?
+
+4. Does the Aggregate already exist?
+
+5. Is this Platform Core?
+
+6. Is this an Industry Plugin?
+
+7. Is this a Capability Plugin?
+
+8. Which Repository owns it?
+
+9. Which Domain Events are published?
+
+10. Which Integration Events are published?
+
+11. Which Workflow consumes them?
+
+12. Does AI participate?
+
+13. Is tenant isolation preserved?
+
+14. Does Repository Intelligence suggest reuse?
+
+15. Will this introduce architectural duplication?
+
+If any answer is unclear
+
+STOP
+
+Perform architectural review before implementation.
+
+------------------------------------------------------------------------------
+
+# Final Principle
+
+Never generate
+
+Code First
+
+Database First
+
+API First
+
+Always generate
+
+Business Capability
+
+↓
+
+Bounded Context
+
+↓
+
+Aggregate
+
+↓
+
+Domain Model
+
+↓
+
+Events
+
+↓
+
+Repository
+
+↓
+
+Application Service
+
+↓
+
+API
+
+↓
+
+Infrastructure
+
+Business drives software.
+
+Software never drives the business.

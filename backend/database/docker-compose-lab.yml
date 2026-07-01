@@ -1,0 +1,34 @@
+# Lab database for monolith Flyway validation (PostgreSQL + pgvector)
+# Usage: docker compose -f database/docker-compose-lab.yml up -d
+
+services:
+  postgres-lab:
+    image: pgvector/pgvector:pg16
+    container_name: aisales-postgres-lab
+    environment:
+      POSTGRES_USER: aisales
+      POSTGRES_PASSWORD: aisales
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-lab-data:/var/lib/postgresql/data
+      - ./init-lab-databases.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aisales"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  flyway-monolith:
+    image: flyway/flyway:10
+    depends_on:
+      postgres-lab:
+        condition: service_healthy
+    volumes:
+      - ./migrations-monolith:/flyway/sql:ro
+    profiles:
+      - migrate
+
+volumes:
+  postgres-lab-data:

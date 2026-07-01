@@ -1,0 +1,40 @@
+# Local Postman / dev profile — no Eureka, Config Server, or Kafka required.
+# Run: mvnw spring-boot:run -pl services/identity-service -Dspring-boot.run.profiles=local
+
+spring:
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+  datasource:
+    url: jdbc:postgresql://localhost:5433/aisales_identity
+
+management:
+  tracing:
+    enabled: false
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+aisales:
+  events:
+    publisher: logging
+  notification:
+    enabled: true
+    base-url: http://localhost:8090
+    fallback-logging: true
+  auth:
+    verification-link-base-url: http://localhost:8081/api/v1/auth/verify-email
+
+logging:
+  level:
+    com.aisales.identity: INFO
+    org.springframework.cloud: WARN
+    com.netflix.discovery: WARN

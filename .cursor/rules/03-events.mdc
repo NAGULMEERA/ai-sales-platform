@@ -1,0 +1,2700 @@
+```md
+---
+description: Enterprise Event Governance Standards v2
+globs:
+  - "**/*.java"
+  - "**/*.kt"
+alwaysApply: true
+priority: 3
+---
+
+# Rule 03 - Enterprise Event Governance v2
+# Part 1 - Event Strategy
+
+# Purpose
+
+Events are first-class architectural citizens.
+
+Events communicate business facts.
+
+Events are not method calls.
+
+Events are immutable.
+
+Events enable
+
+- Loose Coupling
+- Scalability
+- Eventual Consistency
+- Workflow Automation
+- AI Orchestration
+- Plugin Extensibility
+- CQRS
+- Auditability
+
+Every event must represent a meaningful business occurrence.
+
+------------------------------------------------------------------------------
+
+# Event Philosophy
+
+Business Activity
+
+↓
+
+Business Fact
+
+↓
+
+Domain Event
+
+↓
+
+Integration Event
+
+↓
+
+Consumers
+
+↓
+
+Business Action
+
+Events describe
+
+"What Happened"
+
+Never
+
+"What Should Happen"
+
+------------------------------------------------------------------------------
+
+# Event Driven Architecture
+
+The platform is Event Driven.
+
+Services collaborate through
+
+REST
+
+↓
+
+Immediate Query
+
+Kafka
+
+↓
+
+Business Facts
+
+Workflow
+
+↓
+
+Long Running Coordination
+
+Saga
+
+↓
+
+Distributed Consistency
+
+Never use events as remote method calls.
+
+------------------------------------------------------------------------------
+
+# Event Principles
+
+Every event must be
+
+Immutable
+
+Business Meaningful
+
+Versioned
+
+Observable
+
+Tenant Aware
+
+Traceable
+
+Idempotent
+
+Documented
+
+Owned
+
+Events never become mutable state.
+
+------------------------------------------------------------------------------
+
+# Event Taxonomy
+
+Supported event categories
+
+Domain Events
+
+Integration Events
+
+Workflow Events
+
+AI Events
+
+Platform Events
+
+Audit Events
+
+Monitoring Events
+
+Plugin Events
+
+Capability Plugin Events
+
+Security Events
+
+System Events
+
+Every event belongs to exactly one category.
+
+------------------------------------------------------------------------------
+
+# Domain Events
+
+Domain Events
+
+Represent business facts inside one bounded context.
+
+Examples
+
+LeadCreated
+
+LeadQualified
+
+CustomerRegistered
+
+ConversationStarted
+
+AppointmentBooked
+
+InvoiceGenerated
+
+Domain Events
+
+Never leave their owning bounded context directly.
+
+------------------------------------------------------------------------------
+
+# Integration Events
+
+Integration Events
+
+Represent public contracts.
+
+Examples
+
+LeadQualifiedIntegrationEvent
+
+CustomerCreatedIntegrationEvent
+
+PaymentCompletedIntegrationEvent
+
+AppointmentConfirmedIntegrationEvent
+
+Integration Events
+
+Cross service boundaries.
+
+------------------------------------------------------------------------------
+
+# Workflow Events
+
+Workflow Events
+
+Represent workflow progression.
+
+Examples
+
+WorkflowStarted
+
+WorkflowPaused
+
+WorkflowResumed
+
+WorkflowTimedOut
+
+WorkflowCompleted
+
+WorkflowCompensated
+
+WorkflowFailed
+
+Workflow Events belong to Workflow Service.
+
+------------------------------------------------------------------------------
+
+# AI Events
+
+AI Events describe AI execution.
+
+Examples
+
+PromptExecuted
+
+PromptFailed
+
+RecommendationGenerated
+
+EmbeddingCreated
+
+VectorSearchCompleted
+
+KnowledgeIndexed
+
+ProviderSwitched
+
+AI Events belong to AI Service.
+
+------------------------------------------------------------------------------
+
+# Platform Events
+
+Platform Events describe platform capabilities.
+
+Examples
+
+TenantProvisioned
+
+UserCreated
+
+RoleAssigned
+
+PluginInstalled
+
+PluginEnabled
+
+ConfigurationChanged
+
+Platform Events belong to Platform Core.
+
+------------------------------------------------------------------------------
+
+# Audit Events
+
+Audit Events record sensitive activities.
+
+Examples
+
+LoginSucceeded
+
+PermissionGranted
+
+PermissionRevoked
+
+ConfigurationUpdated
+
+DataExported
+
+MediaDownloaded
+
+Audit Events are immutable.
+
+------------------------------------------------------------------------------
+
+# Monitoring Events
+
+Monitoring Events describe platform health.
+
+Examples
+
+ConsumerLagDetected
+
+DLQThresholdExceeded
+
+ServiceUnavailable
+
+MemoryThresholdExceeded
+
+CPUThresholdExceeded
+
+WorkflowBacklogDetected
+
+Monitoring Events never contain business data.
+
+------------------------------------------------------------------------------
+
+# Plugin Events
+
+Industry Plugins publish
+
+Industry specific events.
+
+Examples
+
+Real Estate
+
+PropertyListed
+
+PropertyReserved
+
+SiteVisitBooked
+
+Education
+
+StudentAdmitted
+
+CourseCompleted
+
+Healthcare
+
+PatientRegistered
+
+ConsultationCompleted
+
+Platform Core never owns plugin events.
+
+------------------------------------------------------------------------------
+
+# Capability Plugin Events
+
+Capability Plugins publish reusable events.
+
+Examples
+
+WhatsAppMessageDelivered
+
+VoiceCallCompleted
+
+CalendarEventCreated
+
+PaymentCaptured
+
+OCRCompleted
+
+EmailDelivered
+
+Capability Plugins remain reusable across industries.
+
+------------------------------------------------------------------------------
+
+# Event Ownership
+
+Every event has exactly
+
+One
+
+Publisher
+
+One
+
+Owner
+
+One
+
+Bounded Context
+
+One
+
+Aggregate
+
+One
+
+Topic
+
+One
+
+Schema
+
+One
+
+Lifecycle
+
+Ownership ambiguity is prohibited.
+
+------------------------------------------------------------------------------
+
+# Aggregate Ownership
+
+Aggregate
+
+↓
+
+Domain Event
+
+↓
+
+Application Service
+
+↓
+
+Integration Event
+
+↓
+
+Outbox
+
+↓
+
+Kafka
+
+Aggregate owns business meaning.
+
+Application Service owns publication.
+
+------------------------------------------------------------------------------
+
+# Event Naming
+
+Past tense
+
+Business language
+
+Examples
+
+LeadCreated
+
+LeadQualified
+
+CustomerRegistered
+
+ConversationEnded
+
+AppointmentCancelled
+
+Never
+
+CreateLead
+
+UpdateLead
+
+DoProcessing
+
+GenericEvent
+
+EntityChanged
+
+------------------------------------------------------------------------------
+
+# Repository Intelligence
+
+Before creating an event ask
+
+Does this event already exist?
+
+Can an existing event evolve?
+
+Which bounded context owns it?
+
+Which Aggregate owns it?
+
+Which plugin owns it?
+
+Which service publishes it?
+
+Never duplicate events.
+
+------------------------------------------------------------------------------
+
+# Event Decision Matrix
+
+Business State Changed
+
+↓
+
+Domain Event
+
+Need Cross Service Notification
+
+↓
+
+Integration Event
+
+Workflow Progress
+
+↓
+
+Workflow Event
+
+AI Activity
+
+↓
+
+AI Event
+
+Infrastructure Activity
+
+↓
+
+Monitoring Event
+
+Audit Requirement
+
+↓
+
+Audit Event
+
+Plugin Business
+
+↓
+
+Plugin Event
+
+Reusable Capability
+
+↓
+
+Capability Plugin Event
+
+------------------------------------------------------------------------------
+
+# Business Event Language
+
+Every event must answer
+
+What happened?
+
+Examples
+
+Lead Qualified
+
+Customer Registered
+
+Property Reserved
+
+Payment Completed
+
+Workflow Started
+
+Prompt Executed
+
+Never answer
+
+What should happen next?
+
+Consumers decide.
+
+------------------------------------------------------------------------------
+
+# Event Boundaries
+
+Events belong to
+
+Exactly One
+
+Bounded Context.
+
+Events never belong to multiple services.
+
+Never share event ownership.
+
+------------------------------------------------------------------------------
+
+# Strategic Review Checklist
+
+Before creating an event verify
+
+✓ Business fact identified
+
+✓ Event category selected
+
+✓ Aggregate owner identified
+
+✓ Bounded Context identified
+
+✓ Publisher identified
+
+✓ Topic identified
+
+✓ Existing event searched
+
+✓ Tenant awareness confirmed
+
+✓ Plugin ownership confirmed
+
+✓ Event naming follows business language
+
+------------------------------------------------------------------------------
+
+# Decision Tree
+
+Before generating an event ask
+
+1. Did a business fact occur?
+
+2. Is this inside one bounded context?
+
+3. Is cross-service communication required?
+
+4. Which Aggregate owns it?
+
+5. Which Service publishes it?
+
+6. Does an equivalent event already exist?
+
+7. Is this AI?
+
+8. Is this Workflow?
+
+9. Is this Platform?
+
+10. Is this Plugin specific?
+
+If any answer is unclear
+
+STOP
+
+Resolve event ownership before implementation.
+
+# Rule 03 - Enterprise Event Governance v2
+# Part 2 - Event Design
+
+# Event Design Philosophy
+
+Events are immutable business facts.
+
+Events describe
+
+What Happened
+
+Never
+
+What Should Happen
+
+Events are contracts.
+
+Breaking an event contract is equivalent to breaking a public API.
+
+------------------------------------------------------------------------------
+
+# Event Structure
+
+Every Integration Event must contain
+
+eventId
+
+eventType
+
+eventVersion
+
+aggregateId
+
+aggregateType
+
+tenantId
+
+correlationId
+
+causationId
+
+occurredAt
+
+producer
+
+payload
+
+metadata
+
+Never publish anonymous events.
+
+------------------------------------------------------------------------------
+
+# Event Metadata
+
+Required Metadata
+
+eventId
+
+correlationId
+
+causationId
+
+tenantId
+
+pluginId
+
+traceId
+
+spanId
+
+producerService
+
+producerVersion
+
+schemaVersion
+
+eventTimestamp
+
+Metadata must be consistent across all services.
+
+------------------------------------------------------------------------------
+
+# Event Payload
+
+Payload contains only
+
+Business Data
+
+Never include
+
+Database IDs from other services
+
+Internal JPA entities
+
+Repositories
+
+Business logic
+
+Temporary fields
+
+Implementation details
+
+Events are public contracts.
+
+------------------------------------------------------------------------------
+
+# Event Ownership
+
+Each event has exactly
+
+One Aggregate
+
+One Publisher
+
+One Bounded Context
+
+One Service
+
+One Kafka Topic
+
+One Schema
+
+One Version
+
+Ownership ambiguity is prohibited.
+
+------------------------------------------------------------------------------
+
+# Event Publication Flow
+
+Aggregate
+
+↓
+
+Business Rule
+
+↓
+
+Domain Event
+
+↓
+
+Application Service
+
+↓
+
+Outbox
+
+↓
+
+Kafka Publisher
+
+↓
+
+Integration Event
+
+↓
+
+Kafka Topic
+
+↓
+
+Consumers
+
+Never publish Integration Events directly from Aggregates.
+
+------------------------------------------------------------------------------
+
+# Domain Event Rules
+
+Domain Events
+
+Remain
+
+Inside
+
+The Bounded Context.
+
+Never publish Domain Events directly to Kafka.
+
+Application Services convert
+
+Domain Events
+
+↓
+
+Integration Events
+
+------------------------------------------------------------------------------
+
+# Integration Event Rules
+
+Integration Events
+
+Cross
+
+Service Boundaries.
+
+Integration Events are immutable.
+
+Never modify an event after publication.
+
+------------------------------------------------------------------------------
+
+# Event Versioning
+
+Every event
+
+Starts at
+
+Version 1
+
+Future changes
+
+↓
+
+Version 2
+
+↓
+
+Version 3
+
+Never break existing consumers.
+
+Support parallel versions during migration.
+
+------------------------------------------------------------------------------
+
+# Schema Evolution
+
+Allowed
+
+Add Optional Fields
+
+Add Metadata
+
+Add New Event Versions
+
+Forbidden
+
+Rename Existing Fields
+
+Delete Required Fields
+
+Change Existing Meanings
+
+Reuse Event Names
+
+------------------------------------------------------------------------------
+
+# Event Naming
+
+Pattern
+
+BusinessObject
+
+↓
+
+Past Tense
+
+Examples
+
+LeadCreated
+
+LeadQualified
+
+CustomerRegistered
+
+PropertyReserved
+
+InvoicePaid
+
+AppointmentBooked
+
+WorkflowCompleted
+
+PromptExecuted
+
+Never
+
+LeadProcessing
+
+CreateLead
+
+UpdateCustomer
+
+GenericEvent
+
+------------------------------------------------------------------------------
+
+# Kafka Topic Naming
+
+Pattern
+
+domain.aggregate.event
+
+Examples
+
+lead.created
+
+lead.qualified
+
+customer.registered
+
+conversation.started
+
+workflow.completed
+
+notification.sent
+
+Never
+
+topic1
+
+events
+
+general
+
+misc
+
+------------------------------------------------------------------------------
+
+# Partition Strategy
+
+Partition by
+
+AggregateId
+
+TenantId
+
+Business Key
+
+Choose based on ordering requirements.
+
+Never partition randomly.
+
+------------------------------------------------------------------------------
+
+# Ordering
+
+Ordering is guaranteed
+
+Only
+
+Inside One Partition.
+
+Never assume global ordering.
+
+Business logic must tolerate out-of-order events.
+
+------------------------------------------------------------------------------
+
+# Idempotency
+
+Every consumer
+
+Must be idempotent.
+
+Duplicate events
+
+Must not create duplicate business state.
+
+Store processed event identifiers where required.
+
+------------------------------------------------------------------------------
+
+# Retry Strategy
+
+Every consumer defines
+
+Retry Count
+
+Retry Delay
+
+Exponential Backoff
+
+Maximum Attempts
+
+Failure Strategy
+
+Never retry forever.
+
+------------------------------------------------------------------------------
+
+# Dead Letter Queue
+
+Every topic
+
+Requires
+
+DLQ
+
+Examples
+
+lead.created.dlq
+
+customer.registered.dlq
+
+workflow.failed.dlq
+
+DLQ processing must be observable.
+
+------------------------------------------------------------------------------
+
+# Event Timeout
+
+Every consumer defines
+
+Maximum Processing Time
+
+Slow events
+
+Generate alerts.
+
+Never allow indefinite processing.
+
+------------------------------------------------------------------------------
+
+# Outbox Pattern
+
+Every Business Service
+
+Owns
+
+One Outbox Table.
+
+Business Transaction
+
+↓
+
+Commit
+
+↓
+
+Outbox
+
+↓
+
+Publisher
+
+↓
+
+Kafka
+
+Outbox guarantees reliable publication.
+
+------------------------------------------------------------------------------
+
+# Inbox Pattern
+
+Consumers
+
+May maintain
+
+Inbox Tables
+
+To guarantee
+
+Exactly Once
+
+Business Processing.
+
+Never depend solely on Kafka delivery semantics.
+
+------------------------------------------------------------------------------
+
+# Saga Integration
+
+Events drive
+
+Saga progression.
+
+Every Saga step
+
+Defines
+
+Forward Event
+
+Compensation Event
+
+Timeout
+
+Retry
+
+Never coordinate Sagas through database transactions.
+
+------------------------------------------------------------------------------
+
+# CQRS
+
+Integration Events
+
+Build
+
+Projection Models
+
+Search Models
+
+Dashboard Models
+
+Analytics Models
+
+Read Models
+
+Never update Aggregates from projections.
+
+------------------------------------------------------------------------------
+
+# Event Consumers
+
+Consumers
+
+Must
+
+Validate
+
+Schema
+
+Tenant
+
+Permissions
+
+Business Rules
+
+Idempotency
+
+Before processing.
+
+------------------------------------------------------------------------------
+
+# Multi-Tenant Events
+
+Every event
+
+Contains
+
+tenantId
+
+Consumers
+
+Reject
+
+Tenant Mismatch
+
+Cross Tenant Processing
+
+Missing Tenant Context
+
+------------------------------------------------------------------------------
+
+# Correlation
+
+Every event propagates
+
+traceId
+
+spanId
+
+correlationId
+
+causationId
+
+requestId
+
+tenantId
+
+Never lose distributed traceability.
+
+------------------------------------------------------------------------------
+
+# Event Contracts
+
+Events are
+
+Backward Compatible
+
+Documented
+
+Versioned
+
+Tested
+
+Observable
+
+Treat event contracts like REST contracts.
+
+------------------------------------------------------------------------------
+
+# Contract Testing
+
+Every published Integration Event
+
+Requires
+
+Schema Validation
+
+Consumer Contract Tests
+
+Backward Compatibility Tests
+
+Never publish untested event contracts.
+
+------------------------------------------------------------------------------
+
+# Event Security
+
+Never publish
+
+Passwords
+
+JWT
+
+Secrets
+
+API Keys
+
+Private Documents
+
+Sensitive PII
+
+Use identifiers rather than confidential payloads.
+
+------------------------------------------------------------------------------
+
+# Event Review Checklist
+
+Before publishing verify
+
+✓ Aggregate Owner
+
+✓ Bounded Context
+
+✓ Integration Event
+
+✓ Version
+
+✓ Topic
+
+✓ Metadata
+
+✓ TenantId
+
+✓ CorrelationId
+
+✓ Outbox
+
+✓ Idempotency
+
+✓ Retry
+
+✓ DLQ
+
+✓ Contract Tests
+
+------------------------------------------------------------------------------
+
+# Agent Decision Tree
+
+Before generating an event ask
+
+1. Is this a Domain Event?
+
+2. Is an Integration Event required?
+
+3. Which Aggregate owns it?
+
+4. Which Kafka Topic owns it?
+
+5. Is Outbox implemented?
+
+6. Is consumer idempotent?
+
+7. Is tenant isolation preserved?
+
+8. Is versioning defined?
+
+9. Does Repository Intelligence find an existing event?
+
+10. Will this break consumers?
+
+If any answer is NO
+
+STOP
+
+Redesign the event before implementation.
+
+# Rule 03 - Enterprise Event Governance v2
+# Part 3 - Platform Event Architecture
+
+# Platform Event Philosophy
+
+Platform events coordinate independent platform capabilities.
+
+Business Services own business state.
+
+Platform Services own reusable capabilities.
+
+Plugins extend the platform through events.
+
+Events enable independent evolution.
+
+------------------------------------------------------------------------------
+
+# Platform Event Ownership
+
+Every platform capability owns its events.
+
+Authentication
+
+↓
+
+Authentication Events
+
+AI
+
+↓
+
+AI Events
+
+Workflow
+
+↓
+
+Workflow Events
+
+Media
+
+↓
+
+Media Events
+
+Notification
+
+↓
+
+Notification Events
+
+Billing
+
+↓
+
+Billing Events
+
+Search
+
+↓
+
+Search Events
+
+Platform Core
+
+↓
+
+Platform Events
+
+Never publish another service's events.
+
+------------------------------------------------------------------------------
+
+# AI Events
+
+AI Service publishes
+
+PromptExecuted
+
+PromptExecutionFailed
+
+PromptVersionActivated
+
+RecommendationGenerated
+
+RecommendationRejected
+
+EmbeddingGenerated
+
+EmbeddingUpdated
+
+KnowledgeIndexed
+
+KnowledgeRemoved
+
+VectorSearchCompleted
+
+ProviderSwitched
+
+ModelFallbackActivated
+
+TokenUsageRecorded
+
+AIInferenceCompleted
+
+PromptCached
+
+PromptCacheMiss
+
+AI Events describe AI execution.
+
+They never modify business state.
+
+------------------------------------------------------------------------------
+
+# AI Recommendation Flow
+
+LeadCreated
+
+↓
+
+AI Recommendation
+
+↓
+
+RecommendationGenerated
+
+↓
+
+Lead Aggregate Validation
+
+↓
+
+LeadQualified
+
+AI recommends.
+
+Aggregates decide.
+
+------------------------------------------------------------------------------
+
+# Workflow Events
+
+Workflow Service publishes
+
+WorkflowStarted
+
+WorkflowPaused
+
+WorkflowResumed
+
+WorkflowWaiting
+
+WorkflowTimedOut
+
+WorkflowRetryScheduled
+
+WorkflowCompensated
+
+WorkflowCompleted
+
+WorkflowCancelled
+
+HumanTaskCreated
+
+HumanTaskCompleted
+
+Workflow Events represent orchestration only.
+
+------------------------------------------------------------------------------
+
+# Workflow Coordination
+
+Business Event
+
+↓
+
+Workflow
+
+↓
+
+Business Service
+
+↓
+
+Business Event
+
+Workflow never owns business rules.
+
+------------------------------------------------------------------------------
+
+# Media Events
+
+Media Service publishes
+
+MediaUploaded
+
+MediaDeleted
+
+MediaUpdated
+
+MediaProcessingStarted
+
+MediaProcessingCompleted
+
+ThumbnailGenerated
+
+VideoTranscoded
+
+DocumentIndexed
+
+VirusScanCompleted
+
+MediaExpired
+
+Business Services store only media references.
+
+------------------------------------------------------------------------------
+
+# Search Events
+
+Search Service publishes
+
+SearchIndexCreated
+
+SearchIndexUpdated
+
+SearchIndexDeleted
+
+ProjectionUpdated
+
+ProjectionRebuilt
+
+EmbeddingIndexed
+
+EmbeddingRemoved
+
+AutocompleteIndexUpdated
+
+Search Events support CQRS.
+
+------------------------------------------------------------------------------
+
+# Notification Events
+
+Notification Service publishes
+
+NotificationQueued
+
+NotificationSent
+
+NotificationDelivered
+
+NotificationRead
+
+NotificationFailed
+
+NotificationRetried
+
+NotificationExpired
+
+Business Services never send notifications directly.
+
+------------------------------------------------------------------------------
+
+# Billing Events
+
+Billing Service publishes
+
+SubscriptionCreated
+
+SubscriptionRenewed
+
+SubscriptionExpired
+
+InvoiceGenerated
+
+InvoicePaid
+
+InvoiceCancelled
+
+PaymentCaptured
+
+PaymentRefunded
+
+CreditsConsumed
+
+UsageRecorded
+
+------------------------------------------------------------------------------
+
+# Audit Events
+
+Audit Service publishes
+
+AuthenticationSucceeded
+
+AuthenticationFailed
+
+PermissionGranted
+
+PermissionRevoked
+
+ConfigurationChanged
+
+SensitiveDataViewed
+
+DataExported
+
+Audit events are immutable.
+
+------------------------------------------------------------------------------
+
+# Security Events
+
+Security Service publishes
+
+AccessDenied
+
+TokenExpired
+
+TokenRevoked
+
+SuspiciousActivityDetected
+
+RateLimitExceeded
+
+PermissionViolation
+
+TenantViolationDetected
+
+Security events trigger alerts.
+
+------------------------------------------------------------------------------
+
+# Monitoring Events
+
+Platform publishes
+
+ConsumerLagDetected
+
+DLQThresholdExceeded
+
+HighLatencyDetected
+
+DatabaseSlowQueryDetected
+
+RedisUnavailable
+
+KafkaUnavailable
+
+ServiceUnavailable
+
+HighMemoryUsage
+
+HighCPUUsage
+
+Monitoring events contain no business data.
+
+------------------------------------------------------------------------------
+
+# Platform Events
+
+Platform Core publishes
+
+TenantProvisioned
+
+TenantActivated
+
+TenantSuspended
+
+TenantDeleted
+
+PluginInstalled
+
+PluginEnabled
+
+PluginDisabled
+
+ConfigurationPublished
+
+PlatformUpgraded
+
+Platform events belong only to Platform Core.
+
+------------------------------------------------------------------------------
+
+# Industry Plugin Events
+
+Industry Plugins own their events.
+
+Real Estate
+
+↓
+
+PropertyListed
+
+PropertyUpdated
+
+PropertyReserved
+
+SiteVisitScheduled
+
+SiteVisitCompleted
+
+BuilderRegistered
+
+Education
+
+↓
+
+StudentRegistered
+
+AdmissionApproved
+
+CourseCompleted
+
+Healthcare
+
+↓
+
+PatientRegistered
+
+AppointmentCompleted
+
+PrescriptionIssued
+
+Insurance
+
+↓
+
+PolicyCreated
+
+ClaimSubmitted
+
+ClaimApproved
+
+Platform Core must never publish industry events.
+
+------------------------------------------------------------------------------
+
+# Capability Plugin Events
+
+Capability Plugins publish reusable events.
+
+WhatsApp
+
+↓
+
+MessageQueued
+
+MessageSent
+
+MessageDelivered
+
+MessageRead
+
+TemplateApproved
+
+Voice AI
+
+↓
+
+VoiceCallStarted
+
+VoiceTranscriptGenerated
+
+VoiceCallCompleted
+
+Maps
+
+↓
+
+RouteCalculated
+
+DistanceComputed
+
+Calendar
+
+↓
+
+CalendarEventCreated
+
+CalendarEventUpdated
+
+Email
+
+↓
+
+EmailQueued
+
+EmailDelivered
+
+OCR
+
+↓
+
+OCRStarted
+
+OCRCompleted
+
+Capability plugins remain reusable.
+
+------------------------------------------------------------------------------
+
+# Multi-Tenant Events
+
+Every event contains
+
+tenantId
+
+organizationId
+
+pluginId
+
+correlationId
+
+Consumers reject
+
+Cross Tenant Events
+
+Missing Tenant Context
+
+Tenant isolation is mandatory.
+
+------------------------------------------------------------------------------
+
+# Event Choreography
+
+Preferred
+
+Business Event
+
+↓
+
+Interested Consumers
+
+↓
+
+Independent Processing
+
+Avoid centralized orchestration when choreography is sufficient.
+
+------------------------------------------------------------------------------
+
+# Event Orchestration
+
+Workflow Service orchestrates
+
+Long Running Business Processes.
+
+Examples
+
+Lead Qualification
+
+Customer Onboarding
+
+Appointment Booking
+
+Sales Automation
+
+Payment Recovery
+
+------------------------------------------------------------------------------
+
+# Event Streams
+
+Typical stream
+
+LeadCreated
+
+↓
+
+LeadQualified
+
+↓
+
+CustomerCreated
+
+↓
+
+PropertyMatched
+
+↓
+
+AppointmentScheduled
+
+↓
+
+ConversationStarted
+
+↓
+
+OfferAccepted
+
+↓
+
+SaleCompleted
+
+Streams model business progression.
+
+------------------------------------------------------------------------------
+
+# Event Observability
+
+Every event records
+
+EventId
+
+TraceId
+
+CorrelationId
+
+TenantId
+
+Producer
+
+Consumer
+
+Latency
+
+RetryCount
+
+ProcessingDuration
+
+DLQStatus
+
+Every event is traceable.
+
+------------------------------------------------------------------------------
+
+# Event Catalog
+
+Every published event is registered.
+
+Catalog contains
+
+Owner
+
+Publisher
+
+Consumers
+
+Topic
+
+Schema
+
+Version
+
+Retention
+
+Retry Policy
+
+DLQ Policy
+
+Business Description
+
+Deprecation Status
+
+Events are managed assets.
+
+------------------------------------------------------------------------------
+
+# Platform Review Checklist
+
+Before publishing verify
+
+✓ Platform Owner
+
+✓ Event Category
+
+✓ Tenant Context
+
+✓ Plugin Context
+
+✓ AI Ownership
+
+✓ Workflow Ownership
+
+✓ Media Ownership
+
+✓ Search Ownership
+
+✓ Notification Ownership
+
+✓ Billing Ownership
+
+✓ Event Catalog Updated
+
+------------------------------------------------------------------------------
+
+# Decision Tree
+
+Before creating a platform event ask
+
+1. Which platform capability owns it?
+
+2. Is this business or platform?
+
+3. Is this AI?
+
+4. Is this Workflow?
+
+5. Is this Plugin?
+
+6. Is this Capability Plugin?
+
+7. Is tenant isolation preserved?
+
+8. Is the event already registered?
+
+9. Can an existing event evolve?
+
+10. Is ownership unambiguous?
+
+If any answer is NO
+
+STOP
+
+Review the architecture before generating the event.
+
+# Rule 03 - Enterprise Event Governance v2
+# Part 4 - Event Governance & Repository Intelligence
+
+# Event Governance Philosophy
+
+Events are public contracts.
+
+Once published
+
+Consumers depend on them.
+
+Changing an event without governance is an architectural defect.
+
+Events must evolve safely.
+
+------------------------------------------------------------------------------
+
+# Event Lifecycle
+
+Every event follows
+
+Draft
+
+↓
+
+Architecture Review
+
+↓
+
+Approved
+
+↓
+
+Implemented
+
+↓
+
+Published
+
+↓
+
+Consumed
+
+↓
+
+Monitored
+
+↓
+
+Deprecated
+
+↓
+
+Retired
+
+Never publish undocumented events.
+
+------------------------------------------------------------------------------
+
+# Event Registry
+
+Every published event must be registered.
+
+The Event Registry contains
+
+Event Name
+
+Description
+
+Category
+
+Owner
+
+Publisher
+
+Consumers
+
+Aggregate
+
+Bounded Context
+
+Kafka Topic
+
+Schema Version
+
+Retention Policy
+
+Retry Policy
+
+DLQ Policy
+
+Security Classification
+
+Tenant Scope
+
+Plugin Scope
+
+Documentation Link
+
+The Event Registry is the authoritative source for event contracts.
+
+------------------------------------------------------------------------------
+
+# Event Ownership
+
+Each event has exactly one
+
+Business Owner
+
+Technical Owner
+
+Publishing Service
+
+Owning Aggregate
+
+Owning Bounded Context
+
+Owning Kafka Topic
+
+Never allow shared ownership.
+
+------------------------------------------------------------------------------
+
+# Repository Intelligence
+
+Before creating a new event
+
+Search the repository.
+
+Check for
+
+Existing Event
+
+Existing Topic
+
+Existing Schema
+
+Existing Consumer
+
+Existing Aggregate
+
+Existing Workflow
+
+Existing Integration
+
+Existing Plugin Event
+
+Existing AI Event
+
+Reuse existing contracts whenever possible.
+
+Never create duplicate business events.
+
+------------------------------------------------------------------------------
+
+# Event Review Questions
+
+Before approving a new event answer
+
+1. Is this a business fact?
+
+2. Does an equivalent event already exist?
+
+3. Which Aggregate owns it?
+
+4. Which Bounded Context owns it?
+
+5. Which Service publishes it?
+
+6. Which Topic carries it?
+
+7. Which consumers depend on it?
+
+8. Is versioning required?
+
+9. Is tenant isolation preserved?
+
+10. Does this increase coupling?
+
+If ownership is unclear
+
+Reject the event.
+
+------------------------------------------------------------------------------
+
+# Schema Governance
+
+Every Integration Event
+
+Must have
+
+Schema
+
+Version
+
+Compatibility Policy
+
+Documentation
+
+Validation Rules
+
+Examples
+
+JSON Schema
+
+Avro
+
+Protobuf
+
+Never publish undocumented payloads.
+
+------------------------------------------------------------------------------
+
+# Compatibility Rules
+
+Allowed
+
+Add optional fields
+
+Add metadata
+
+Create new event versions
+
+Deprecate gradually
+
+Forbidden
+
+Rename required fields
+
+Remove required fields
+
+Change business meaning
+
+Reuse old event names
+
+Breaking changes require a new version.
+
+------------------------------------------------------------------------------
+
+# Consumer Governance
+
+Every consumer defines
+
+Owner
+
+Purpose
+
+Retry Policy
+
+Timeout
+
+Concurrency
+
+Idempotency Strategy
+
+DLQ Strategy
+
+Consumers must be independently deployable.
+
+------------------------------------------------------------------------------
+
+# Producer Governance
+
+Every producer defines
+
+Publishing Rules
+
+Outbox Strategy
+
+Ordering Strategy
+
+Schema Version
+
+Monitoring
+
+Failure Handling
+
+Never publish directly from domain logic.
+
+------------------------------------------------------------------------------
+
+# Event Catalog Categories
+
+Maintain separate catalogs for
+
+Domain Events
+
+Integration Events
+
+Workflow Events
+
+AI Events
+
+Platform Events
+
+Plugin Events
+
+Capability Plugin Events
+
+Audit Events
+
+Monitoring Events
+
+Security Events
+
+This improves discoverability and ownership.
+
+------------------------------------------------------------------------------
+
+# Event Evolution
+
+Preferred order
+
+Extend
+
+↓
+
+Version
+
+↓
+
+Deprecate
+
+↓
+
+Remove
+
+Never replace an existing event immediately.
+
+Support migration periods.
+
+------------------------------------------------------------------------------
+
+# Event Documentation
+
+Every event document includes
+
+Business Meaning
+
+Publisher
+
+Consumers
+
+Schema
+
+Example Payload
+
+Ordering Requirements
+
+Idempotency Notes
+
+Failure Handling
+
+Related Aggregates
+
+Related Workflows
+
+Documentation is mandatory.
+
+------------------------------------------------------------------------------
+
+# Event Security
+
+Classify every event
+
+Public
+
+Internal
+
+Confidential
+
+Restricted
+
+Never expose
+
+Passwords
+
+Secrets
+
+Tokens
+
+Private Documents
+
+Sensitive PII
+
+Security classification must be documented.
+
+------------------------------------------------------------------------------
+
+# Multi-Tenant Governance
+
+Every Integration Event contains
+
+tenantId
+
+organizationId
+
+correlationId
+
+producerService
+
+Consumers validate tenant ownership before processing.
+
+Cross-tenant processing is prohibited.
+
+------------------------------------------------------------------------------
+
+# Plugin Governance
+
+Industry Plugin events
+
+Remain inside plugin ownership.
+
+Capability Plugin events
+
+Remain reusable.
+
+Platform Core
+
+Must never publish industry-specific events.
+
+------------------------------------------------------------------------------
+
+# AI Governance
+
+AI Events
+
+Must never update business state directly.
+
+AI recommendations require
+
+Aggregate validation
+
+Business rule validation
+
+Human approval (when required)
+
+AI events remain advisory.
+
+------------------------------------------------------------------------------
+
+# Workflow Governance
+
+Workflow Events
+
+Coordinate execution.
+
+Business Services
+
+Own state.
+
+Aggregates
+
+Own invariants.
+
+Workflow must not become a business service.
+
+------------------------------------------------------------------------------
+
+# Observability
+
+Every event publishes
+
+Metrics
+
+Logs
+
+Distributed Traces
+
+Processing Time
+
+Retry Count
+
+Failure Count
+
+Consumer Lag
+
+DLQ Count
+
+Events without observability are incomplete.
+
+------------------------------------------------------------------------------
+
+# Architecture Metrics
+
+Track
+
+Total Events
+
+Unused Events
+
+Duplicate Events
+
+Consumer Count
+
+Retry Rate
+
+DLQ Rate
+
+Average Processing Time
+
+Schema Versions
+
+Breaking Changes
+
+Lag
+
+Review these metrics regularly.
+
+------------------------------------------------------------------------------
+
+# Event Anti-Patterns
+
+Reject
+
+GenericEvent
+
+EntityUpdated
+
+DataChanged
+
+ObjectModified
+
+ProcessCompleted
+
+TempEvent
+
+TestEvent
+
+DatabaseChanged
+
+ControllerEvent
+
+Events must describe meaningful business facts.
+
+------------------------------------------------------------------------------
+
+# Architecture Review Checklist
+
+Before approving verify
+
+✓ Business fact identified
+
+✓ Aggregate owner defined
+
+✓ Bounded Context defined
+
+✓ Publisher defined
+
+✓ Consumers identified
+
+✓ Topic defined
+
+✓ Schema documented
+
+✓ Version defined
+
+✓ Repository searched
+
+✓ Duplicate check completed
+
+✓ Tenant isolation verified
+
+✓ Plugin ownership verified
+
+✓ AI ownership verified
+
+✓ Workflow ownership verified
+
+✓ Observability defined
+
+------------------------------------------------------------------------------
+
+# Agent Decision Tree
+
+Before generating any event ask
+
+1. Did a business fact occur?
+
+2. Which Aggregate owns it?
+
+3. Which Bounded Context owns it?
+
+4. Which Service publishes it?
+
+5. Does an equivalent event already exist?
+
+6. Does Repository Intelligence recommend reuse?
+
+7. Is schema versioned?
+
+8. Is tenant isolation preserved?
+
+9. Are consumers identified?
+
+10. Does this maintain loose coupling?
+
+If any answer is NO
+
+STOP
+
+Perform architecture review before generating the event.
+
+------------------------------------------------------------------------------
+
+# Final Principle
+
+Never design events from
+
+Database Tables
+
+Controllers
+
+REST APIs
+
+Implementation Classes
+
+Always design events from
+
+Business Facts
+
+↓
+
+Domain Events
+
+↓
+
+Integration Events
+
+↓
+
+Workflow
+
+↓
+
+Consumers
+
+↓
+
+Business Outcomes
+
+Business drives events.
+
+Events drive the platform.

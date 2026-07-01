@@ -1,0 +1,31 @@
+# Local dev — log emails to console, no Eureka/Config Server.
+# Run: mvnw spring-boot:run -pl services/notification-service -Dspring-boot.run.profiles=local
+
+spring:
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+  datasource:
+    url: jdbc:postgresql://localhost:5433/aisales_notification
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+aisales:
+  notification:
+    delivery-mode: log
+    from-address: noreply@aisales.local
+    app-name: AI Sales Platform
+
+management:
+  tracing:
+    enabled: false
+
+logging:
+  level:
+    com.aisales.notification: INFO

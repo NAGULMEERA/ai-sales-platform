@@ -1,0 +1,3 @@
+com.aisales.common.starter.config.CommonAutoConfiguration
+com.aisales.common.starter.config.WebAutoConfiguration
+com.aisales.common.starter.autoconfigure.SecurityAutoConfiguration

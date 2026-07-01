@@ -1,0 +1,12 @@
+# Default owners for all files
+* @aisales/platform-team
+
+# Common modules
+/common/ @aisales/platform-team
+
+# Infrastructure
+/infrastructure/ @aisales/platform-team
+
+# Services
+/services/identity-service/ @aisales/identity-team
+/services/tenant-service/ @aisales/tenant-team
