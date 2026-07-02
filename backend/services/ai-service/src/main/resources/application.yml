@@ -5,7 +5,10 @@ spring:
   application:
     name: ai-service
   config:
-    import: optional:configserver:http://localhost:8888
+    import:
+      - optional:configserver:http://localhost:8888
+      - optional:classpath:platform/application-observability.yml
+      - optional:classpath:platform/application-cache.yml
   datasource:
     url: jdbc:postgresql://localhost:5432/ai_db
     username: aisales
@@ -30,7 +33,14 @@ management:
         include: health,info,prometheus
 
 aisales:
+  cache:
+    enabled: false
   ai:
+    semantic-cache:
+      enabled: true
+      max-cosine-distance: 0.1
+      default-ttl: 7d
+      redis-ttl: 1h
     embedding:
       default-provider-kind: OPEN_SOURCE
       default-model: BAAI/bge-m3

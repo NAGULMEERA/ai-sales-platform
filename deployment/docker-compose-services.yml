@@ -69,6 +69,44 @@ services:
       - aisales-network
     depends_on:
       - postgres
+      - redis
+      - kafka
+      - service-registry
+      - config-server
+
+  lead-service:
+    build:
+      context: ../backend/services/lead-service
+      dockerfile: Dockerfile
+    container_name: aisales-lead-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - aisales-network
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+      - service-registry
+      - config-server
+
+  ai-service:
+    build:
+      context: ../backend/services/ai-service
+      dockerfile: Dockerfile
+    container_name: aisales-ai-service
+    ports:
+      - "8088:8088"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - aisales-network
+    depends_on:
+      - postgres
+      - redis
+      - kafka
       - service-registry
       - config-server
 

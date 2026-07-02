@@ -1,6 +1,7 @@
 com.aisales.common.events.config.EventsCoreAutoConfiguration
 com.aisales.common.events.config.EventsAutoConfiguration
 com.aisales.common.events.config.KafkaEventsAutoConfiguration
+com.aisales.common.events.config.PlatformKafkaTopicsAutoConfiguration
 com.aisales.common.events.config.OutboxAutoConfiguration
 com.aisales.common.events.config.InboxAutoConfiguration
 com.aisales.common.events.audit.EventAuditAutoConfiguration
