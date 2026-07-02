@@ -29,6 +29,10 @@
             <artifactId>common-observability</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.aisales</groupId>
+            <artifactId>common-cache</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
             <optional>true</optional>

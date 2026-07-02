@@ -12,13 +12,18 @@ import lombok.experimental.SuperBuilder;
 public class TenantCreatedEvent extends BaseEvent {
 
     private String tenantName;
+    private String slug;
     private String plan;
+    private String industry;
 
-    public static TenantCreatedEvent of(String tenantId, String tenantName, String plan, String correlationId) {
+    public static TenantCreatedEvent of(String tenantId, String tenantName, String slug,
+                                        String plan, String industry, String correlationId) {
         TenantCreatedEvent event = new TenantCreatedEvent();
         event.init("TenantCreated", tenantId, tenantId, correlationId);
         event.setTenantName(tenantName);
+        event.setSlug(slug);
         event.setPlan(plan);
+        event.setIndustry(industry);
         return event;
     }
 }

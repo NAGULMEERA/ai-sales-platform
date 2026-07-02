@@ -26,7 +26,16 @@ public class EmbeddingProperties {
         private String baseUrl = "http://localhost:8099";
         private String model = "BAAI/bge-m3";
         private int dimension = 1024;
-        private int connectTimeoutMs = 5000;
+        /**
+         * TEI runs on the same internal network, so the TCP handshake should complete almost
+         * instantly; 2s already gives generous headroom over a genuinely healthy dependency.
+         */
+        private int connectTimeoutMs = 2000;
+        /**
+         * Unlike the connect timeout, this is deliberately generous: model inference time (not
+         * network latency) dominates here, and CPU-hosted batch embedding can legitimately take
+         * several seconds to tens of seconds depending on batch size and hardware.
+         */
         private int readTimeoutMs = 30000;
     }
 
@@ -41,6 +50,10 @@ public class EmbeddingProperties {
             private String baseUrl = "https://api.openai.com/v1";
             private String model = "text-embedding-3-small";
             private int dimension = 1536;
+            /** Public-internet call; kept short so a DNS/TLS handshake issue fails fast. */
+            private int connectTimeoutMs = 3000;
+            /** Batch embedding requests over the internet; generous but bounded. */
+            private int readTimeoutMs = 20000;
         }
     }
 }

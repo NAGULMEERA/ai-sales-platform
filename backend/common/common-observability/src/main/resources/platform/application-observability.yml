@@ -1,0 +1,34 @@
+# Platform Infrastructure Epic — Phase 2 observability defaults.
+# Import from services: spring.config.import: optional:classpath:platform/application-observability.yml
+
+aisales:
+  observability:
+    environment: ${ENVIRONMENT:local}
+  tracing:
+    enabled: true
+    sample-rate: ${TRACING_SAMPLE_RATE:1.0}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      environment: ${aisales.observability.environment:local}
+  tracing:
+    sampling:
+      probability: ${aisales.tracing.sample-rate:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-},%X{correlation_id:-}]"

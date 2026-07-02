@@ -55,6 +55,14 @@ public final class TenantContext {
         return CONTEXT.get().isolationMode;
     }
 
+    public static void setPlatformAdmin(boolean platformAdmin) {
+        CONTEXT.get().platformAdmin = platformAdmin;
+    }
+
+    public static boolean isPlatformAdmin() {
+        return CONTEXT.get().platformAdmin;
+    }
+
     public static void clear() {
         CONTEXT.remove();
     }
@@ -64,5 +72,6 @@ public final class TenantContext {
         private String organizationId;
         private String userId;
         private TenantIsolationMode isolationMode = TenantIsolationMode.SHARED_SCHEMA;
+        private boolean platformAdmin;
     }
 }

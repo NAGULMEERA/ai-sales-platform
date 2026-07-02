@@ -32,7 +32,7 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("User not found: " + id));
     }
 
-    public List<UserResponse> listByTenant(String tenantId) {
+    public List<UserResponse> listByTenant(UUID tenantId) {
         return userRepository.findByTenantId(tenantId).stream().map(userMapper::toResponse).toList();
     }
 }

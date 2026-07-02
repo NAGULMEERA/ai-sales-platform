@@ -1,6 +1,6 @@
 package com.aisales.tenant.domain.entity;
 
-import com.aisales.common.core.audit.BaseEntity;
+import com.aisales.common.core.persistence.TenantAwareEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -11,10 +11,7 @@ import lombok.Setter;
 @Table(name = "users")
 @Getter
 @Setter
-public class User extends BaseEntity {
-
-    @Column(nullable = false)
-    private String tenantId;
+public class User extends TenantAwareEntity {
 
     @Column(nullable = false, unique = true)
     private String email;

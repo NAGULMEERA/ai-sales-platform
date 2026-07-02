@@ -10,12 +10,19 @@ public class TenantMapper {
     public TenantDto toDto(Tenant tenant) {
         return TenantDto.builder()
                 .id(tenant.getId())
-                .name(tenant.getName())
+                .tenantCode(tenant.getTenantCode())
                 .slug(tenant.getSlug())
-                .plan(tenant.getPlan())
-                .status(tenant.getStatus().name())
+                .name(tenant.getName())
+                .industry(tenant.getIndustry())
+                .subscriptionPlan(tenant.getSubscriptionPlan())
+                .status(tenant.getStatus())
+                .timezone(tenant.getTimezone())
+                .language(tenant.getLanguage())
+                .logoUrl(tenant.getLogoUrl())
                 .createdAt(tenant.getCreatedAt())
                 .updatedAt(tenant.getUpdatedAt())
+                .createdBy(tenant.getCreatedBy())
+                .updatedBy(tenant.getUpdatedBy())
                 .build();
     }
 }

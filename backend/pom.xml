@@ -18,6 +18,7 @@
         <module>common/common-events</module>
         <module>common/common-contracts</module>
         <module>common/common-observability</module>
+        <module>common/common-cache</module>
         <module>common/common-testing</module>
         <module>common/common-starter</module>
         <module>../infrastructure/service-registry</module>
@@ -113,6 +114,11 @@
             <dependency>
                 <groupId>com.aisales</groupId>
                 <artifactId>common-observability</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aisales</groupId>
+                <artifactId>common-cache</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: eventing-integration-test
+  datasource:
+    username: aisales
+    password: aisales
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  kafka:
+    consumer:
+      group-id: eventing-integration-test
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+aisales:
+  events:
+    default-topic: aisales-events-test
+    outbox:
+      enabled: true
+      dispatch-interval-ms: 3600000
+    inbox:
+      enabled: true
+
+logging:
+  level:
+    com.aisales.common.events: INFO

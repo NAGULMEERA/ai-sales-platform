@@ -23,12 +23,17 @@ public class EventsAutoConfiguration {
         return new LoggingEventPublisher();
     }
 
-    @Bean
-    @ConditionalOnProperty(name = "aisales.events.publisher", havingValue = "kafka", matchIfMissing = true)
-    @ConditionalOnBean(KafkaTemplate.class)
-    @ConditionalOnMissingBean(EventPublisher.class)
-    public EventPublisher kafkaEventPublisher(KafkaTemplate<String, String> kafkaTemplate,
-                                              ObjectMapper objectMapper) {
-        return new KafkaEventPublisher(kafkaTemplate, objectMapper);
+    @Configuration
+    @ConditionalOnProperty(name = "aisales.events.outbox.enabled", havingValue = "false", matchIfMissing = true)
+    static class DirectKafkaPublisherConfiguration {
+
+        @Bean
+        @ConditionalOnProperty(name = "aisales.events.publisher", havingValue = "kafka", matchIfMissing = true)
+        @ConditionalOnBean(KafkaTemplate.class)
+        @ConditionalOnMissingBean(EventPublisher.class)
+        public EventPublisher kafkaEventPublisher(KafkaTemplate<String, String> kafkaTemplate,
+                                                  ObjectMapper objectMapper) {
+            return new KafkaEventPublisher(kafkaTemplate, objectMapper);
+        }
     }
 }

@@ -34,7 +34,7 @@ public class UserController {
     }
 
     @GetMapping("/tenant/{tenantId}")
-    public ApiResponse<List<UserResponse>> listByTenant(@PathVariable String tenantId) {
+    public ApiResponse<List<UserResponse>> listByTenant(@PathVariable UUID tenantId) {
         return ApiResponse.ok(userService.listByTenant(tenantId));
     }
 }

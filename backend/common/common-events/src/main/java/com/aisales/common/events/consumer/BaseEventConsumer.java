@@ -1,6 +1,7 @@
 package com.aisales.common.events.consumer;
 
 import com.aisales.common.core.util.CorrelationIdUtils;
+import com.aisales.common.core.util.MDCUtils;
 import com.aisales.common.core.util.TenantContext;
 import com.aisales.common.events.model.BaseEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +24,7 @@ public abstract class BaseEventConsumer<T extends BaseEvent> {
             if (event.getTenantId() != null) {
                 TenantContext.setTenantId(event.getTenantId());
             }
+            MDCUtils.putContext();
             processEvent(event);
         } catch (Exception e) {
             log.error("Failed to process event of type {}", eventClass.getSimpleName(), e);
@@ -30,6 +32,7 @@ public abstract class BaseEventConsumer<T extends BaseEvent> {
         } finally {
             TenantContext.clear();
             CorrelationIdUtils.clear();
+            MDCUtils.clearContext();
         }
     }
 

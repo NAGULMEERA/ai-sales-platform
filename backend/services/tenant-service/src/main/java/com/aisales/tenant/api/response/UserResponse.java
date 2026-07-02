@@ -10,7 +10,7 @@ import java.util.UUID;
 public class UserResponse {
 
     UUID id;
-    String tenantId;
+    UUID tenantId;
     String email;
     String firstName;
     String lastName;

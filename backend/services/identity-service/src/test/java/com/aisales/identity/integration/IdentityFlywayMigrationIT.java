@@ -29,7 +29,7 @@ class IdentityFlywayMigrationIT {
                 .load();
         flyway.migrate();
 
-        assertThat(flyway.info().applied()).hasSize(7);
+        assertThat(flyway.info().applied()).hasSize(10);
 
         try (Connection conn = postgres.createConnection("");
              Statement st = conn.createStatement()) {
@@ -38,6 +38,8 @@ class IdentityFlywayMigrationIT {
             assertTableExists(st, "permissions");
             assertTableExists(st, "tenant_subscriptions");
             assertTableExists(st, "audit_logs");
+            assertTableExists(st, "processed_events");
+            assertTableExists(st, "dead_letter");
         }
     }
 

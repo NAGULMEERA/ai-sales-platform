@@ -6,6 +6,10 @@ public final class ApiConstants {
     public static final String API_V2 = "/api/v2";
     public static final String CORRELATION_ID_HEADER = "X-Correlation-Id";
     public static final String TENANT_ID_HEADER = "X-Tenant-Id";
+    public static final String USER_ID_HEADER = "X-User-Id";
+    public static final String ORGANIZATION_ID_HEADER = "X-Organization-Id";
+    public static final String IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
+    public static final String API_VERSION = "v1";
     public static final String DEPRECATION_HEADER = "Deprecation";
     public static final String SUNSET_HEADER = "Sunset";
     public static final String LINK_HEADER = "Link";

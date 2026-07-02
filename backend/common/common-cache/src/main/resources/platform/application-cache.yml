@@ -1,0 +1,16 @@
+# Platform Infrastructure Epic — Phase 3
+# Import in service application.yml when Redis caching is required:
+#   spring.config.import: optional:classpath:platform/application-cache.yml
+
+aisales:
+  cache:
+    enabled: false
+    key-prefix: aisales
+    default-ttl: 5m
+
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s

@@ -20,6 +20,8 @@ public class ApiResponse<T> {
     private T data;
     private String correlationId;
     private Instant timestamp;
+    private String path;
+    private String version;
 
     public static <T> ApiResponse<T> ok(T data) {
         return ApiResponse.<T>builder()

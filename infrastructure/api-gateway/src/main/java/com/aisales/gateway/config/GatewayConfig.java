@@ -1,16 +1,65 @@
 package com.aisales.gateway.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
+import org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@EnableConfigurationProperties(GatewayRateLimitProperties.class)
 public class GatewayConfig {
+
+    private final GatewayRateLimitProperties rateLimitProperties;
+    private final KeyResolver clientIpKeyResolver;
+    private RedisRateLimiter authRedisRateLimiter;
+    private RedisRateLimiter passwordResetRedisRateLimiter;
+
+    public GatewayConfig(GatewayRateLimitProperties rateLimitProperties, KeyResolver clientIpKeyResolver) {
+        this.rateLimitProperties = rateLimitProperties;
+        this.clientIpKeyResolver = clientIpKeyResolver;
+    }
+
+    @Autowired(required = false)
+    public void setRateLimiters(
+            @Qualifier("authRedisRateLimiter") RedisRateLimiter authRedisRateLimiter,
+            @Qualifier("passwordResetRedisRateLimiter") RedisRateLimiter passwordResetRedisRateLimiter) {
+        this.authRedisRateLimiter = authRedisRateLimiter;
+        this.passwordResetRedisRateLimiter = passwordResetRedisRateLimiter;
+    }
 
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
-        return builder.routes()
+        RouteLocatorBuilder.Builder routes = builder.routes();
+
+        if (rateLimitProperties.isEnabled()
+                && authRedisRateLimiter != null
+                && passwordResetRedisRateLimiter != null) {
+            routes = routes
+                    .route("identity-auth-rate-limited", r -> r
+                            .path("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/refresh")
+                            .filters(f -> f.requestRateLimiter(config -> config
+                                    .setRateLimiter(authRedisRateLimiter)
+                                    .setKeyResolver(clientIpKeyResolver)
+                                    .setDenyEmptyKey(false)))
+                            .uri("lb://identity-service"))
+                    .route("identity-auth-password-rate-limited", r -> r
+                            .path(
+                                    "/api/v1/auth/forgot-password",
+                                    "/api/v1/auth/reset-password",
+                                    "/api/v1/auth/resend-verification")
+                            .filters(f -> f.requestRateLimiter(config -> config
+                                    .setRateLimiter(passwordResetRedisRateLimiter)
+                                    .setKeyResolver(clientIpKeyResolver)
+                                    .setDenyEmptyKey(false)))
+                            .uri("lb://identity-service"));
+        }
+
+        return routes
                 .route("identity-service", r -> r.path("/api/v1/auth/**", "/api/v1/users/**")
                         .uri("lb://identity-service"))
                 .route("tenant-service", r -> r.path("/api/v1/tenants/**", "/api/v1/tenant-users/**")

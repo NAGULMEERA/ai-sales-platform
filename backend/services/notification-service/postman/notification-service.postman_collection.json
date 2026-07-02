@@ -1,0 +1,45 @@
+{
+  "info": {
+    "name": "Notification Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "AI Sales Platform notification-service APIs.\n\nnotification-service runs on http://localhost:8090 with profile=local.\n\nIn local profile, emails are logged to the console instead of sent via SMTP unless aisales.notification.delivery-mode=smtp and a mail server (e.g. MailHog on localhost:1025) is configured.\n\nSwagger UI: http://localhost:8090/swagger-ui/index.html\nOpenAPI spec: http://localhost:8090/v3/api-docs"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8090" },
+    { "key": "tenantId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/notification/health"
+      }
+    },
+    {
+      "name": "Send Email Verification Email",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/notifications/email",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"recipientEmail\": \"user@test.com\",\n  \"templateCode\": \"EMAIL_VERIFICATION\",\n  \"variables\": {\n    \"firstName\": \"Admin\",\n    \"verificationLink\": \"http://localhost:8081/api/v1/auth/verify-email?token=sample-token\"\n  },\n  \"correlationId\": \"manual-test-1\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Send Password Reset Email",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/notifications/email",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"recipientEmail\": \"user@test.com\",\n  \"templateCode\": \"PASSWORD_RESET\",\n  \"variables\": {\n    \"firstName\": \"Admin\",\n    \"resetLink\": \"http://localhost:8081/reset-password?token=sample-token\"\n  },\n  \"correlationId\": \"manual-test-2\"\n}"
+        }
+      }
+    }
+  ]
+}

@@ -12,7 +12,7 @@ import java.sql.Statement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class LeadFlywayMigrationIT {
 
     @Container
@@ -29,12 +29,21 @@ class LeadFlywayMigrationIT {
                 .load();
         flyway.migrate();
 
-        assertThat(flyway.info().applied()).hasSize(3);
+        assertThat(flyway.info().applied()).hasSize(7);
 
         try (Connection conn = postgres.createConnection("");
-             Statement st = conn.createStatement();
-             ResultSet rs = st.executeQuery(
-                     "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'leads'")) {
+             Statement st = conn.createStatement()) {
+            assertTableExists(st, "leads");
+            assertTableExists(st, "outbox_events");
+            assertTableExists(st, "processed_events");
+            assertTableExists(st, "dead_letter");
+        }
+    }
+
+    private static void assertTableExists(Statement st, String table) throws Exception {
+        try (ResultSet rs = st.executeQuery(
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '"
+                        + table + "'")) {
             rs.next();
             assertThat(rs.getInt(1)).isEqualTo(1);
         }

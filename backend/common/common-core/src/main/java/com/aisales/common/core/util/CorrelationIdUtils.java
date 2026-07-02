@@ -17,6 +17,7 @@ public final class CorrelationIdUtils {
 
     public static void set(String correlationId) {
         MDC.put(ApiConstants.CORRELATION_ID_HEADER, correlationId);
+        MDC.put(MDCUtils.CORRELATION_ID_KEY, correlationId);
     }
 
     public static void setCorrelationId(String correlationId) {
@@ -33,5 +34,6 @@ public final class CorrelationIdUtils {
 
     public static void clear() {
         MDC.remove(ApiConstants.CORRELATION_ID_HEADER);
+        MDC.remove(MDCUtils.CORRELATION_ID_KEY);
     }
 }

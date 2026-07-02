@@ -24,6 +24,13 @@ spring:
     port: ${SMTP_PORT:1025}
     username: ${SMTP_USERNAME:}
     password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          # Outbound SMTP must never block indefinitely (Rule 08/09 resilience: sensible timeouts).
+          connectiontimeout: ${SMTP_CONNECT_TIMEOUT_MS:5000}
+          timeout: ${SMTP_READ_TIMEOUT_MS:5000}
+          writetimeout: ${SMTP_WRITE_TIMEOUT_MS:5000}
 
 aisales:
   security:
@@ -32,6 +39,37 @@ aisales:
     delivery-mode: log
     from-address: noreply@aisales.local
     app-name: AI Sales Platform
+
+resilience4j:
+  retry:
+    instances:
+      # Guards the outbound SMTP send. Kept deliberately low (2 total attempts, i.e. 1 retry):
+      # unlike a pure read, an SMTP send is not perfectly idempotent (a connection drop after the
+      # server accepted DATA could in rare cases retry a message that actually went out), so this
+      # trades a small chance of a duplicate transactional email for a much larger reduction in
+      # emails dropped due to a single transient connection blip. Only connection/timeout failures
+      # are retried; MailAuthenticationException (bad credentials) is never retried.
+      smtpEmail:
+        max-attempts: 2
+        wait-duration: 300ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        enable-randomized-wait: true
+        randomized-wait-factor: 0.3
+        retry-exception-predicate: com.aisales.common.observability.http.TransientFailurePredicate
+  circuitbreaker:
+    instances:
+      # External SMTP provider — stop hammering a down mail server (Rule 09/10). Auth/config
+      # failures (MailAuthenticationException) do not count toward opening the breaker.
+      smtpEmail:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        record-failure-predicate: com.aisales.common.observability.http.TransientFailurePredicate
 
 eureka:
   client:

@@ -1,6 +1,8 @@
 package com.aisales.common.testing.factory;
 
 import com.aisales.common.contracts.tenant.CreateTenantRequest;
+import com.aisales.common.contracts.tenant.SubscriptionPlan;
+import com.aisales.common.contracts.tenant.TenantIndustry;
 import com.aisales.common.contracts.user.CreateUserRequest;
 
 import java.util.Set;
@@ -16,7 +18,10 @@ public final class TestDataFactory {
         return CreateTenantRequest.builder()
                 .name("Test Tenant " + suffix)
                 .slug("test-" + suffix)
-                .plan("STARTER")
+                .industry(TenantIndustry.REAL_ESTATE)
+                .subscriptionPlan(SubscriptionPlan.FREE)
+                .timezone("UTC")
+                .language("en")
                 .build();
     }
 

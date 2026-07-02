@@ -5,7 +5,10 @@ spring:
   application:
     name: tenant-service
   config:
-    import: optional:configserver:http://localhost:8888
+    import:
+      - optional:configserver:http://localhost:8888
+      - optional:classpath:platform/application-observability.yml
+      - optional:classpath:platform/application-cache.yml
   datasource:
     url: jdbc:postgresql://localhost:5432/aisales_tenant
     username: aisales
@@ -21,8 +24,12 @@ spring:
     bootstrap-servers: localhost:9092
 
 aisales:
+  security:
+    use-platform-defaults: false
   events:
     default-topic: aisales-events
+    outbox:
+      enabled: true
 
 eureka:
   client:

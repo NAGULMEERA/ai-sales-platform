@@ -46,3 +46,42 @@ aisales:
           api-key: ${OPENAI_API_KEY:}
           model: text-embedding-3-small
           dimension: 1536
+
+resilience4j:
+  retry:
+    instances:
+      # Embedding is a pure, idempotent read-like operation (same input -> same output), so
+      # retrying transient failures is always safe. Only network failures/timeouts, 5xx, and 429
+      # are retried (see TransientFailurePredicate); 4xx (bad request/auth) is never retried.
+      bgeM3Embedding:
+        max-attempts: 3
+        wait-duration: 150ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        enable-randomized-wait: true
+        randomized-wait-factor: 0.5
+        retry-exception-predicate: com.aisales.common.observability.http.TransientFailurePredicate
+      openAiEmbedding:
+        # Higher base wait than the internal BGE-M3 provider: OpenAI is an external, rate-limited
+        # (429) dependency, and retrying immediately after a rate-limit response would just be
+        # rejected again (Rule 09: "retry only transient failures, rate limits...").
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        enable-randomized-wait: true
+        randomized-wait-factor: 0.5
+        retry-exception-predicate: com.aisales.common.observability.http.TransientFailurePredicate
+  circuitbreaker:
+    instances:
+      # External OpenAI dependency only — internal BGE-M3 is same-network and skipped per
+      # resilience policy (avoid circuit breakers on internal repository/database calls).
+      openAiEmbedding:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        record-failure-predicate: com.aisales.common.observability.http.TransientFailurePredicate

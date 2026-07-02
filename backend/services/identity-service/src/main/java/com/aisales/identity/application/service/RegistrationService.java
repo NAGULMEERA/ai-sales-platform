@@ -7,7 +7,6 @@ import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.ValidationException;
 import com.aisales.identity.api.request.RegisterRequest;
 import com.aisales.identity.api.response.RegistrationResponse;
-import com.aisales.identity.application.utils.SlugGenerator;
 import com.aisales.identity.domain.entity.Tenant;
 import com.aisales.identity.domain.entity.TenantSubscription;
 import com.aisales.identity.domain.entity.User;
@@ -40,6 +39,7 @@ public class RegistrationService {
     private final AuditService auditService;
     private final EventPublisher eventPublisher;
     private final AuthProperties authProperties;
+    private final SlugGenerator slugGenerator;
 
     @Transactional
     public RegistrationResponse register(RegisterRequest request, String ipAddress, String userAgent) {
@@ -47,9 +47,9 @@ public class RegistrationService {
             throw new ValidationException("Email already registered");
         }
 
-        String slug = SlugGenerator.generate(request.getCompanyName());
+        String slug = slugGenerator.generate(request.getCompanyName());
         if (tenantRepository.existsBySlug(slug)) {
-            slug = SlugGenerator.generateUnique(slug);
+            slug = slugGenerator.generateUnique(slug);
         }
 
         UUID organizationId = UUID.randomUUID();
@@ -81,7 +81,11 @@ public class RegistrationService {
                 .build());
 
         eventPublisher.publish(TenantCreatedEvent.of(
-                tenant.getId().toString(), tenant.getName(), SubscriptionPlan.FREE.name(),
+                tenant.getId().toString(),
+                tenant.getName(),
+                tenant.getSlug(),
+                SubscriptionPlan.FREE.name(),
+                "REAL_ESTATE",
                 CorrelationIdUtils.getCorrelationId()));
         eventPublisher.publish(UserCreatedEvent.of(
                 tenant.getId().toString(), user.getId().toString(), user.getEmail(),

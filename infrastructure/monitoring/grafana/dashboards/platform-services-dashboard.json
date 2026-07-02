@@ -1,0 +1,55 @@
+{
+  "title": "Platform Services",
+  "uid": "platform-services",
+  "tags": ["platform", "microservices"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Tenant Created (rate)",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(tenant_created_total[5m]))",
+          "legendFormat": "created/s"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "HTTP 5xx (rate)",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m]))",
+          "legendFormat": "5xx/s"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP request latency p95",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, application))",
+          "legendFormat": "{{application}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "JVM heap used",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "targets": [
+        {
+          "expr": "jvm_memory_used_bytes{area=\"heap\"}",
+          "legendFormat": "{{application}}"
+        }
+      ]
+    }
+  ]
+}

@@ -6,12 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "aisales.events.outbox.enabled", havingValue = "false", matchIfMissing = true)
 public class KafkaEventPublisher implements EventPublisher {
 
     private final KafkaTemplate<String, String> kafkaTemplate;

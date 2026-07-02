@@ -19,12 +19,25 @@ public class TenantRlsConnectionInitializer {
 
     private static final String SET_TENANT_SQL =
             "SELECT set_config('app.current_tenant', :tenantId, true)";
+    private static final String SET_PLATFORM_ADMIN_SQL =
+            "SELECT set_config('app.is_platform_admin', :flag, true)";
 
     @PersistenceContext
     private EntityManager entityManager;
 
     @Before("@annotation(transactional)")
     public void applyRlsContext(Transactional transactional) {
+        entityManager.createNativeQuery(SET_PLATFORM_ADMIN_SQL)
+                .setParameter("flag", TenantContext.isPlatformAdmin() ? "true" : "false")
+                .getSingleResult();
+
+        if (TenantContext.isPlatformAdmin()) {
+            entityManager.createNativeQuery(SET_TENANT_SQL)
+                    .setParameter("tenantId", "")
+                    .getSingleResult();
+            return;
+        }
+
         TenantContext.getTenantIdAsUuid().ifPresent(tenantId ->
                 entityManager.createNativeQuery(SET_TENANT_SQL)
                         .setParameter("tenantId", tenantId.toString())

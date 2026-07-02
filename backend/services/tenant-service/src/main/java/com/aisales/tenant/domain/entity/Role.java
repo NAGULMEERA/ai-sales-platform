@@ -1,6 +1,6 @@
 package com.aisales.tenant.domain.entity;
 
-import com.aisales.common.core.audit.BaseEntity;
+import com.aisales.common.core.persistence.TenantAwareEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -11,10 +11,7 @@ import lombok.Setter;
 @Table(name = "roles")
 @Getter
 @Setter
-public class Role extends BaseEntity {
-
-    @Column(nullable = false)
-    private String tenantId;
+public class Role extends TenantAwareEntity {
 
     @Column(nullable = false)
     private String name;
