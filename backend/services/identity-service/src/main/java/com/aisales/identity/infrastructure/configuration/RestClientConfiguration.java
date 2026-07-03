@@ -2,7 +2,7 @@ package com.aisales.identity.infrastructure.configuration;
 
 import com.aisales.common.observability.http.CorrelationIdPropagationInterceptor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
@@ -35,8 +35,8 @@ public class RestClientConfiguration {
             @Value("${aisales.http.connect-timeout-ms:2000}") long connectTimeoutMs,
             @Value("${aisales.http.read-timeout-ms:5000}") long readTimeoutMs) {
         return builder
-                .setConnectTimeout(Duration.ofMillis(connectTimeoutMs))
-                .setReadTimeout(Duration.ofMillis(readTimeoutMs))
+                .connectTimeout(Duration.ofMillis(connectTimeoutMs))
+                .readTimeout(Duration.ofMillis(readTimeoutMs))
                 .additionalInterceptors(new CorrelationIdPropagationInterceptor())
                 .build();
     }

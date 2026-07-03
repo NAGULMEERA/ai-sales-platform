@@ -1,6 +1,6 @@
 package com.aisales.common.starter.config;
 
-import org.springframework.boot.actuate.health.HealthContributorRegistry;
+import org.springframework.boot.health.registry.HealthContributorRegistry;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.annotation.Configuration;
 

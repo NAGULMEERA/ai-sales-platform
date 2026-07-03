@@ -1,8 +1,8 @@
 package com.aisales.ai.infrastructure.configuration;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.web.client.ClientHttpRequestFactories;
-import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.HttpClientSettings;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -29,9 +29,9 @@ public class EmbeddingConfiguration {
      * embedding providers (self-hosted or commercial) never block indefinitely.
      */
     public static ClientHttpRequestFactory timeoutRequestFactory(long connectTimeoutMs, long readTimeoutMs) {
-        ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings.DEFAULTS
+        HttpClientSettings settings = HttpClientSettings.defaults()
                 .withConnectTimeout(Duration.ofMillis(connectTimeoutMs))
                 .withReadTimeout(Duration.ofMillis(readTimeoutMs));
-        return ClientHttpRequestFactories.get(settings);
+        return ClientHttpRequestFactoryBuilder.detect().build(settings);
     }
 }

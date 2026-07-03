@@ -8,7 +8,7 @@ import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.logstash.logback.argument.StructuredArguments;
-import org.springframework.boot.autoconfigure.mail.MailProperties;
+import org.springframework.boot.mail.autoconfigure.MailProperties;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;

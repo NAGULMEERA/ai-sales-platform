@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.aop.AopAutoConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -52,10 +52,10 @@ class NotificationHttpSenderCircuitBreakerTest {
     @Autowired
     private NotificationHttpSender sender;
 
-    @MockBean
+    @MockitoBean
     private RestTemplate restTemplate;
 
-    @MockBean
+    @MockitoBean
     private InternalServiceTokenProvider internalServiceTokenProvider;
 
     @BeforeEach

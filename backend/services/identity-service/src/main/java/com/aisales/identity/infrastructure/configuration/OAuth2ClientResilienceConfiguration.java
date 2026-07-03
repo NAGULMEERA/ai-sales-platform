@@ -1,16 +1,14 @@
 package com.aisales.identity.infrastructure.configuration;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.ClientHttpRequestFactories;
-import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.HttpClientSettings;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.converter.FormHttpMessageConverter;
-import org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
-import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
+import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenValidator;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
@@ -19,7 +17,6 @@ import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserServ
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
-import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -27,10 +24,10 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -49,16 +46,11 @@ public class OAuth2ClientResilienceConfiguration {
     public OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> authorizationCodeTokenResponseClient(
             @Value("${aisales.oauth2.connect-timeout-ms:3000}") long connectTimeoutMs,
             @Value("${aisales.oauth2.read-timeout-ms:5000}") long readTimeoutMs) {
-        // Must keep the same converters/error handler as Spring Security's default
-        // DefaultAuthorizationCodeTokenResponseClient() constructor; only the request factory
-        // (connect/read timeout) is being customized.
-        RestTemplate restTemplate = new RestTemplate(
-                Arrays.asList(new FormHttpMessageConverter(), new OAuth2AccessTokenResponseHttpMessageConverter()));
-        restTemplate.setErrorHandler(new OAuth2ErrorResponseErrorHandler());
-        restTemplate.setRequestFactory(timeoutRequestFactory(connectTimeoutMs, readTimeoutMs));
-
-        DefaultAuthorizationCodeTokenResponseClient client = new DefaultAuthorizationCodeTokenResponseClient();
-        client.setRestOperations(restTemplate);
+        RestClient restClient = RestClient.builder()
+                .requestFactory(timeoutRequestFactory(connectTimeoutMs, readTimeoutMs))
+                .build();
+        RestClientAuthorizationCodeTokenResponseClient client = new RestClientAuthorizationCodeTokenResponseClient();
+        client.setRestClient(restClient);
         return client;
     }
 
@@ -117,9 +109,9 @@ public class OAuth2ClientResilienceConfiguration {
     }
 
     private static ClientHttpRequestFactory timeoutRequestFactory(long connectTimeoutMs, long readTimeoutMs) {
-        ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings.DEFAULTS
+        HttpClientSettings settings = HttpClientSettings.defaults()
                 .withConnectTimeout(Duration.ofMillis(connectTimeoutMs))
                 .withReadTimeout(Duration.ofMillis(readTimeoutMs));
-        return ClientHttpRequestFactories.get(settings);
+        return ClientHttpRequestFactoryBuilder.detect().build(settings);
     }
 }

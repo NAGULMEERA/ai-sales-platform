@@ -35,7 +35,7 @@ public class CorrelationIdPropagationInterceptor implements ClientHttpRequestInt
     public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution)
             throws IOException {
         String correlationId = CorrelationIdUtils.getCorrelationId();
-        if (StringUtils.hasText(correlationId) && !request.getHeaders().containsKey(ApiConstants.CORRELATION_ID_HEADER)) {
+        if (StringUtils.hasText(correlationId) && !request.getHeaders().containsHeader(ApiConstants.CORRELATION_ID_HEADER)) {
             request.getHeaders().add(ApiConstants.CORRELATION_ID_HEADER, correlationId);
         }
         return execution.execute(request, body);

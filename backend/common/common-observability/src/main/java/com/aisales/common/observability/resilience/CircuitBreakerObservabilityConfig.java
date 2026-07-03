@@ -12,16 +12,18 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Structured logging for every Resilience4j {@link CircuitBreaker} instance configured anywhere
- * on the platform. Mirrors {@link RetryObservabilityConfig}: Micrometer metrics are
- * auto-registered by {@code resilience4j-micrometer}; this adds the per-event log lines needed
- * for production diagnosis (Rule 08).
+ * on the platform. Micrometer metrics are auto-registered by {@code resilience4j-micrometer};
+ * this adds the per-event log lines needed for production diagnosis (Rule 08).
+ *
+ * <p>Resilience4j 2.3+ composes all {@link RegistryEventConsumer} beans into the primary
+ * {@code circuitBreakerRegistryEventConsumer}; this bean must therefore use a distinct name.
  */
 @Slf4j
 @Configuration
 public class CircuitBreakerObservabilityConfig {
 
     @Bean
-    public RegistryEventConsumer<CircuitBreaker> circuitBreakerRegistryEventConsumer() {
+    public RegistryEventConsumer<CircuitBreaker> platformCircuitBreakerLoggingEventConsumer() {
         return new RegistryEventConsumer<>() {
             @Override
             public void onEntryAddedEvent(EntryAddedEvent<CircuitBreaker> event) {

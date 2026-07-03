@@ -2,8 +2,7 @@ package com.aisales.common.events.outbox;
 
 import com.aisales.common.events.model.TenantCreatedEvent;
 import com.aisales.common.events.publisher.EventPublisher;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -23,7 +22,7 @@ class OutboxEventPublisherTest {
     private OutboxRepository outboxRepository;
 
     @Spy
-    private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private JsonMapper objectMapper = JsonMapper.builder().build();
 
     @InjectMocks
     private OutboxEventPublisher outboxEventPublisher;

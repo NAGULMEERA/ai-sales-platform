@@ -12,25 +12,24 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Structured logging for every Resilience4j {@link Retry} instance configured anywhere on the
- * platform. Registered once here (a {@link RegistryEventConsumer} bean is the mechanism
- * {@code resilience4j-spring-boot3}'s auto-configuration uses to customize the {@code
- * RetryRegistry} it builds) so every service gets consistent retry observability for free instead
- * of duplicating listener wiring per outbound call site.
+ * platform so every service gets consistent retry observability for free instead of duplicating
+ * listener wiring per outbound call site.
  *
  * <p>Per-instance Micrometer metrics ({@code resilience4j.retry.calls} with a {@code kind} tag of
  * successful_without_retry / successful_with_retry / failed_with_retry / failed_without_retry) are
  * already auto-registered by {@code resilience4j-micrometer} on the classpath; this class adds the
  * complementary structured log line for each individual retry attempt, which aggregate metrics
- * alone cannot provide (Rule 08: a failure without good diagnostics is hard to investigate in
- * production; Rule 09/10: "retries emit metrics and structured logs so retry rates are
- * observable").
+ * alone cannot provide (Rule 08).
+ *
+ * <p>Resilience4j 2.3+ composes all {@link RegistryEventConsumer} beans into the primary
+ * {@code retryRegistryEventConsumer}; this bean must therefore use a distinct name.
  */
 @Slf4j
 @Configuration
 public class RetryObservabilityConfig {
 
     @Bean
-    public RegistryEventConsumer<Retry> retryRegistryEventConsumer() {
+    public RegistryEventConsumer<Retry> platformRetryLoggingEventConsumer() {
         return new RegistryEventConsumer<>() {
             @Override
             public void onEntryAddedEvent(EntryAddedEvent<Retry> event) {

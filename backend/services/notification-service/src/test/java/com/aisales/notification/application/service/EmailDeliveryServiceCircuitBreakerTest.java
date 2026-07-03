@@ -9,8 +9,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.aop.AopAutoConfiguration;
-import org.springframework.boot.autoconfigure.mail.MailProperties;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.mail.autoconfigure.MailProperties;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.MailSendException;
@@ -56,7 +56,7 @@ class EmailDeliveryServiceCircuitBreakerTest {
     @Autowired
     private EmailDeliveryService emailDeliveryService;
 
-    @MockBean
+    @MockitoBean
     private JavaMailSender mailSender;
 
     @Test

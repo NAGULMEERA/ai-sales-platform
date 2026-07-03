@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.aop.AopAutoConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
@@ -48,10 +48,10 @@ class NotificationHttpSenderRetryTest {
     @Autowired
     private NotificationHttpSender sender;
 
-    @MockBean
+    @MockitoBean
     private RestTemplate restTemplate;
 
-    @MockBean
+    @MockitoBean
     private InternalServiceTokenProvider internalServiceTokenProvider;
 
     @BeforeEach
