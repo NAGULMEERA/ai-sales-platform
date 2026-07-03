@@ -16,7 +16,8 @@ public class DeadLetterService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordFailure(ConsumerRecord<String, String> record, String consumerName, String eventId,
-                              String eventType, Exception exception) {
+                              String eventType, int retryCount, Exception exception) {
+        Instant now = Instant.now();
         deadLetterRepository.save(DeadLetterMessage.builder()
                 .topic(record.topic())
                 .partitionId(record.partition())
@@ -25,8 +26,11 @@ public class DeadLetterService {
                 .eventType(eventType)
                 .payload(record.value() != null ? record.value() : "")
                 .errorMessage(exception.getMessage())
+                .errorClass(exception.getClass().getName())
+                .retryCount(retryCount)
                 .consumerName(consumerName)
-                .createdAt(Instant.now())
+                .lastAttemptAt(now)
+                .createdAt(now)
                 .build());
     }
 }

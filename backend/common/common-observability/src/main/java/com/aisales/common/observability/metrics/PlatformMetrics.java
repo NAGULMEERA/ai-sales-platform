@@ -28,11 +28,39 @@ public class PlatformMetrics {
         counter(metricName, tags).increment();
     }
 
+    public void increment(String metricName, double amount, String... tags) {
+        counter(metricName, tags).increment(amount);
+    }
+
     public void incrementForTenant(String metricName, String tenantId) {
         if (StringUtils.hasText(tenantId)) {
             increment(metricName, "tenant_id", tenantId);
         } else {
             increment(metricName);
+        }
+    }
+
+    public void incrementBusinessMetric(String metricName, String tenantId, String... tags) {
+        if (StringUtils.hasText(tenantId)) {
+            String[] tagged = new String[tags.length + 2];
+            tagged[0] = "tenant_id";
+            tagged[1] = tenantId;
+            System.arraycopy(tags, 0, tagged, 2, tags.length);
+            increment(metricName, tagged);
+        } else {
+            increment(metricName, tags);
+        }
+    }
+
+    public void incrementBusinessMetric(String metricName, double amount, String tenantId, String... tags) {
+        if (StringUtils.hasText(tenantId)) {
+            String[] tagged = new String[tags.length + 2];
+            tagged[0] = "tenant_id";
+            tagged[1] = tenantId;
+            System.arraycopy(tags, 0, tagged, 2, tags.length);
+            increment(metricName, amount, tagged);
+        } else {
+            increment(metricName, amount, tags);
         }
     }
 

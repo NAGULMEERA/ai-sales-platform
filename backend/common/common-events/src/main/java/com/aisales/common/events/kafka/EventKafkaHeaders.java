@@ -8,6 +8,7 @@ public final class EventKafkaHeaders {
     public static final String TENANT_ID = ApiConstants.TENANT_ID_HEADER;
     public static final String EVENT_ID = "X-Event-Id";
     public static final String EVENT_TYPE = "X-Event-Type";
+    public static final String EVENT_VERSION = "X-Event-Version";
 
     private EventKafkaHeaders() {
     }

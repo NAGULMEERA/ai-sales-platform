@@ -49,8 +49,17 @@ public class DeadLetterMessage {
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
+    @Column(name = "error_class")
+    private String errorClass;
+
+    @Column(name = "retry_count", nullable = false)
+    private int retryCount;
+
     @Column(name = "consumer_name", nullable = false, length = 100)
     private String consumerName;
+
+    @Column(name = "last_attempt_at", nullable = false)
+    private Instant lastAttemptAt;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

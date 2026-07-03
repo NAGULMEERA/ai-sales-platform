@@ -48,4 +48,12 @@ class TenantCacheKeyGeneratorTest {
         assertThat(generator.namespacePattern("tenant"))
                 .isEqualTo("aisales:tenant:" + TENANT_ID + ":tenant:*");
     }
+
+    @Test
+    void shouldBuildTenantPatternForTenantWideInvalidation() {
+        TenantContext.setTenantId(TENANT_ID.toString());
+
+        assertThat(generator.tenantPattern())
+                .isEqualTo("aisales:tenant:" + TENANT_ID + ":*");
+    }
 }

@@ -1,4 +1,5 @@
 com.aisales.common.events.config.EventsCoreAutoConfiguration
+com.aisales.common.events.config.EventSchemaAutoConfiguration
 com.aisales.common.events.config.EventsAutoConfiguration
 com.aisales.common.events.config.KafkaEventsAutoConfiguration
 com.aisales.common.events.config.PlatformKafkaTopicsAutoConfiguration

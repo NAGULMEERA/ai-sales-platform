@@ -2,6 +2,10 @@ package com.aisales.common.observability.http;
 
 import com.aisales.common.core.constant.ApiConstants;
 import com.aisales.common.core.util.CorrelationIdUtils;
+import com.aisales.common.observability.config.ObservabilityProperties;
+import com.aisales.common.observability.metrics.MetricNames;
+import com.aisales.common.observability.metrics.PlatformMetrics;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
@@ -29,7 +33,21 @@ import java.io.IOException;
  * OAuth2, OpenAI): those providers have no use for our internal correlation id and forwarding
  * internal headers to third parties is unnecessary information disclosure.
  */
+@Slf4j
 public class CorrelationIdPropagationInterceptor implements ClientHttpRequestInterceptor {
+
+    private final ObservabilityProperties observabilityProperties;
+    private final PlatformMetrics platformMetrics;
+
+    public CorrelationIdPropagationInterceptor() {
+        this(null, null);
+    }
+
+    public CorrelationIdPropagationInterceptor(ObservabilityProperties observabilityProperties,
+                                               PlatformMetrics platformMetrics) {
+        this.observabilityProperties = observabilityProperties;
+        this.platformMetrics = platformMetrics;
+    }
 
     @Override
     public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution)
@@ -38,6 +56,24 @@ public class CorrelationIdPropagationInterceptor implements ClientHttpRequestInt
         if (StringUtils.hasText(correlationId) && !request.getHeaders().containsHeader(ApiConstants.CORRELATION_ID_HEADER)) {
             request.getHeaders().add(ApiConstants.CORRELATION_ID_HEADER, correlationId);
         }
-        return execution.execute(request, body);
+        long startedAt = System.currentTimeMillis();
+        ClientHttpResponse response = execution.execute(request, body);
+        long elapsedMs = OutboundCallDiagnostics.elapsedMillisSince(startedAt);
+        if (isSlow(elapsedMs)) {
+            String host = request.getURI().getHost();
+            log.warn("slow_outbound_http_call method={} host={} path={} duration_ms={}",
+                    request.getMethod(), host, request.getURI().getPath(), elapsedMs);
+            if (platformMetrics != null) {
+                platformMetrics.increment(MetricNames.OUTBOUND_SLOW_CALL,
+                        "method", request.getMethod().name(),
+                        "target_host", host != null ? host : "unknown");
+            }
+        }
+        return response;
+    }
+
+    private boolean isSlow(long elapsedMs) {
+        return observabilityProperties != null
+                && elapsedMs >= observabilityProperties.getSlowOutboundCallThreshold().toMillis();
     }
 }

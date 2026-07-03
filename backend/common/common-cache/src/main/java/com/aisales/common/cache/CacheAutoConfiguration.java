@@ -1,10 +1,14 @@
 package com.aisales.common.cache;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -26,11 +30,18 @@ public class CacheAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    public PlatformCacheMetrics platformCacheMetrics(ObjectProvider<MeterRegistry> meterRegistry) {
+        return new PlatformCacheMetrics(meterRegistry.getIfAvailable(SimpleMeterRegistry::new));
+    }
+
+    @Bean
     public PlatformCacheService platformCacheService(
             StringRedisTemplate redisTemplate,
             TenantCacheKeyGenerator keyGenerator,
             CacheProperties properties,
-            ObjectMapper objectMapper) {
-        return new PlatformCacheService(redisTemplate, keyGenerator, properties, objectMapper);
+            ObjectMapper objectMapper,
+            PlatformCacheMetrics metrics) {
+        return new PlatformCacheService(redisTemplate, keyGenerator, properties, objectMapper, metrics);
     }
 }

@@ -27,6 +27,13 @@ public class TenantCacheKeyGenerator {
                 .orElseGet(() -> prefix + ":platform:" + namespace + ":*");
     }
 
+    public String tenantPattern() {
+        String prefix = properties.getKeyPrefix();
+        return TenantContext.getTenantIdAsUuid()
+                .map(tenantId -> prefix + ":tenant:" + tenantId + ":*")
+                .orElseGet(() -> prefix + ":platform:*");
+    }
+
     private static String scopedKey(String prefix, UUID tenantId, String namespace, String key) {
         return prefix + ":tenant:" + tenantId + ":" + namespace + ":" + key;
     }

@@ -20,7 +20,10 @@ CREATE TABLE IF NOT EXISTS dead_letter (
     event_type VARCHAR(100),
     payload TEXT NOT NULL,
     error_message TEXT,
+    error_class VARCHAR(255),
+    retry_count INT NOT NULL DEFAULT 0,
     consumer_name VARCHAR(100) NOT NULL,
+    last_attempt_at TIMESTAMP NOT NULL DEFAULT NOW(),
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 

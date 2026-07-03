@@ -2,10 +2,13 @@ package com.aisales.common.events.outbox;
 
 import com.aisales.common.events.model.BaseEvent;
 import com.aisales.common.events.publisher.EventPublisher;
+import com.aisales.common.observability.metrics.MetricNames;
+import com.aisales.common.observability.metrics.PlatformMetrics;
 import com.aisales.common.exception.exception.EventPublishException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
@@ -20,15 +23,30 @@ import java.time.Instant;
  */
 @Component
 @Primary
-@RequiredArgsConstructor
 @ConditionalOnProperty(name = "aisales.events.outbox.enabled", havingValue = "true")
 public class OutboxEventPublisher implements EventPublisher {
 
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
+    private final PlatformMetrics platformMetrics;
 
     @Value("${aisales.events.default-topic:aisales-events}")
     private String defaultTopic;
+
+    public OutboxEventPublisher(OutboxRepository outboxRepository, ObjectMapper objectMapper) {
+        this.outboxRepository = outboxRepository;
+        this.objectMapper = objectMapper;
+        this.platformMetrics = null;
+    }
+
+    @Autowired
+    public OutboxEventPublisher(OutboxRepository outboxRepository,
+                                ObjectMapper objectMapper,
+                                ObjectProvider<PlatformMetrics> platformMetrics) {
+        this.outboxRepository = outboxRepository;
+        this.objectMapper = objectMapper;
+        this.platformMetrics = platformMetrics != null ? platformMetrics.getIfAvailable() : null;
+    }
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
@@ -50,6 +68,10 @@ public class OutboxEventPublisher implements EventPublisher {
                     .createdAt(Instant.now())
                     .retryCount(0)
                     .build());
+            if (platformMetrics != null) {
+                platformMetrics.incrementBusinessMetric(MetricNames.EVENT_PUBLISHED, event.getTenantId(),
+                        "event_type", event.getEventType(), "topic", topic, "publisher", "outbox");
+            }
         } catch (JsonProcessingException ex) {
             throw new EventPublishException("Failed to serialize outbox event: " + event.getEventType(), ex);
         }

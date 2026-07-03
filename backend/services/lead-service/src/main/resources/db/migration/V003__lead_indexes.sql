@@ -4,5 +4,5 @@ CREATE INDEX IF NOT EXISTS idx_leads_cover ON leads(tenant_id, status) INCLUDE (
 CREATE INDEX IF NOT EXISTS idx_leads_fts ON leads USING gin(
     to_tsvector('english', customer_name || ' ' || COALESCE(transcript, ''))
 );
-CREATE INDEX IF NOT EXISTS idx_leads_date_qualified ON leads(tenant_id, (metadata->>'qualified_at')::timestamptz)
+CREATE INDEX IF NOT EXISTS idx_leads_date_qualified ON leads(tenant_id, (metadata->>'qualified_at'))
     WHERE status = 'QUALIFIED';
