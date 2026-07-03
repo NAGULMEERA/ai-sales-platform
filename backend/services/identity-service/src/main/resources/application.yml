@@ -1,4 +1,8 @@
 aisales:
+  api:
+    title: Identity Service API
+    description: Authentication, authorization, tenant onboarding, subscriptions
+    version: v1
   security:
     use-platform-defaults: false
     jwt:
@@ -73,6 +77,7 @@ spring:
       - optional:configserver:http://localhost:8888
       - optional:classpath:platform/application-observability.yml
       - optional:classpath:platform/application-cache.yml
+      - optional:classpath:platform/application-openapi.yml
   datasource:
     url: jdbc:postgresql://localhost:5432/aisales_identity
     username: aisales
@@ -114,9 +119,3 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus
-
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    path: /swagger-ui.html

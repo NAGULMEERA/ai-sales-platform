@@ -40,6 +40,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1")
+
 @RequiredArgsConstructor
 @Tag(name = "Authentication", description = "Registration, login, tokens, password reset, email verification")
 public class AuthController {

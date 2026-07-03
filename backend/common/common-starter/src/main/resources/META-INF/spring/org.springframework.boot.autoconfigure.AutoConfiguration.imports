@@ -1,4 +1,5 @@
 com.aisales.common.starter.config.CommonAutoConfiguration
 com.aisales.common.starter.config.WebAutoConfiguration
+com.aisales.common.starter.config.OpenApiAutoConfiguration
 com.aisales.common.starter.config.StartupValidationAutoConfiguration
 com.aisales.common.starter.autoconfigure.SecurityAutoConfiguration
