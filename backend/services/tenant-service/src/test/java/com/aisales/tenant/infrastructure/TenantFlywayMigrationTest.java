@@ -29,7 +29,7 @@ class TenantFlywayMigrationTest {
                 .load();
         flyway.migrate();
 
-        assertThat(flyway.info().applied()).hasSize(9);
+        assertThat(flyway.info().applied()).hasSize(10);
 
         try (Connection conn = postgres.createConnection("");
              Statement st = conn.createStatement();
@@ -47,6 +47,22 @@ class TenantFlywayMigrationTest {
                 tableCount++;
             }
             assertThat(tableCount).isEqualTo(5);
+        }
+
+        try (Connection conn = postgres.createConnection("");
+             Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("""
+                     SELECT column_name
+                     FROM information_schema.columns
+                     WHERE table_schema = 'public'
+                       AND table_name = 'dead_letter'
+                       AND column_name IN ('error_class', 'retry_count', 'last_attempt_at')
+                     """)) {
+            int count = 0;
+            while (rs.next()) {
+                count++;
+            }
+            assertThat(count).isEqualTo(3);
         }
 
         try (Connection conn = postgres.createConnection("");

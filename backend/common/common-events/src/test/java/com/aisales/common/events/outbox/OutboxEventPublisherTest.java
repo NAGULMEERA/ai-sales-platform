@@ -22,7 +22,7 @@ class OutboxEventPublisherTest {
     private OutboxRepository outboxRepository;
 
     @Spy
-    private JsonMapper objectMapper = JsonMapper.builder().build();
+    private JsonMapper objectMapper = JsonMapper.builder().findAndAddModules().build();
 
     @InjectMocks
     private OutboxEventPublisher outboxEventPublisher;

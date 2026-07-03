@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class EventKafkaHeaderPropagatorTest {
 
-    private final JsonMapper objectMapper = JsonMapper.builder().build();
+    private final JsonMapper objectMapper = JsonMapper.builder().findAndAddModules().build();
     private final EventKafkaHeaderPropagator propagator =
             new EventKafkaHeaderPropagator(objectMapper, null, null);
 
@@ -34,6 +34,7 @@ class EventKafkaHeaderPropagatorTest {
         assertThat(headerValue(record, EventKafkaHeaders.TENANT_ID)).isEqualTo("tenant-1");
         assertThat(headerValue(record, EventKafkaHeaders.EVENT_ID)).isEqualTo(event.getEventId());
         assertThat(headerValue(record, EventKafkaHeaders.EVENT_TYPE)).isEqualTo("TenantCreated");
+        assertThat(headerValue(record, EventKafkaHeaders.EVENT_VERSION)).isEqualTo("1");
     }
 
     private String headerValue(ProducerRecord<String, String> record, String name) {

@@ -6,10 +6,12 @@ import com.aisales.common.observability.filter.CorrelationIdFilter;
 import com.aisales.common.observability.filter.LoggingFilter;
 import com.aisales.common.observability.metrics.CustomMetrics;
 import com.aisales.common.observability.metrics.PlatformMetrics;
+import com.aisales.common.observability.metrics.AiRequestMetrics;
 import com.aisales.common.observability.metrics.MetricsConfig;
 import com.aisales.common.observability.metrics.TimerAspect;
 import com.aisales.common.observability.resilience.CircuitBreakerObservabilityConfig;
 import com.aisales.common.observability.resilience.RetryObservabilityConfig;
+import com.aisales.common.observability.tracing.TraceContextEnricher;
 import com.aisales.common.observability.tracing.TracingConfig;
 import com.aisales.common.security.filter.JwtAuthenticationFilter;
 import com.aisales.common.security.util.JwtTokenProvider;
@@ -27,7 +29,9 @@ import org.springframework.context.annotation.Import;
         LoggingFilter.class,
         CustomMetrics.class,
         PlatformMetrics.class,
+        AiRequestMetrics.class,
         TimerAspect.class,
+        TraceContextEnricher.class,
         JwtAuthenticationFilter.class,
         JwtUtils.class,
         JwtTokenProvider.class,

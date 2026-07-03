@@ -5,6 +5,7 @@ import com.aisales.common.core.constant.SecurityConstants;
 import com.aisales.common.core.persistence.TenantHibernateFilterEnabler;
 import com.aisales.common.core.util.MDCUtils;
 import com.aisales.common.core.util.TenantContext;
+import com.aisales.common.observability.tracing.TraceContextEnricher;
 import com.aisales.common.security.model.UserPrincipal;
 import com.aisales.common.security.util.JwtUtils;
 import jakarta.servlet.FilterChain;
@@ -12,6 +13,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,6 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
     private final TenantHibernateFilterEnabler tenantHibernateFilterEnabler;
+    private final ObjectProvider<TraceContextEnricher> traceContextEnricher;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -56,6 +59,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
             MDCUtils.putContext();
+            traceContextEnricher.ifAvailable(TraceContextEnricher::enrichCurrentSpan);
             filterChain.doFilter(request, response);
         } finally {
             TenantContext.clear();

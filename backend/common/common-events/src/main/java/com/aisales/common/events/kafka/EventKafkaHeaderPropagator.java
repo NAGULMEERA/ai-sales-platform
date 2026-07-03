@@ -85,6 +85,7 @@ public class EventKafkaHeaderPropagator {
             JsonNode node = objectMapper.readTree(payload);
             addHeader(headers, EventKafkaHeaders.EVENT_ID, textOrNull(node, "eventId"));
             addHeader(headers, EventKafkaHeaders.EVENT_TYPE, textOrNull(node, "eventType"));
+            addHeader(headers, EventKafkaHeaders.EVENT_VERSION, eventVersion(node));
             addHeader(headers, EventKafkaHeaders.CORRELATION_ID, textOrNull(node, "correlationId"));
             addHeader(headers, EventKafkaHeaders.TENANT_ID, textOrNull(node, "tenantId"));
         } catch (Exception ignored) {
@@ -123,12 +124,31 @@ public class EventKafkaHeaderPropagator {
         return value != null && !value.isNull() ? value.asText() : null;
     }
 
+    private static String eventVersion(JsonNode node) {
+        String eventVersion = textOrNull(node, "eventVersion");
+        return StringUtils.hasText(eventVersion) ? eventVersion : textOrNull(node, "version");
+    }
+
     public void applyEventContext(BaseEvent event) {
         if (event.getCorrelationId() != null) {
             CorrelationIdUtils.setCorrelationId(event.getCorrelationId());
         }
         if (event.getTenantId() != null) {
             TenantContext.setTenantId(event.getTenantId());
+        }
+        Span currentSpan = tracer != null ? tracer.currentSpan() : null;
+        if (currentSpan != null) {
+            tagIfPresent(currentSpan, "tenant.id", event.getTenantId());
+            tagIfPresent(currentSpan, "request.id", event.getCorrelationId());
+            tagIfPresent(currentSpan, "event.id", event.getEventId());
+            tagIfPresent(currentSpan, "event.type", event.getEventType());
+            currentSpan.tag("event.version", String.valueOf(event.getEventVersion()));
+        }
+    }
+
+    private static void tagIfPresent(Span span, String name, String value) {
+        if (StringUtils.hasText(value)) {
+            span.tag(name, value);
         }
     }
 }

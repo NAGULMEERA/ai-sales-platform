@@ -20,9 +20,15 @@ public final class MetricNames {
     public static final String EVENT_CONSUMED = "platform_event_consumed_total";
     public static final String EVENT_DLQ = "platform_event_dlq_total";
 
-    // AI (future)
+    // HTTP
+    public static final String HTTP_SLOW_REQUEST = "http_server_slow_requests_total";
+    public static final String HTTP_SERVER_ERROR = "http_server_errors_total";
+    public static final String OUTBOUND_SLOW_CALL = "http_client_slow_calls_total";
+
+    // AI
     public static final String AI_REQUEST = "ai_request_total";
     public static final String AI_TOKENS = "ai_tokens_total";
+    public static final String AI_SLOW_REQUEST = "ai_slow_request_total";
 
     private MetricNames() {
     }

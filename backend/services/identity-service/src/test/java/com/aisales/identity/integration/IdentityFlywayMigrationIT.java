@@ -29,7 +29,7 @@ class IdentityFlywayMigrationIT {
                 .load();
         flyway.migrate();
 
-        assertThat(flyway.info().applied()).hasSize(10);
+        assertThat(flyway.info().applied()).hasSize(11);
 
         try (Connection conn = postgres.createConnection("");
              Statement st = conn.createStatement()) {
@@ -40,6 +40,7 @@ class IdentityFlywayMigrationIT {
             assertTableExists(st, "audit_logs");
             assertTableExists(st, "processed_events");
             assertTableExists(st, "dead_letter");
+            assertDeadLetterRetryColumnsExist(st);
         }
     }
 
@@ -49,6 +50,19 @@ class IdentityFlywayMigrationIT {
                         + table + "'")) {
             rs.next();
             assertThat(rs.getInt(1)).isEqualTo(1);
+        }
+    }
+
+    private static void assertDeadLetterRetryColumnsExist(Statement st) throws Exception {
+        try (ResultSet rs = st.executeQuery("""
+                SELECT COUNT(*)
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'dead_letter'
+                  AND column_name IN ('error_class', 'retry_count', 'last_attempt_at')
+                """)) {
+            rs.next();
+            assertThat(rs.getInt(1)).isEqualTo(3);
         }
     }
 }

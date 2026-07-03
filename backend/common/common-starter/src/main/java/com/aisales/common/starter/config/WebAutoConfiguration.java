@@ -2,7 +2,9 @@ package com.aisales.common.starter.config;
 
 import com.aisales.common.observability.filter.CorrelationIdFilter;
 import com.aisales.common.observability.filter.LoggingFilter;
+import com.aisales.common.observability.config.ObservabilityProperties;
 import com.aisales.common.observability.http.CorrelationIdPropagationInterceptor;
+import com.aisales.common.observability.metrics.PlatformMetrics;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.restclient.RestTemplateCustomizer;
 import org.springframework.boot.security.autoconfigure.web.servlet.SecurityFilterProperties;
@@ -42,7 +44,10 @@ public class WebAutoConfiguration {
     }
 
     @Bean
-    public RestTemplateCustomizer correlationIdRestTemplateCustomizer() {
-        return restTemplate -> restTemplate.getInterceptors().add(new CorrelationIdPropagationInterceptor());
+    public RestTemplateCustomizer correlationIdRestTemplateCustomizer(
+            ObservabilityProperties observabilityProperties,
+            PlatformMetrics platformMetrics) {
+        return restTemplate -> restTemplate.getInterceptors()
+                .add(new CorrelationIdPropagationInterceptor(observabilityProperties, platformMetrics));
     }
 }
