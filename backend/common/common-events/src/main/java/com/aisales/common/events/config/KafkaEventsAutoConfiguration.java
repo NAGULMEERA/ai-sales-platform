@@ -1,5 +1,6 @@
 package com.aisales.common.events.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +14,7 @@ import org.springframework.kafka.listener.ContainerProperties;
 @Configuration
 @EnableKafka
 @ConditionalOnClass(KafkaTemplate.class)
+@ConditionalOnBean(ConsumerFactory.class)
 public class KafkaEventsAutoConfiguration {
 
     @Bean(name = "integrationKafkaListenerContainerFactory")

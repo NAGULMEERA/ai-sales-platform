@@ -3,8 +3,7 @@ package com.aisales.identity.infrastructure.oauth;
 import com.aisales.common.core.util.CorrelationIdUtils;
 import com.aisales.common.exception.model.ErrorCode;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 class OAuth2LoginFailureHandlerTest {
 
-    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final JsonMapper objectMapper = JsonMapper.builder().build();
     private final OAuth2LoginFailureHandler handler = new OAuth2LoginFailureHandler(objectMapper);
 
     @AfterEach

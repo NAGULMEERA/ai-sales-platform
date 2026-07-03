@@ -4,8 +4,7 @@ import com.aisales.common.events.inbox.DeadLetterService;
 import com.aisales.common.events.inbox.InboxService;
 import com.aisales.common.events.kafka.EventKafkaHeaderPropagator;
 import com.aisales.common.events.model.TenantCreatedEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +30,7 @@ class IntegrationEventListenerTest {
     private EventKafkaHeaderPropagator headerPropagator;
 
     @Spy
-    private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private JsonMapper objectMapper = JsonMapper.builder().build();
 
     @InjectMocks
     private IntegrationEventListener integrationEventListener;

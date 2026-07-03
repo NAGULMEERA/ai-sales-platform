@@ -44,6 +44,7 @@ import java.util.UUID;
 @Tag(name = "Authentication", description = "Registration, login, tokens, password reset, email verification")
 public class AuthController {
 
+
     private final AuthService authService;
     private final RegistrationService registrationService;
 

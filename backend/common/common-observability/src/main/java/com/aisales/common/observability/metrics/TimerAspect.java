@@ -8,7 +8,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 
 @Aspect
-@Component
+@Component("platformTimerAspect")
 @RequiredArgsConstructor
 public class TimerAspect {
 

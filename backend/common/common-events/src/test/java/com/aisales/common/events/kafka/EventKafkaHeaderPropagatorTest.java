@@ -3,8 +3,7 @@ package com.aisales.common.events.kafka;
 import com.aisales.common.core.util.CorrelationIdUtils;
 import com.aisales.common.core.util.TenantContext;
 import com.aisales.common.events.model.TenantCreatedEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -13,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class EventKafkaHeaderPropagatorTest {
 
-    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final JsonMapper objectMapper = JsonMapper.builder().build();
     private final EventKafkaHeaderPropagator propagator =
             new EventKafkaHeaderPropagator(objectMapper, null, null);
 

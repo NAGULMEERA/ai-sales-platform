@@ -26,7 +26,7 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
+            <artifactId>spring-boot-starter-aspectj</artifactId>
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
@@ -38,7 +38,7 @@
         </dependency>
         <dependency>
             <!-- Spring Cloud's Resilience4j integration: provides @Retry/@CircuitBreaker/@RateLimiter
-                 annotation support (via spring-boot-starter-aop, already below), auto-configured
+                 annotation support (via spring-boot-starter-aspectj, already below), auto-configured
                  Micrometer metrics per instance, and keeps the version aligned with the platform's
                  spring-cloud-dependencies BOM instead of hardcoding one here. -->
             <groupId>org.springframework.cloud</groupId>

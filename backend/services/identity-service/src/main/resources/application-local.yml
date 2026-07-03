@@ -7,6 +7,10 @@ spring:
       enabled: false
     discovery:
       enabled: false
+  config:
+    import:
+      - optional:classpath:platform/application-observability.yml
+      - optional:classpath:platform/application-cache.yml
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
