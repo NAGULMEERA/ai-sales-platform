@@ -13,9 +13,14 @@ import org.springframework.util.StringUtils;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,8 +45,10 @@ public class StartupValidationRunner implements ApplicationRunner {
         List<String> failures = new ArrayList<>();
         validateRequiredConfig(failures);
         validateDatabase(failures);
+        validateFlyway(failures);
         validateRedis(failures);
         validateKafka(failures);
+        validateExternalDependencies(failures);
 
         if (!failures.isEmpty()) {
             state.markFailed(failures);
@@ -99,6 +106,60 @@ public class StartupValidationRunner implements ApplicationRunner {
             connection.ping();
         } catch (Exception ex) {
             failures.add("Redis startup validation failed: " + ex.getMessage());
+        }
+    }
+
+    private void validateFlyway(List<String> failures) {
+        if (!properties.isValidateFlyway()) {
+            return;
+        }
+        Class<?> flywayClass = flywayClass();
+        if (flywayClass == null) {
+            return;
+        }
+        for (String beanName : applicationContext.getBeanNamesForType(flywayClass, false, false)) {
+            try {
+                Object configuredFlyway = applicationContext.getBean(beanName);
+                Object infoResult = configuredFlyway.getClass().getMethod("info").invoke(configuredFlyway);
+                Object[] pending = (Object[]) infoResult.getClass().getMethod("pending").invoke(infoResult);
+                if (pending.length > 0) {
+                    failures.add("Pending Flyway migrations: " + pending.length);
+                }
+            } catch (Exception ex) {
+                failures.add("Flyway startup validation failed: " + ex.getMessage());
+            }
+        }
+    }
+
+    private Class<?> flywayClass() {
+        try {
+            return Class.forName("org.flywaydb.core.Flyway");
+        } catch (ClassNotFoundException ex) {
+            return null;
+        }
+    }
+
+    private void validateExternalDependencies(List<String> failures) {
+        if (properties.getRequiredExternalHealthUrls().isEmpty()) {
+            return;
+        }
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(2))
+                .build();
+        for (String url : properties.getRequiredExternalHealthUrls()) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .timeout(Duration.ofSeconds(3))
+                        .GET()
+                        .build();
+                HttpResponse<Void> response = client.send(request, HttpResponse.BodyHandlers.discarding());
+                if (response.statusCode() >= 500) {
+                    failures.add("External dependency unhealthy (" + response.statusCode() + "): " + url);
+                }
+            } catch (Exception ex) {
+                failures.add("External dependency unreachable: " + url + " (" + ex.getMessage() + ")");
+            }
         }
     }
 

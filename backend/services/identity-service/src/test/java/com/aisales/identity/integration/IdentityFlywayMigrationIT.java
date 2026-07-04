@@ -1,14 +1,15 @@
 package com.aisales.identity.integration;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
+
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,7 +30,7 @@ class IdentityFlywayMigrationIT {
                 .load();
         flyway.migrate();
 
-        assertThat(flyway.info().applied()).hasSize(11);
+        assertThat(flyway.info().applied()).hasSize(13);
 
         try (Connection conn = postgres.createConnection("");
              Statement st = conn.createStatement()) {
@@ -40,6 +41,7 @@ class IdentityFlywayMigrationIT {
             assertTableExists(st, "audit_logs");
             assertTableExists(st, "processed_events");
             assertTableExists(st, "dead_letter");
+            assertTableExists(st, "outbox_events");
             assertDeadLetterRetryColumnsExist(st);
         }
     }
