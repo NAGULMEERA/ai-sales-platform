@@ -22,6 +22,8 @@ aisales:
     fallback-logging: true
   events:
     default-topic: aisales-events
+    outbox:
+      enabled: true
     inbox:
       enabled: true
   http:
@@ -37,6 +39,21 @@ aisales:
     # the read timeout stays short despite the call being external.
     connect-timeout-ms: 3000
     read-timeout-ms: 5000
+  startup-validation:
+    enabled: true
+    validate-flyway: true
+    validate-redis: true
+    validate-kafka: true
+    required-config-values:
+      - aisales.security.jwt.secret
+    required-tables:
+      - users
+      - tenants
+      - refresh_tokens
+      - audit_logs
+      - outbox_events
+      - permissions
+      - role_permissions
 
 resilience4j:
   retry:

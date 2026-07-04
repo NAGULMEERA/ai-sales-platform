@@ -28,6 +28,7 @@ public enum ErrorCode {
     AUTH_INSUFFICIENT_PERMISSIONS("AUTH_002", "Insufficient permissions", HttpStatus.FORBIDDEN),
     AUTH_OAUTH2_LOGIN_FAILED("AUTH_003", "OAuth2 login failed", HttpStatus.UNAUTHORIZED),
     AUTH_RATE_LIMIT("AUTH_004", "Too many authentication attempts", HttpStatus.TOO_MANY_REQUESTS),
+    AUTH_REFRESH_TOKEN_REUSE("AUTH_005", "Refresh token reuse detected", HttpStatus.UNAUTHORIZED),
 
     // Tenant
     TENANT_INACTIVE("TENANT_001", "Tenant is inactive or suspended", HttpStatus.FORBIDDEN),

@@ -16,11 +16,7 @@ public final class LayeredArchitectureRules {
     }
 
     public static JavaClasses importLayerClasses(String basePackage) {
-        return new ClassFileImporter().importPackages(
-                basePackage + ".api",
-                basePackage + ".application",
-                basePackage + ".domain",
-                basePackage + ".infrastructure");
+        return new ClassFileImporter().importPackages(basePackage);
     }
 
     public static void check(JavaClasses classes) {
