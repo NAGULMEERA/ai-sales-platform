@@ -1,0 +1,6 @@
+# Platform springdoc defaults — import via spring.config.import alongside observability/cache YAML.
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
