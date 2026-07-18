@@ -42,6 +42,12 @@ public final class MetricNames {
     public static final String AI_TOKENS = "ai_tokens_total";
     public static final String AI_SLOW_REQUEST = "ai_slow_request_total";
 
+    // Billing
+    public static final String BILLING_INVOICE_CREATED = "billing_invoice_created_total";
+    public static final String BILLING_INVOICE_ISSUED = "billing_invoice_issued_total";
+    public static final String BILLING_PAYMENT_CREATED = "billing_payment_created_total";
+    public static final String BILLING_STRIPE_WEBHOOK = "billing_stripe_webhook_total";
+
     private MetricNames() {
     }
 }

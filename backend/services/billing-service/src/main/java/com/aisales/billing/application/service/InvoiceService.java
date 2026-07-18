@@ -17,6 +17,8 @@ import com.aisales.common.exception.exception.BusinessException;
 import com.aisales.common.exception.exception.NotFoundException;
 import com.aisales.common.exception.exception.ValidationException;
 import com.aisales.common.exception.model.ErrorCode;
+import com.aisales.common.observability.metrics.MetricNames;
+import com.aisales.common.observability.metrics.PlatformMetrics;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -27,12 +29,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 /**
- * Billing owns invoices. AI usage is fetched via Feign; amounts are snapshotted.
- * Payment collection is handled by {@link PaymentService}.
+ * Billing owns invoices. AI usage is fetched via Feign outside the persistence TX;
+ * amounts are snapshotted when the invoice row is written.
  */
 @Service
 @RequiredArgsConstructor
@@ -42,8 +46,9 @@ public class InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final AiServiceClient aiServiceClient;
+    private final PlatformTransactionManager transactionManager;
+    private final PlatformMetrics platformMetrics;
 
-    @Transactional
     public InvoiceDto createFromAiUsage(CreateAiUsageInvoiceRequest request) {
         UUID tenantId = requireTenantId();
         validatePeriod(request.getPeriodFrom(), request.getPeriodTo());
@@ -55,7 +60,76 @@ public class InvoiceService {
                     "AI usage invoice already exists for this tenant and period");
         }
 
+        // Feign must not hold a DB connection (Track A P1).
         AiUsageSummaryDto summary = fetchUsageSummary(request.getPeriodFrom(), request.getPeriodTo());
+
+        InvoiceDto created = new TransactionTemplate(transactionManager).execute(status ->
+                persistAiUsageInvoice(tenantId, request, summary));
+        if (created != null) {
+            platformMetrics.incrementBusinessMetric(
+                    MetricNames.BILLING_INVOICE_CREATED,
+                    tenantId.toString(),
+                    "source", SOURCE_AI_USAGE,
+                    "status", created.getStatus().name());
+        }
+        return created;
+    }
+
+    @Transactional(readOnly = true)
+    public InvoiceDto get(UUID id) {
+        return toDto(requireOwned(id));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<InvoiceDto> list(int page, int size, InvoiceStatus status) {
+        UUID tenantId = requireTenantId();
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        Page<Invoice> result = status != null
+                ? invoiceRepository.findByTenantIdAndStatusAndDeletedAtIsNull(tenantId, status, pageable)
+                : invoiceRepository.findByTenantIdAndDeletedAtIsNull(tenantId, pageable);
+        List<InvoiceDto> content = result.getContent().stream().map(this::toDtoWithoutLines).toList();
+        return PageResponse.<InvoiceDto>builder()
+                .content(content)
+                .page(result.getNumber())
+                .size(result.getSize())
+                .totalElements(result.getTotalElements())
+                .totalPages(result.getTotalPages())
+                .first(result.isFirst())
+                .last(result.isLast())
+                .build();
+    }
+
+    @Transactional
+    public InvoiceDto issue(UUID id) {
+        Invoice invoice = requireOwned(id);
+        if (invoice.getStatus() == InvoiceStatus.ISSUED) {
+            return toDto(invoice);
+        }
+        if (invoice.getStatus() != InvoiceStatus.DRAFT) {
+            throw new ValidationException("Only DRAFT invoices can be issued");
+        }
+        Instant now = Instant.now();
+        invoice.setStatus(InvoiceStatus.ISSUED);
+        invoice.setIssuedAt(now);
+        invoice.setUpdatedAt(now);
+        invoice.setUpdatedBy(actor());
+        InvoiceDto dto = toDto(invoiceRepository.save(invoice));
+        platformMetrics.incrementBusinessMetric(
+                MetricNames.BILLING_INVOICE_ISSUED,
+                invoice.getTenantId().toString(),
+                "source", invoice.getSource() != null ? invoice.getSource() : "unknown");
+        return dto;
+    }
+
+    private InvoiceDto persistAiUsageInvoice(
+            UUID tenantId, CreateAiUsageInvoiceRequest request, AiUsageSummaryDto summary) {
+        if (invoiceRepository.existsByTenantIdAndPeriodStartAndPeriodEndAndSourceAndDeletedAtIsNull(
+                tenantId, request.getPeriodFrom(), request.getPeriodTo(), SOURCE_AI_USAGE)) {
+            throw new BusinessException(
+                    ErrorCode.CONFLICT,
+                    "AI usage invoice already exists for this tenant and period");
+        }
+
         Instant now = Instant.now();
         String actor = actor();
         UUID invoiceId = UUID.randomUUID();
@@ -107,47 +181,6 @@ public class InvoiceService {
             }
         }
 
-        return toDto(invoiceRepository.save(invoice));
-    }
-
-    @Transactional(readOnly = true)
-    public InvoiceDto get(UUID id) {
-        return toDto(requireOwned(id));
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<InvoiceDto> list(int page, int size, InvoiceStatus status) {
-        UUID tenantId = requireTenantId();
-        PageRequest pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
-        Page<Invoice> result = status != null
-                ? invoiceRepository.findByTenantIdAndStatusAndDeletedAtIsNull(tenantId, status, pageable)
-                : invoiceRepository.findByTenantIdAndDeletedAtIsNull(tenantId, pageable);
-        List<InvoiceDto> content = result.getContent().stream().map(this::toDtoWithoutLines).toList();
-        return PageResponse.<InvoiceDto>builder()
-                .content(content)
-                .page(result.getNumber())
-                .size(result.getSize())
-                .totalElements(result.getTotalElements())
-                .totalPages(result.getTotalPages())
-                .first(result.isFirst())
-                .last(result.isLast())
-                .build();
-    }
-
-    @Transactional
-    public InvoiceDto issue(UUID id) {
-        Invoice invoice = requireOwned(id);
-        if (invoice.getStatus() == InvoiceStatus.ISSUED) {
-            return toDto(invoice);
-        }
-        if (invoice.getStatus() != InvoiceStatus.DRAFT) {
-            throw new ValidationException("Only DRAFT invoices can be issued");
-        }
-        Instant now = Instant.now();
-        invoice.setStatus(InvoiceStatus.ISSUED);
-        invoice.setIssuedAt(now);
-        invoice.setUpdatedAt(now);
-        invoice.setUpdatedBy(actor());
         return toDto(invoiceRepository.save(invoice));
     }
 

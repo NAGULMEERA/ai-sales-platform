@@ -40,6 +40,15 @@
 
 **Track B status:** items 1–13 **Done**.
 
+## Track C — Payment / billing hardening (after Track B)
+
+| # | Item | Pass criteria | Status |
+|---|------|---------------|--------|
+| 1 | **Stripe webhook hardening** | Failures + event-id dedup | **Done** (`payment_intent.payment_failed`; `stripe_webhook_event` claim) |
+| 2 | **Billing TX / metrics** | Provider/Feign outside DB TX; payment KPIs | **Done** (invoice Feign + Stripe charge outside TX; Micrometer counters) |
+
+**Track C status:** items 1–2 **Done**.
+
 ## Explicit non-goals (still hold)
 
 - New industry microservices

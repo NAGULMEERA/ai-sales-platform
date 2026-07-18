@@ -18,6 +18,8 @@ import com.aisales.common.contracts.client.AiServiceClient;
 import com.aisales.common.core.dto.ApiResponse;
 import com.aisales.common.core.util.TenantContext;
 import com.aisales.common.exception.exception.BusinessException;
+import com.aisales.common.observability.metrics.PlatformMetrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -29,6 +31,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 @ExtendWith(MockitoExtension.class)
 class InvoiceServiceTest {
@@ -43,7 +49,11 @@ class InvoiceServiceTest {
     void setUp() {
         tenantId = UUID.randomUUID();
         TenantContext.setTenantId(tenantId.toString());
-        service = new InvoiceService(invoiceRepository, aiServiceClient);
+        service = new InvoiceService(
+                invoiceRepository,
+                aiServiceClient,
+                passthroughTransactionManager(),
+                new PlatformMetrics(new SimpleMeterRegistry()));
     }
 
     @AfterEach
@@ -106,5 +116,22 @@ class InvoiceServiceTest {
                         .build()))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("already exists");
+    }
+
+    private static PlatformTransactionManager passthroughTransactionManager() {
+        return new PlatformTransactionManager() {
+            @Override
+            public TransactionStatus getTransaction(TransactionDefinition definition) {
+                return new SimpleTransactionStatus(true);
+            }
+
+            @Override
+            public void commit(TransactionStatus status) {
+            }
+
+            @Override
+            public void rollback(TransactionStatus status) {
+            }
+        };
     }
 }
