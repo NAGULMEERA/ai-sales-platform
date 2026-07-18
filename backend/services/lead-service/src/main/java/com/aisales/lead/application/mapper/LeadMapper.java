@@ -49,6 +49,9 @@ public class LeadMapper {
                 .score(lead.getScore())
                 .confidenceScore(lead.getConfidenceScore())
                 .assignedTo(lead.getAssignedTo())
+                .attributes(lead.getAttributes() != null
+                        ? new java.util.HashMap<>(lead.getAttributes())
+                        : new java.util.HashMap<>())
                 .createdAt(lead.getCreatedAt())
                 .updatedAt(lead.getUpdatedAt())
                 .version(lead.getVersion())

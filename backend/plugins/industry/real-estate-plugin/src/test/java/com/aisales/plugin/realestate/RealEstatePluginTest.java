@@ -15,5 +15,25 @@ class RealEstatePluginTest {
         assertThat(plugin.getIndustryCode()).isEqualTo("REAL_ESTATE");
         assertThat(plugin.descriptor().getMetadata()).containsEntry("ownsMicroservice", false);
         assertThat(plugin.descriptor().getDefaultConfig()).containsKey("catalogAttributeKeys");
+        assertThat(plugin.descriptor().getDefaultConfig())
+                .containsEntry("defaultPipelineCode", "REAL_ESTATE_SALES_V1")
+                .containsEntry("pipelineHappyPath",
+                        java.util.List.of("New", "Qualified", "Visit", "Negotiation", "Booked"))
+                .containsEntry("matchAttributeKeys",
+                        java.util.List.of("bedrooms", "bathrooms", "location"))
+                .containsEntry("catalogOfferCategory", "residential")
+                .containsEntry("quoteLineSource", "catalog.offerId")
+                .containsEntry("leadAttributeKeys",
+                        java.util.List.of("budget", "location", "propertyType", "timeline"))
+                .containsEntry("qualificationPromptCode", "LEAD_QUALIFY_REAL_ESTATE")
+                .containsEntry("qualificationVariableKeys",
+                        java.util.List.of("budget", "location", "timeline"))
+                .containsEntry("conversationFollowupWorkflowKey", "CONVERSATION_FOLLOWUP_V1")
+                .containsEntry("defaultFollowupType", "VISIT_FOLLOWUP")
+                .containsEntry("conversationSubjectTemplate", "Visit follow-up")
+                .containsEntry("inPersonEngagementLabel", "Site visit");
+        assertThat(plugin.descriptor().getMetadata())
+                .containsEntry("industryQuoteType", false)
+                .containsEntry("industryConversationType", false);
     }
 }

@@ -25,6 +25,7 @@ import com.aisales.lead.infrastructure.persistence.LeadNoteRepository;
 import com.aisales.lead.infrastructure.persistence.LeadRepository;
 import com.aisales.lead.infrastructure.persistence.LeadScoreRepository;
 import com.aisales.lead.infrastructure.persistence.LeadStatusHistoryRepository;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -121,5 +122,65 @@ class LeadServiceTest {
         assertThatThrownBy(() -> leadService.createLead(request))
                 .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("Tenant context");
+    }
+
+    @Test
+    void shouldCreateRealEstateLeadWithIndustryAttributesOnSameApi() {
+        CreateLeadRequest request = CreateLeadRequest.builder()
+                .customerName("RE Buyer")
+                .phone("+919111111111")
+                .sourceType("WEB")
+                .attributes(Map.of(
+                        "budget", 7500000,
+                        "location", "Whitefield",
+                        "propertyType", "Apartment"))
+                .build();
+
+        when(leadRepository.saveAndFlush(any(Lead.class))).thenAnswer(invocation -> {
+            Lead lead = invocation.getArgument(0);
+            lead.setId(UUID.randomUUID());
+            lead.setExternalId("LD-RE-1");
+            return lead;
+        });
+
+        LeadDto dto = leadService.createLead(request);
+
+        assertThat(dto.getAttributes())
+                .containsEntry("budget", 7500000)
+                .containsEntry("location", "Whitefield")
+                .containsEntry("propertyType", "Apartment");
+        ArgumentCaptor<Lead> leadCaptor = ArgumentCaptor.forClass(Lead.class);
+        verify(leadRepository).saveAndFlush(leadCaptor.capture());
+        assertThat(leadCaptor.getValue().getAttributes()).containsEntry("propertyType", "Apartment");
+    }
+
+    @Test
+    void shouldCreateAutomobileLeadWithIndustryAttributesOnSameApi() {
+        CreateLeadRequest request = CreateLeadRequest.builder()
+                .customerName("Auto Buyer")
+                .phone("+919222222222")
+                .sourceType("WEB")
+                .attributes(Map.of(
+                        "vehicle", "SUV",
+                        "budget", 1800000,
+                        "financeRequired", true))
+                .build();
+
+        when(leadRepository.saveAndFlush(any(Lead.class))).thenAnswer(invocation -> {
+            Lead lead = invocation.getArgument(0);
+            lead.setId(UUID.randomUUID());
+            lead.setExternalId("LD-AUTO-1");
+            return lead;
+        });
+
+        LeadDto dto = leadService.createLead(request);
+
+        assertThat(dto.getAttributes())
+                .containsEntry("vehicle", "SUV")
+                .containsEntry("budget", 1800000)
+                .containsEntry("financeRequired", true);
+        ArgumentCaptor<Lead> leadCaptor = ArgumentCaptor.forClass(Lead.class);
+        verify(leadRepository).saveAndFlush(leadCaptor.capture());
+        assertThat(leadCaptor.getValue().getAttributes()).containsEntry("financeRequired", true);
     }
 }

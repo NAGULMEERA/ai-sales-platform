@@ -1,6 +1,8 @@
 package com.aisales.common.contracts.lead;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,6 +35,9 @@ public class LeadDto {
     private Integer score;
     private Integer confidenceScore;
     private UUID assignedTo;
+    /** Industry-agnostic attributes (plugin-defined keys). */
+    @Builder.Default
+    private Map<String, Object> attributes = new HashMap<>();
     private Instant createdAt;
     private Instant updatedAt;
     private Long version;

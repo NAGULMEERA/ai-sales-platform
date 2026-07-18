@@ -100,4 +100,96 @@ class AiGatewayServiceTest {
         assertThat(captor.getValue().getEventType()).isEqualTo("PromptExecuted");
         assertThat(captor.getValue().getBusinessReference()).isEqualTo("lead-1");
     }
+
+    @Test
+    void shouldQualifyRealEstateLeadViaSameExecuteApi() {
+        stubPrompt(
+                "LEAD_QUALIFY_REAL_ESTATE",
+                "Qualify RE lead {{leadName}} budget={{budget}} location={{location}} timeline={{timeline}}",
+                List.of("leadName", "budget", "location", "timeline"));
+
+        when(llmProvider.complete(any())).thenReturn(new LlmCompletionResult(
+                "STUB", "stub-model", "{\"recommendation\":\"QUALIFY\",\"score\":82}",
+                Map.of("recommendation", "QUALIFY", "score", 82,
+                        "inputs", Map.of("budget", "7500000", "location", "Whitefield", "timeline", "3 months")),
+                0.9, 12, 6));
+
+        AiExecuteResponse response = aiGatewayService.execute(AiExecuteRequest.builder()
+                .promptCode("LEAD_QUALIFY_REAL_ESTATE")
+                .variables(Map.of(
+                        "leadName", "RE Buyer",
+                        "budget", "7500000",
+                        "location", "Whitefield",
+                        "timeline", "3 months"))
+                .businessReference("lead-re-1")
+                .build());
+
+        assertThat(response.getPromptCode()).isEqualTo("LEAD_QUALIFY_REAL_ESTATE");
+        assertThat(response.getRenderedUserPrompt())
+                .contains("budget=7500000")
+                .contains("location=Whitefield")
+                .contains("timeline=3 months");
+        assertThat(response.getStructuredOutput()).containsEntry("recommendation", "QUALIFY");
+    }
+
+    @Test
+    void shouldQualifyAutomobileLeadViaSameExecuteApi() {
+        stubPrompt(
+                "LEAD_QUALIFY_AUTOMOBILE",
+                "Qualify Auto lead {{leadName}} budget={{budget}} vehicle={{vehicle}} finance={{financeRequired}} exchange={{exchange}}",
+                List.of("leadName", "budget", "vehicle", "financeRequired", "exchange"));
+
+        when(llmProvider.complete(any())).thenReturn(new LlmCompletionResult(
+                "STUB", "stub-model", "{\"recommendation\":\"QUALIFY\",\"score\":78}",
+                Map.of("recommendation", "QUALIFY", "score", 78,
+                        "inputs", Map.of("budget", "1800000", "vehicle", "SUV",
+                                "financeRequired", "true", "exchange", "yes")),
+                0.88, 14, 7));
+
+        AiExecuteResponse response = aiGatewayService.execute(AiExecuteRequest.builder()
+                .promptCode("LEAD_QUALIFY_AUTOMOBILE")
+                .variables(Map.of(
+                        "leadName", "Auto Buyer",
+                        "budget", "1800000",
+                        "vehicle", "SUV",
+                        "financeRequired", "true",
+                        "exchange", "yes"))
+                .businessReference("lead-auto-1")
+                .build());
+
+        assertThat(response.getPromptCode()).isEqualTo("LEAD_QUALIFY_AUTOMOBILE");
+        assertThat(response.getRenderedUserPrompt())
+                .contains("vehicle=SUV")
+                .contains("finance=true")
+                .contains("exchange=yes");
+        assertThat(response.getStructuredOutput()).containsEntry("recommendation", "QUALIFY");
+    }
+
+    private void stubPrompt(String code, String userTemplate, List<String> variables) {
+        UUID promptId = UUID.randomUUID();
+        PromptTemplate template = PromptTemplate.builder()
+                .id(promptId)
+                .tenantId(tenantId)
+                .code(code)
+                .name(code)
+                .purpose("LEAD_QUALIFICATION")
+                .status(PromptStatus.ACTIVE)
+                .activeVersion(1)
+                .createdAt(java.time.Instant.now())
+                .updatedAt(java.time.Instant.now())
+                .build();
+        PromptVersionEntity version = PromptVersionEntity.builder()
+                .id(UUID.randomUUID())
+                .tenantId(tenantId)
+                .promptId(promptId)
+                .versionNumber(1)
+                .systemTemplate("You are a lead qualifier. Return JSON recommendation and score.")
+                .userTemplate(userTemplate)
+                .variables(variables)
+                .status(PromptStatus.ACTIVE)
+                .createdAt(java.time.Instant.now())
+                .build();
+        when(promptService.resolveForExecution(code, null, null))
+                .thenReturn(new PromptService.ResolvedPrompt(template, version));
+    }
 }

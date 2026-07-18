@@ -3,6 +3,8 @@ package com.aisales.common.contracts.lead;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -39,4 +41,13 @@ public class CreateLeadRequest {
 
     @Size(max = 255)
     private String campaign;
+
+    /**
+     * Industry-agnostic lead attributes (plugin-defined keys).
+     * Real Estate example: budget, location, propertyType.
+     * Automobile example: vehicle, budget, financeRequired.
+     * Stored in leads.metadata — no industry columns on Lead.
+     */
+    @Builder.Default
+    private Map<String, Object> attributes = new HashMap<>();
 }

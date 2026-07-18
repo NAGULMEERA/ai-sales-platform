@@ -1,5 +1,6 @@
 package com.aisales.lead.application.service;
 
+import com.aisales.common.contracts.lead.EnsurePipelineRequest;
 import com.aisales.common.contracts.lead.LeadStatus;
 import com.aisales.common.contracts.lead.PipelineDto;
 import com.aisales.common.contracts.lead.PipelineStageDto;
@@ -11,6 +12,8 @@ import com.aisales.lead.domain.entity.SalesPipeline;
 import com.aisales.lead.domain.entity.SalesPipelineStage;
 import com.aisales.lead.domain.entity.SalesPipelineTransition;
 import com.aisales.lead.domain.service.DefaultSalesPipelineDefinition;
+import com.aisales.lead.domain.service.PipelineTemplateDefinition;
+import com.aisales.lead.domain.service.PipelineTemplateRegistry;
 import com.aisales.lead.domain.service.PipelineTransitionSource;
 import com.aisales.lead.infrastructure.persistence.SalesPipelineRepository;
 import com.aisales.lead.infrastructure.persistence.SalesPipelineStageRepository;
@@ -18,6 +21,7 @@ import com.aisales.lead.infrastructure.persistence.SalesPipelineTransitionReposi
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -33,12 +37,13 @@ public class PipelineService {
     private final SalesPipelineStageRepository stageRepository;
     private final SalesPipelineTransitionRepository transitionRepository;
     private final PipelineTransitionSource transitionSource;
+    private final PipelineTemplateRegistry templateRegistry;
 
     @Transactional
     public SalesPipeline ensureDefaultPipeline(UUID tenantId) {
         return pipelineRepository.findByTenantIdAndDefaultPipelineTrueAndActiveTrue(tenantId)
                 .or(() -> pipelineRepository.findByTenantIdAndCode(tenantId, DefaultSalesPipelineDefinition.CODE))
-                .orElseGet(() -> createDefaultPipeline(tenantId));
+                .orElseGet(() -> createFromTemplate(tenantId, templateRegistry.require(DefaultSalesPipelineDefinition.CODE), true));
     }
 
     @Transactional
@@ -76,17 +81,36 @@ public class PipelineService {
         return toDto(ensureDefaultPipeline(tenantId));
     }
 
-    private SalesPipeline createDefaultPipeline(UUID tenantId) {
+    /**
+     * Idempotent ensure of a pipeline from a known template (same API for all industries).
+     */
+    @Transactional
+    public PipelineDto ensurePipeline(EnsurePipelineRequest request) {
+        UUID tenantId = requireTenantId();
+        String code = request.getCode().trim().toUpperCase(Locale.ROOT);
+        PipelineTemplateDefinition template = templateRegistry.require(code);
+
+        return pipelineRepository.findByTenantIdAndCode(tenantId, code)
+                .map(this::toDto)
+                .orElseGet(() -> {
+                    boolean makeDefault = request.isMakeDefault()
+                            && pipelineRepository.findByTenantIdAndDefaultPipelineTrueAndActiveTrue(tenantId).isEmpty();
+                    return toDto(createFromTemplate(tenantId, template, makeDefault));
+                });
+    }
+
+    private SalesPipeline createFromTemplate(
+            UUID tenantId, PipelineTemplateDefinition template, boolean defaultPipeline) {
         Instant now = Instant.now();
         UUID actor = parseUuidOrNull(TenantContext.getUserId());
 
         SalesPipeline pipeline = pipelineRepository.saveAndFlush(SalesPipeline.builder()
                 .tenantId(tenantId)
-                .code(DefaultSalesPipelineDefinition.CODE)
-                .name(DefaultSalesPipelineDefinition.NAME)
-                .description(DefaultSalesPipelineDefinition.DESCRIPTION)
+                .code(template.code())
+                .name(template.name())
+                .description(template.description())
                 .active(true)
-                .defaultPipeline(true)
+                .defaultPipeline(defaultPipeline)
                 .createdAt(now)
                 .updatedAt(now)
                 .createdBy(actor)
@@ -94,7 +118,7 @@ public class PipelineService {
                 .build());
 
         List<SalesPipelineStage> stages = new ArrayList<>();
-        for (DefaultSalesPipelineDefinition.StageSeed seed : DefaultSalesPipelineDefinition.stages()) {
+        for (PipelineTemplateDefinition.StageSeed seed : template.stages()) {
             stages.add(SalesPipelineStage.builder()
                     .pipelineId(pipeline.getId())
                     .stageCode(seed.status().name())
@@ -106,7 +130,7 @@ public class PipelineService {
         stageRepository.saveAll(stages);
 
         List<SalesPipelineTransition> transitions = new ArrayList<>();
-        for (Map.Entry<LeadStatus, Set<LeadStatus>> entry : DefaultSalesPipelineDefinition.transitions().entrySet()) {
+        for (Map.Entry<LeadStatus, Set<LeadStatus>> entry : template.transitions().entrySet()) {
             for (LeadStatus to : entry.getValue()) {
                 transitions.add(SalesPipelineTransition.builder()
                         .pipelineId(pipeline.getId())

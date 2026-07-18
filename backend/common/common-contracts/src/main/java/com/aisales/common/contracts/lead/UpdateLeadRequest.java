@@ -2,6 +2,7 @@ package com.aisales.common.contracts.lead;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,4 +32,7 @@ public class UpdateLeadRequest {
 
     @Size(max = 255)
     private String campaign;
+
+    /** When non-null, replaces industry-agnostic lead attributes. */
+    private Map<String, Object> attributes;
 }

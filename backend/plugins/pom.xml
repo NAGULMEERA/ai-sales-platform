@@ -19,6 +19,7 @@
     <modules>
         <module>plugin-sdk</module>
         <module>industry/real-estate-plugin</module>
+        <module>industry/automobile-plugin</module>
         <module>capability/email-channel-plugin</module>
         <module>capability/whatsapp-channel-plugin</module>
     </modules>
