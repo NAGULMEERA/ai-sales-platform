@@ -13,6 +13,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -96,6 +98,14 @@ public class Lead {
 
     @Column(name = "assigned_to")
     private UUID assignedTo;
+
+    /**
+     * Industry-agnostic attributes (plugin-defined keys). Persisted as leads.metadata.
+     */
+    @Builder.Default
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "metadata", nullable = false, columnDefinition = "jsonb")
+    private Map<String, Object> attributes = new HashMap<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -272,7 +282,7 @@ public class Lead {
 
     public void updateDetails(String name, String phoneValue, String emailValue,
                               String sourceTypeValue, String sourceIdValue, String campaignValue,
-                              UUID actor) {
+                              Map<String, Object> attributesValue, UUID actor) {
         assertActive();
         if (!isBlank(name)) {
             this.customerName = name.trim();
@@ -291,6 +301,9 @@ public class Lead {
         }
         if (campaignValue != null) {
             this.campaign = campaignValue;
+        }
+        if (attributesValue != null) {
+            this.attributes = new HashMap<>(attributesValue);
         }
         assertHasContactMethod();
         touch(actor);

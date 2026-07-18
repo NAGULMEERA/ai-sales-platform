@@ -99,6 +99,9 @@ public class LeadService {
                 .sourceType(request.getSourceType().trim())
                 .sourceId(request.getSourceId())
                 .campaign(request.getCampaign())
+                .attributes(request.getAttributes() != null
+                        ? new java.util.HashMap<>(request.getAttributes())
+                        : new java.util.HashMap<>())
                 .status(LeadStatus.NEW)
                 .validated(false)
                 .qualified(false)
@@ -147,7 +150,8 @@ public class LeadService {
         Lead lead = requireLead(leadId);
         UUID actor = actorId();
         lead.updateDetails(request.getCustomerName(), request.getPhone(), request.getEmail(),
-                request.getSourceType(), request.getSourceId(), request.getCampaign(), actor);
+                request.getSourceType(), request.getSourceId(), request.getCampaign(),
+                request.getAttributes(), actor);
         sideEffects.recordActivity(lead.getId(), "UPDATED", "Lead details updated", actor);
         return leadMapper.toDto(leadRepository.save(lead));
     }

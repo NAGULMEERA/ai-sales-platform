@@ -16,7 +16,9 @@ import com.aisales.common.contracts.catalog.CatalogProductType;
 import com.aisales.common.core.util.TenantContext;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -133,5 +135,101 @@ class CatalogMatchingServiceTest {
                 .build());
 
         assertThat(result.getCandidates()).isEmpty();
+    }
+
+    @Test
+    void shouldMatchRealEstateProductsByAttributeFiltersOnSameApi() {
+        CatalogProduct matching = product("RE-APT-3BHK", "Whitefield Apartment", "residential", Map.of(
+                "bedrooms", 3,
+                "bathrooms", 2,
+                "location", "Whitefield",
+                "price", 7500000));
+        CatalogProduct other = product("RE-APT-2BHK", "Koramangala Flat", "residential", Map.of(
+                "bedrooms", 2,
+                "bathrooms", 2,
+                "location", "Koramangala",
+                "price", 6500000));
+
+        when(productRepository.search(any(), any(), any(), any(), any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(matching, other)));
+        when(offerRepository.findActiveByTenantAndProductIds(eq(tenantId), any()))
+                .thenReturn(List.of());
+
+        CatalogMatchResultDto result = matchingService.match(CatalogMatchRequest.builder()
+                .category("residential")
+                .attributeFilters(Map.of(
+                        "bedrooms", 3,
+                        "location", "Whitefield"))
+                .limit(10)
+                .build());
+
+        assertThat(result.getCandidates()).hasSize(1);
+        assertThat(result.getCandidates().getFirst().getProductCode()).isEqualTo("RE-APT-3BHK");
+        assertThat(result.getCandidates().getFirst().getReason()).contains("attribute filters");
+        assertThat(result.getCandidates().getFirst().getMatchScore()).isGreaterThan(40);
+    }
+
+    @Test
+    void shouldMatchAutomobileProductsByAttributeFiltersOnSameApi() {
+        CatalogProduct matching = product("AUTO-CAMRY", "Toyota Camry", "vehicle", Map.of(
+                "make", "Toyota",
+                "model", "Camry",
+                "year", 2024,
+                "price", 1800000));
+        CatalogProduct other = product("AUTO-CITY", "Honda City", "vehicle", Map.of(
+                "make", "Honda",
+                "model", "City",
+                "year", 2023,
+                "price", 1200000));
+
+        when(productRepository.search(any(), any(), any(), any(), any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(matching, other)));
+        when(offerRepository.findActiveByTenantAndProductIds(eq(tenantId), any()))
+                .thenReturn(List.of());
+
+        CatalogMatchResultDto result = matchingService.match(CatalogMatchRequest.builder()
+                .category("vehicle")
+                .attributeFilters(Map.of(
+                        "make", "Toyota",
+                        "model", "Camry",
+                        "year", 2024))
+                .limit(10)
+                .build());
+
+        assertThat(result.getCandidates()).hasSize(1);
+        assertThat(result.getCandidates().getFirst().getProductCode()).isEqualTo("AUTO-CAMRY");
+        assertThat(result.getCandidates().getFirst().getReason())
+                .contains("make")
+                .contains("model")
+                .contains("year");
+    }
+
+    @Test
+    void shouldExcludeProductsMissingRequiredAttributeFilters() {
+        CatalogProduct withoutLocation = product("RE-NO-LOC", "Mystery Unit", "residential", Map.of(
+                "bedrooms", 3,
+                "bathrooms", 2));
+
+        when(productRepository.search(any(), any(), any(), any(), any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(withoutLocation)));
+
+        CatalogMatchResultDto result = matchingService.match(CatalogMatchRequest.builder()
+                .attributeFilters(Map.of("bedrooms", 3, "location", "Whitefield"))
+                .build());
+
+        assertThat(result.getCandidates()).isEmpty();
+    }
+
+    private CatalogProduct product(String code, String name, String category, Map<String, Object> attributes) {
+        return CatalogProduct.builder()
+                .id(UUID.randomUUID())
+                .tenantId(tenantId)
+                .code(code)
+                .name(name)
+                .category(category)
+                .productType(CatalogProductType.PRODUCT)
+                .status(CatalogItemStatus.ACTIVE)
+                .attributes(new HashMap<>(attributes))
+                .build();
     }
 }

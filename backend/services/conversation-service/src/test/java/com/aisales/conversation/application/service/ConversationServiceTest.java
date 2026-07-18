@@ -80,6 +80,42 @@ class ConversationServiceTest {
     }
 
     @Test
+    void shouldStartRealEstateVisitFollowupConversationOnSameApi() {
+        when(threadRepository.saveAndFlush(any(ConversationThread.class))).thenAnswer(inv -> {
+            ConversationThread t = inv.getArgument(0);
+            t.setId(UUID.randomUUID());
+            return t;
+        });
+
+        ConversationDto dto = conversationService.start(CreateConversationRequest.builder()
+                .leadId(UUID.randomUUID())
+                .channel(ConversationChannel.WHATSAPP)
+                .subject("Visit follow-up")
+                .build());
+
+        assertThat(dto.getSubject()).isEqualTo("Visit follow-up");
+        assertThat(dto.getStatus()).isEqualTo(ConversationStatus.OPEN);
+    }
+
+    @Test
+    void shouldStartAutomobileTestDriveFollowupConversationOnSameApi() {
+        when(threadRepository.saveAndFlush(any(ConversationThread.class))).thenAnswer(inv -> {
+            ConversationThread t = inv.getArgument(0);
+            t.setId(UUID.randomUUID());
+            return t;
+        });
+
+        ConversationDto dto = conversationService.start(CreateConversationRequest.builder()
+                .leadId(UUID.randomUUID())
+                .channel(ConversationChannel.WHATSAPP)
+                .subject("Test-drive follow-up")
+                .build());
+
+        assertThat(dto.getSubject()).isEqualTo("Test-drive follow-up");
+        assertThat(dto.getStatus()).isEqualTo(ConversationStatus.OPEN);
+    }
+
+    @Test
     void shouldRequireLeadOrCustomer() {
         assertThatThrownBy(() -> conversationService.start(CreateConversationRequest.builder()
                         .channel(ConversationChannel.WEB)

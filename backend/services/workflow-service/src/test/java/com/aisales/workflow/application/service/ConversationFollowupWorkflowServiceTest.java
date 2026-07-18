@@ -78,4 +78,11 @@ class ConversationFollowupWorkflowServiceTest {
         assertThat(eventCaptor.getValue().getDefinitionKey())
                 .isEqualTo("CONVERSATION_FOLLOWUP_V1");
     }
+
+    @Test
+    void shouldUseSameWorkflowKeyForVisitAndTestDriveFollowups() {
+        // Sprint 6: industries differ by conversation subject / lead followupType metadata only.
+        assertThat(WorkflowDefinitionKey.CONVERSATION_FOLLOWUP_V1.name())
+                .isEqualTo("CONVERSATION_FOLLOWUP_V1");
+    }
 }

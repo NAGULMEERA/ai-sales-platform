@@ -25,7 +25,9 @@ import com.aisales.common.contracts.lead.LeadStatus;
 import com.aisales.common.contracts.lead.LeadStatusHistoryDto;
 import com.aisales.common.contracts.lead.LeadTimelineEntryDto;
 import com.aisales.common.contracts.lead.LoseLeadRequest;
+import com.aisales.common.contracts.lead.AiLeadQualificationResultDto;
 import com.aisales.common.contracts.lead.QualifyLeadRequest;
+import com.aisales.common.contracts.lead.QualifyLeadWithAiRequest;
 import com.aisales.common.contracts.lead.RecordLeadQualityScoreRequest;
 import com.aisales.common.contracts.lead.ScheduleLeadVisitRequest;
 import com.aisales.common.contracts.lead.ScoreLeadRequest;
@@ -34,6 +36,7 @@ import com.aisales.common.contracts.lead.UpsertAssignmentPoolMemberRequest;
 import com.aisales.common.core.dto.ApiResponse;
 import com.aisales.common.core.dto.PageResponse;
 import com.aisales.common.core.util.CorrelationIdUtils;
+import com.aisales.lead.application.service.LeadAiQualificationService;
 import com.aisales.lead.application.service.LeadAssignmentPoolService;
 import com.aisales.lead.application.service.LeadExtensionService;
 import com.aisales.lead.application.service.LeadJourneyService;
@@ -67,6 +70,7 @@ public class LeadController {
     private final LeadExtensionService extensionService;
     private final LeadAssignmentPoolService assignmentPoolService;
     private final LeadJourneyService journeyService;
+    private final LeadAiQualificationService aiQualificationService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -132,6 +136,13 @@ public class LeadController {
     public ApiResponse<LeadDto> qualify(
             @PathVariable UUID id, @Valid @RequestBody QualifyLeadRequest request) {
         return ok("Lead qualified", leadService.qualifyLead(id, request));
+    }
+
+    @PostMapping("/{id}/ai-qualification")
+    @Operation(summary = "Qualify lead via AI Gateway (same API for all industries; prompt/vars differ)")
+    public ApiResponse<AiLeadQualificationResultDto> qualifyWithAi(
+            @PathVariable UUID id, @Valid @RequestBody QualifyLeadWithAiRequest request) {
+        return ok("AI qualification completed", aiQualificationService.qualifyWithAi(id, request));
     }
 
     @PostMapping("/{id}/contact")
