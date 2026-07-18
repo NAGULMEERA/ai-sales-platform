@@ -22,5 +22,6 @@
         <module>industry/automobile-plugin</module>
         <module>capability/email-channel-plugin</module>
         <module>capability/whatsapp-channel-plugin</module>
+        <module>capability/meta-lead-ads-plugin</module>
     </modules>
 </project>

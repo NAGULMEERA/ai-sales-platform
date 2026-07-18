@@ -23,4 +23,11 @@ class GatewayPublicPathMatcherTest {
         assertThat(GatewayPublicPathMatcher.isPublicPath("/api/v1/payments/webhooks/stripe")).isTrue();
         assertThat(GatewayPublicPathMatcher.isPublicPath("/api/v1/payments/abc")).isFalse();
     }
+
+    @Test
+    void shouldAllowMetaLeadAdsWebhooks() {
+        assertThat(GatewayPublicPathMatcher.isPublicPath("/api/v1/integrations/webhooks/meta/leadgen"))
+                .isTrue();
+        assertThat(GatewayPublicPathMatcher.isPublicPath("/api/v1/integrations/config")).isFalse();
+    }
 }

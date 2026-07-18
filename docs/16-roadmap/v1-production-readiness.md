@@ -49,6 +49,16 @@
 
 **Track C status:** items 1–2 **Done**.
 
+## Track D — Social Lead Ads → instant voice qualify
+
+| # | Item | Pass criteria | Status |
+|---|------|---------------|--------|
+| 1 | **Meta Lead Ads → Lead + STUB voice qualify** | Webhook creates lead; stub call fills budget/location/timeline; optional AI qualify | **Done** (`POST /integrations/webhooks/meta/leadgen`; page binding; STUB voice; capability plugin) |
+| 2 | **LIVE Meta Graph lead fetch** | leadgen_id → Graph API form fields | **Done** (`mode=LIVE`; `MetaGraphLeadClient`; page/global access token) |
+| 3 | **Real voice provider** | Outbound PSTN/VoIP replace STUB | **Done** (plug/flag `STUB\|TWILIO`; `voice_call` CallSid lookup; status webhook; ProdVoiceGuard) |
+
+**Track D status:** items 1–3 **Done**.
+
 ## Explicit non-goals (still hold)
 
 - New industry microservices

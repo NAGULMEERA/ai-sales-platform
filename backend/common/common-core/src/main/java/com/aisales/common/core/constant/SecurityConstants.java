@@ -20,6 +20,7 @@ public final class SecurityConstants {
             "/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
             "/api/v1/auth/**", "/api/v1/public/**",
             "/api/v1/payments/webhooks/**",
+            "/api/v1/integrations/webhooks/**",
             "/.well-known/jwks.json", "/api/v1/.well-known/jwks.json",
             "/oauth2/**", "/login/oauth2/**"
     };
