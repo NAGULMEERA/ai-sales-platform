@@ -53,6 +53,7 @@ class LeadLifecycleServiceTest {
     @Mock private EventPublisher eventPublisher;
     @Mock private DuplicateLeadDetectionService duplicateDetection;
     @Mock private LeadAssignmentPoolService assignmentPoolService;
+    @Mock private LeadCustomerConversionGateway customerConversionGateway;
 
     private LeadService leadService;
     private UUID tenantId;
@@ -89,13 +90,19 @@ class LeadLifecycleServiceTest {
                 leadRepository, assignmentRepository, noteRepository, activityRepository,
                 followupRepository, scoreRepository, statusHistoryRepository, duplicateRepository,
                 mapper, eventPublisher, stateMachine, sideEffects, duplicateDetection,
-                assignmentPoolService);
+                assignmentPoolService, org.mockito.Mockito.mock(PipelineService.class),
+                customerConversionGateway);
 
         when(leadRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, leadId))
                 .thenReturn(Optional.of(lead));
         when(leadRepository.save(any(Lead.class))).thenAnswer(inv -> inv.getArgument(0));
         when(statusHistoryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(activityRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(customerConversionGateway.resolveCustomerId(any(Lead.class), any()))
+                .thenAnswer(inv -> {
+                    UUID requested = inv.getArgument(1);
+                    return requested != null ? requested : UUID.randomUUID();
+                });
     }
 
     @AfterEach

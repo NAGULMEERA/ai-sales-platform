@@ -4,8 +4,13 @@
 spring:
   application:
     name: catalog-service
+  profiles:
+    default: local
   config:
-    import: optional:configserver:http://localhost:8888
+    import:
+      - optional:configserver:http://localhost:8888
+      - optional:classpath:platform/application-observability.yml
+      - optional:classpath:platform/application-cache.yml
   datasource:
     url: jdbc:postgresql://localhost:5432/catalog_db
     username: aisales
@@ -17,6 +22,18 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: localhost:9092
+
+aisales:
+  security:
+    use-platform-defaults: true
+  events:
+    default-topic: aisales-events
+    outbox:
+      enabled: true
+    inbox:
+      enabled: false
 
 eureka:
   client:
@@ -27,4 +44,4 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,metrics,prometheus

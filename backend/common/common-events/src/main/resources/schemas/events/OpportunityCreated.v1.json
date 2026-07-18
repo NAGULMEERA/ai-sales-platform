@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aisales.com/schemas/events/OpportunityCreated.v1.json",
+  "title": "OpportunityCreated v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["eventId", "eventType", "eventVersion", "tenantId", "aggregateId", "occurredAt", "correlationId", "customerId", "name", "status"],
+  "properties": {
+    "eventId": {"type": "string", "minLength": 1},
+    "eventType": {"const": "OpportunityCreated"},
+    "eventVersion": {"const": 1},
+    "tenantId": {"type": "string", "minLength": 1},
+    "aggregateId": {"type": "string", "minLength": 1},
+    "occurredAt": {"type": "string", "format": "date-time"},
+    "correlationId": {"type": "string", "minLength": 1},
+    "customerId": {"type": "string", "minLength": 1},
+    "leadId": {"type": "string"},
+    "name": {"type": "string", "minLength": 1},
+    "status": {"type": "string", "minLength": 1},
+    "assignedTo": {"type": "string"}
+  }
+}

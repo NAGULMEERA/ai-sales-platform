@@ -77,6 +77,8 @@ public class LeadService {
     private final LeadSideEffectRecorder sideEffects;
     private final DuplicateLeadDetectionService duplicateDetection;
     private final LeadAssignmentPoolService assignmentPoolService;
+    private final PipelineService pipelineService;
+    private final LeadCustomerConversionGateway customerConversionGateway;
 
     @Transactional
     public LeadDto createLead(CreateLeadRequest request) {
@@ -85,9 +87,12 @@ public class LeadService {
         Instant now = Instant.now();
         UUID orgId = parseUuidOrNull(TenantContext.getOrganizationId());
 
+        UUID pipelineId = pipelineService.resolvePipelineIdForCreate(tenantId, request.getPipelineId());
+
         Lead lead = Lead.builder()
                 .tenantId(tenantId)
                 .organizationId(orgId)
+                .pipelineId(pipelineId)
                 .customerName(request.getCustomerName().trim())
                 .phone(request.getPhone().trim())
                 .email(StringUtils.hasText(request.getEmail()) ? request.getEmail().trim() : null)
@@ -269,22 +274,62 @@ public class LeadService {
     public LeadDto scoreLead(UUID leadId, ScoreLeadRequest request) {
         Lead lead = requireLead(leadId);
         UUID actor = actorId();
-        lead.applyScore(request.getScore(), actor, stateMachine);
+        Instant now = Instant.now();
+        persistComponentScore(leadId, "BUDGET", request.getBudgetScore(), request.getExplanation(), actor, now);
+        persistComponentScore(leadId, "TIMELINE", request.getTimelineScore(), request.getExplanation(), actor, now);
+        persistComponentScore(leadId, "LOCATION", request.getLocationScore(), request.getExplanation(), actor, now);
+        persistComponentScore(leadId, "ENGAGEMENT", request.getEngagementScore(), request.getExplanation(), actor, now);
+        persistComponentScore(leadId, "AI_CONFIDENCE", request.getAiConfidenceScore(), request.getExplanation(), actor, now);
+
+        int overall = resolveOverallScore(request);
+        String scoreType = StringUtils.hasText(request.getScoreType()) ? request.getScoreType() : "COMPOSITE";
+        lead.applyScore(overall, actor, stateMachine);
+        lead.applyConfidenceScore(request.getAiConfidenceScore(), actor);
         leadRepository.save(lead);
         scoreRepository.save(LeadScoreRecord.builder()
                 .leadId(leadId)
-                .score(request.getScore())
-                .scoreType(request.getScoreType())
+                .score(overall)
+                .scoreType(scoreType)
                 .explanation(request.getExplanation())
-                .scoredAt(Instant.now())
+                .scoredAt(now)
                 .scoredBy(actor)
                 .build());
         sideEffects.recordActivity(leadId, "SCORED",
-                "Score " + request.getScore() + " (" + request.getScoreType() + ")", actor);
+                "Score " + overall + " (" + scoreType + ")", actor);
         eventPublisher.publish(LeadScoredEvent.of(
                 lead.getTenantId().toString(), leadId.toString(), lead.getCustomerName(),
-                request.getScore(), request.getScoreType(), correlationId()));
+                overall, scoreType, correlationId()));
         return leadMapper.toDto(lead);
+    }
+
+    private void persistComponentScore(UUID leadId, String type, Integer score, String explanation,
+                                       UUID actor, Instant now) {
+        if (score == null) {
+            return;
+        }
+        scoreRepository.save(LeadScoreRecord.builder()
+                .leadId(leadId)
+                .score(score)
+                .scoreType(type)
+                .explanation(explanation)
+                .scoredAt(now)
+                .scoredBy(actor)
+                .build());
+    }
+
+    private static int resolveOverallScore(ScoreLeadRequest request) {
+        if (request.getScore() != null) {
+            return request.getScore();
+        }
+        java.util.List<Integer> components = java.util.stream.Stream.of(
+                        request.getBudgetScore(), request.getTimelineScore(), request.getLocationScore(),
+                        request.getEngagementScore(), request.getAiConfidenceScore())
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        if (components.isEmpty()) {
+            throw new ValidationException("Provide overall score or at least one component score");
+        }
+        return (int) Math.round(components.stream().mapToInt(Integer::intValue).average().orElseThrow());
     }
 
     @Transactional
@@ -292,12 +337,13 @@ public class LeadService {
         Lead lead = requireLead(leadId);
         UUID actor = actorId();
         LeadStatus old = lead.getStatus();
-        lead.convert(request.getCustomerId(), actor, stateMachine);
+        UUID customerId = customerConversionGateway.resolveCustomerId(lead, request.getCustomerId());
+        lead.convert(customerId, actor, stateMachine);
         leadRepository.save(lead);
         sideEffects.recordStatusChange(leadId, old, lead.getStatus(), request.getReason(), actor);
         eventPublisher.publish(LeadConvertedEvent.of(
                 lead.getTenantId().toString(), leadId.toString(), lead.getCustomerName(),
-                request.getCustomerId() != null ? request.getCustomerId().toString() : null,
+                customerId.toString(),
                 correlationId()));
         return leadMapper.toDto(lead);
     }

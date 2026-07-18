@@ -72,7 +72,8 @@ class LeadAssignmentPoolServiceTest {
                 leadRepository, assignmentRepository, noteRepository, activityRepository,
                 followupRepository, scoreRepository, statusHistoryRepository, duplicateRepository,
                 mapper, eventPublisher, new LeadStateMachine(), sideEffects, duplicateDetection,
-                poolService);
+                poolService, org.mockito.Mockito.mock(PipelineService.class),
+                org.mockito.Mockito.mock(LeadCustomerConversionGateway.class));
     }
 
     @AfterEach

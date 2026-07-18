@@ -1,17 +1,13 @@
 package com.aisales.plugin.contract;
 
-import java.util.UUID;
-
 /**
- * Contract for reusable capability plugins (WhatsApp, Voice, Payment, etc.).
+ * Reusable capability plugin (notification channel metadata, calendar, payment, etc.).
+ * Describes integration configuration — does not send messages or own business state.
  */
-public interface CapabilityPlugin {
+public interface CapabilityPlugin extends PlatformPlugin {
 
-    String getPluginId();
-
-    String getCapabilityType();
-
-    String getVersion();
-
-    boolean isHealthy(UUID tenantId);
+    default String getCapabilityType() {
+        var capabilities = descriptor().getCapabilities();
+        return capabilities.isEmpty() ? "UNKNOWN" : capabilities.get(0);
+    }
 }

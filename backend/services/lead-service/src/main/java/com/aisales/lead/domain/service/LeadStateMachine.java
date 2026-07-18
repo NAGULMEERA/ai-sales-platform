@@ -2,43 +2,48 @@ package com.aisales.lead.domain.service;
 
 import com.aisales.common.contracts.lead.LeadStatus;
 import com.aisales.common.exception.exception.ValidationException;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+/**
+ * Explicit lead journey transitions. Integrations (email/WhatsApp/AI) never mutate status directly.
+ * When a lead has a {@code pipelineId}, transitions are resolved from pipeline config;
+ * otherwise the platform default sales graph is used.
+ */
 @Component
 public class LeadStateMachine {
 
-    private static final Map<LeadStatus, Set<LeadStatus>> ALLOWED = new EnumMap<>(LeadStatus.class);
+    private final PipelineTransitionSource transitionSource;
 
-    static {
-        ALLOWED.put(LeadStatus.NEW, EnumSet.of(
-                LeadStatus.CONTACTED, LeadStatus.QUALIFIED, LeadStatus.LOST));
-        ALLOWED.put(LeadStatus.CONTACTED, EnumSet.of(
-                LeadStatus.QUALIFIED, LeadStatus.APPOINTMENT_BOOKED, LeadStatus.LOST));
-        ALLOWED.put(LeadStatus.QUALIFIED, EnumSet.of(
-                LeadStatus.CONTACTED, LeadStatus.APPOINTMENT_BOOKED, LeadStatus.NEGOTIATING, LeadStatus.LOST));
-        ALLOWED.put(LeadStatus.APPOINTMENT_BOOKED, EnumSet.of(
-                LeadStatus.VISITED, LeadStatus.NEGOTIATING, LeadStatus.LOST));
-        ALLOWED.put(LeadStatus.VISITED, EnumSet.of(
-                LeadStatus.NEGOTIATING, LeadStatus.WON, LeadStatus.LOST));
-        ALLOWED.put(LeadStatus.NEGOTIATING, EnumSet.of(
-                LeadStatus.WON, LeadStatus.LOST));
-        ALLOWED.put(LeadStatus.WON, EnumSet.noneOf(LeadStatus.class));
-        ALLOWED.put(LeadStatus.LOST, EnumSet.noneOf(LeadStatus.class));
+    /** Unit-test / bootstrap constructor — uses the default sales pipeline graph. */
+    public LeadStateMachine() {
+        this.transitionSource = (pipelineId, from) -> DefaultSalesPipelineDefinition.allowedTargets(from);
+    }
+
+    @Autowired
+    public LeadStateMachine(PipelineTransitionSource transitionSource) {
+        this.transitionSource = transitionSource;
     }
 
     public boolean isTerminal(LeadStatus status) {
-        return status == LeadStatus.WON || status == LeadStatus.LOST;
+        return status == LeadStatus.WON || status == LeadStatus.LOST || status == LeadStatus.ARCHIVED;
+    }
+
+    public boolean isClosed(LeadStatus status) {
+        return status == LeadStatus.ARCHIVED;
     }
 
     public void assertTransition(LeadStatus from, LeadStatus to) {
+        assertTransition(null, from, to);
+    }
+
+    public void assertTransition(UUID pipelineId, LeadStatus from, LeadStatus to) {
         if (from == to) {
             return;
         }
-        Set<LeadStatus> allowed = ALLOWED.getOrDefault(from, EnumSet.noneOf(LeadStatus.class));
+        Set<LeadStatus> allowed = transitionSource.allowedTargets(pipelineId, from);
         if (!allowed.contains(to)) {
             throw new ValidationException("Invalid lead status transition from " + from + " to " + to);
         }

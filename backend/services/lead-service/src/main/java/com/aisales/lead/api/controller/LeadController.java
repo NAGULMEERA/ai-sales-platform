@@ -1,7 +1,9 @@
 package com.aisales.lead.api.controller;
 
+import com.aisales.common.contracts.lead.ArchiveLeadRequest;
 import com.aisales.common.contracts.lead.AssignLeadRequest;
 import com.aisales.common.contracts.lead.AssignmentPoolMemberDto;
+import com.aisales.common.contracts.lead.CancelLeadVisitRequest;
 import com.aisales.common.contracts.lead.ChangeLeadStatusRequest;
 import com.aisales.common.contracts.lead.ConvertLeadRequest;
 import com.aisales.common.contracts.lead.CreateLeadAttachmentRequest;
@@ -21,9 +23,11 @@ import com.aisales.common.contracts.lead.LeadNoteDto;
 import com.aisales.common.contracts.lead.LeadQualityScoreDto;
 import com.aisales.common.contracts.lead.LeadStatus;
 import com.aisales.common.contracts.lead.LeadStatusHistoryDto;
+import com.aisales.common.contracts.lead.LeadTimelineEntryDto;
 import com.aisales.common.contracts.lead.LoseLeadRequest;
 import com.aisales.common.contracts.lead.QualifyLeadRequest;
 import com.aisales.common.contracts.lead.RecordLeadQualityScoreRequest;
+import com.aisales.common.contracts.lead.ScheduleLeadVisitRequest;
 import com.aisales.common.contracts.lead.ScoreLeadRequest;
 import com.aisales.common.contracts.lead.UpdateLeadRequest;
 import com.aisales.common.contracts.lead.UpsertAssignmentPoolMemberRequest;
@@ -32,6 +36,7 @@ import com.aisales.common.core.dto.PageResponse;
 import com.aisales.common.core.util.CorrelationIdUtils;
 import com.aisales.lead.application.service.LeadAssignmentPoolService;
 import com.aisales.lead.application.service.LeadExtensionService;
+import com.aisales.lead.application.service.LeadJourneyService;
 import com.aisales.lead.application.service.LeadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -61,6 +66,7 @@ public class LeadController {
     private final LeadService leadService;
     private final LeadExtensionService extensionService;
     private final LeadAssignmentPoolService assignmentPoolService;
+    private final LeadJourneyService journeyService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -162,6 +168,43 @@ public class LeadController {
     public ApiResponse<LeadDto> lose(
             @PathVariable UUID id, @Valid @RequestBody LoseLeadRequest request) {
         return ok("Lead lost", leadService.loseLead(id, request));
+    }
+
+    @PostMapping("/{id}/schedule-visit")
+    @Operation(summary = "Schedule site visit (journey command)")
+    public ApiResponse<LeadDto> scheduleVisit(
+            @PathVariable UUID id, @RequestBody(required = false) ScheduleLeadVisitRequest request) {
+        ScheduleLeadVisitRequest body = request != null ? request : new ScheduleLeadVisitRequest();
+        return ok("Visit scheduled", journeyService.scheduleVisit(id, body));
+    }
+
+    @PostMapping("/{id}/complete-visit")
+    @Operation(summary = "Complete site visit (journey command)")
+    public ApiResponse<LeadDto> completeVisit(
+            @PathVariable UUID id, @RequestParam(required = false) String notes) {
+        return ok("Visit completed", journeyService.completeVisit(id, notes));
+    }
+
+    @PostMapping("/{id}/cancel-visit")
+    @Operation(summary = "Cancel scheduled visit (journey command)")
+    public ApiResponse<LeadDto> cancelVisit(
+            @PathVariable UUID id, @RequestBody(required = false) CancelLeadVisitRequest request) {
+        CancelLeadVisitRequest body = request != null ? request : new CancelLeadVisitRequest();
+        return ok("Visit cancelled", journeyService.cancelVisit(id, body));
+    }
+
+    @PostMapping("/{id}/archive")
+    @Operation(summary = "Archive closed lead (WON/LOST → ARCHIVED)")
+    public ApiResponse<LeadDto> archive(
+            @PathVariable UUID id, @RequestBody(required = false) ArchiveLeadRequest request) {
+        ArchiveLeadRequest body = request != null ? request : new ArchiveLeadRequest();
+        return ok("Lead archived", journeyService.archiveLead(id, body));
+    }
+
+    @GetMapping("/{id}/timeline")
+    @Operation(summary = "Append-only lead journey timeline")
+    public ApiResponse<List<LeadTimelineEntryDto>> timeline(@PathVariable UUID id) {
+        return ok(journeyService.timeline(id));
     }
 
     @PostMapping("/{id}/notes")

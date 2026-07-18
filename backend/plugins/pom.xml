@@ -14,10 +14,12 @@
     <artifactId>plugins-parent</artifactId>
     <packaging>pom</packaging>
     <name>plugins-parent</name>
-    <description>Industry and capability plugin modules</description>
+    <description>Industry and capability plugin modules (metadata/config only)</description>
 
     <modules>
         <module>plugin-sdk</module>
         <module>industry/real-estate-plugin</module>
+        <module>capability/email-channel-plugin</module>
+        <module>capability/whatsapp-channel-plugin</module>
     </modules>
 </project>

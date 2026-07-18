@@ -4,6 +4,8 @@
 spring:
   application:
     name: ai-service
+  profiles:
+    default: local
   config:
     import:
       - optional:configserver:http://localhost:8888
@@ -20,6 +22,8 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: localhost:9092
 
 eureka:
   client:
@@ -30,12 +34,22 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,metrics,prometheus
 
 aisales:
+  security:
+    use-platform-defaults: true
   cache:
     enabled: false
+  events:
+    default-topic: aisales-events
+    outbox:
+      enabled: true
+    inbox:
+      enabled: false
   ai:
+    llm:
+      provider: STUB
     semantic-cache:
       enabled: true
       max-cosine-distance: 0.1
@@ -60,9 +74,6 @@ aisales:
 resilience4j:
   retry:
     instances:
-      # Embedding is a pure, idempotent read-like operation (same input -> same output), so
-      # retrying transient failures is always safe. Only network failures/timeouts, 5xx, and 429
-      # are retried (see TransientFailurePredicate); 4xx (bad request/auth) is never retried.
       bgeM3Embedding:
         max-attempts: 3
         wait-duration: 150ms
@@ -72,9 +83,6 @@ resilience4j:
         randomized-wait-factor: 0.5
         retry-exception-predicate: com.aisales.common.observability.http.TransientFailurePredicate
       openAiEmbedding:
-        # Higher base wait than the internal BGE-M3 provider: OpenAI is an external, rate-limited
-        # (429) dependency, and retrying immediately after a rate-limit response would just be
-        # rejected again (Rule 09: "retry only transient failures, rate limits...").
         max-attempts: 3
         wait-duration: 500ms
         enable-exponential-backoff: true
@@ -84,8 +92,6 @@ resilience4j:
         retry-exception-predicate: com.aisales.common.observability.http.TransientFailurePredicate
   circuitbreaker:
     instances:
-      # External OpenAI dependency only — internal BGE-M3 is same-network and skipped per
-      # resilience policy (avoid circuit breakers on internal repository/database calls).
       openAiEmbedding:
         sliding-window-type: COUNT_BASED
         sliding-window-size: 10

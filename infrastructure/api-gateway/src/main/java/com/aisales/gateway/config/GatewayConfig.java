@@ -74,7 +74,12 @@ public class GatewayConfig {
                         .uri("lb://conversation-service"))
                 .route("appointment-service", r -> r.path("/api/v1/appointments/**", "/api/v1/appointment/**")
                         .uri("lb://appointment-service"))
-                .route("ai-service", r -> r.path("/api/v1/ai/**", "/api/v1/prompts/**", "/api/v1/embeddings/**")
+                .route("ai-service", r -> r.path(
+                                "/api/v1/ai/**",
+                                "/api/v1/prompts/**",
+                                "/api/v1/embeddings/**",
+                                "/api/v1/knowledge-bases/**",
+                                "/api/v1/knowledge-documents/**")
                         .uri("lb://ai-service"))
                 .route("workflow-service", r -> r.path("/api/v1/workflows/**", "/api/v1/workflow/**")
                         .uri("lb://workflow-service"))
@@ -92,7 +97,11 @@ public class GatewayConfig {
                         .uri("lb://media-service"))
                 .route("audit-service", r -> r.path("/api/v1/audit/**")
                         .uri("lb://audit-service"))
-                .route("deal-service", r -> r.path("/api/v1/deals/**", "/api/v1/deal/**")
+                .route("deal-service", r -> r.path(
+                                "/api/v1/deals/**",
+                                "/api/v1/deal/**",
+                                "/api/v1/opportunities/**",
+                                "/api/v1/quotes/**")
                         .uri("lb://deal-service"))
                 .route("marketplace-service", r -> r.path("/api/v1/marketplace/**")
                         .uri("lb://marketplace-service"))

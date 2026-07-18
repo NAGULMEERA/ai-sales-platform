@@ -56,7 +56,9 @@ class LeadTenantIsolationTest {
                 leadRepository, assignmentRepository, noteRepository, activityRepository,
                 followupRepository, scoreRepository, statusHistoryRepository, duplicateRepository,
                 new LeadMapper(), eventPublisher, new LeadStateMachine(), sideEffects,
-                duplicateDetection, assignmentPoolService);
+                duplicateDetection, assignmentPoolService,
+                org.mockito.Mockito.mock(PipelineService.class),
+                org.mockito.Mockito.mock(LeadCustomerConversionGateway.class));
     }
 
     @AfterEach
