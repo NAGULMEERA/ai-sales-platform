@@ -36,9 +36,9 @@ function Ensure-Database {
 
 
 
-Write-Host "Step 1: Starting Postgres..." -ForegroundColor Cyan
+Write-Host "Step 1: Starting Postgres + Mailpit..." -ForegroundColor Cyan
 
-docker compose -f (Join-Path $Deployment "docker-compose-infra.yml") up -d postgres
+docker compose -f (Join-Path $Deployment "docker-compose-infra.yml") up -d postgres mailpit
 
 
 
@@ -56,7 +56,7 @@ Ensure-Database "aisales_notification"
 
 
 
-Write-Host "Step 3: Starting notification-service in a new window (port 8090, profile=local)..." -ForegroundColor Cyan
+Write-Host "Step 3: Starting notification-service in a new window (port 8090, profile=local, SMTP→Mailpit)..." -ForegroundColor Cyan
 
 Start-Process powershell -ArgumentList @(
 
@@ -78,7 +78,7 @@ Write-Host "Step 4: Starting identity-service (profile=local, port 8081)..." -Fo
 
 Write-Host "  Swagger: http://localhost:8081/swagger-ui.html" -ForegroundColor Gray
 
-Write-Host "  Emails log in notification-service window (delivery-mode=log)" -ForegroundColor Gray
+Write-Host "  Mailbox UI (Mailpit): http://localhost:8025" -ForegroundColor Gray
 
 Write-Host "  Postman: import backend/services/identity-service/postman/identity-service.postman_collection.json" -ForegroundColor Gray
 

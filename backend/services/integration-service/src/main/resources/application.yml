@@ -9,7 +9,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/integration_db
     username: aisales
-    password: aisales
+    password: ${DB_PASSWORD:${SPRING_DATASOURCE_PASSWORD:aisales}}
   jpa:
     hibernate:
       ddl-auto: validate

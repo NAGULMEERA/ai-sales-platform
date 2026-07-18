@@ -46,7 +46,7 @@ public class SubscriptionController {
     @Operation(summary = "Upgrade tenant to Premium (payment hook)")
     public ApiResponse<SubscriptionResponse> upgrade(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(required = false) String externalSubscriptionId) {
+            @RequestParam(name = "externalSubscriptionId", required = false) String externalSubscriptionId) {
         UUID tenantId = UUID.fromString(TenantContext.getTenantId());
         UUID userId = UUID.fromString(principal.getUserId());
         SubscriptionResponse response = subscriptionService.upgradeToPremium(
@@ -58,7 +58,7 @@ public class SubscriptionController {
 
     @GetMapping("/features/{featureCode}")
     @Operation(summary = "Check if feature is enabled for tenant plan")
-    public ApiResponse<FeatureCheckResponse> checkFeature(@PathVariable String featureCode) {
+    public ApiResponse<FeatureCheckResponse> checkFeature(@PathVariable("featureCode") String featureCode) {
         UUID tenantId = UUID.fromString(TenantContext.getTenantId());
         FeatureCheckResponse response = featureCheckService.checkFeature(tenantId, featureCode);
         ApiResponse<FeatureCheckResponse> api = ApiResponse.ok(response);

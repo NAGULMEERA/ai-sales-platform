@@ -1,0 +1,23 @@
+# Production profile — secrets MUST come from Vault / Secret Manager → K8s env.
+# SPRING_PROFILES_ACTIVE=prod
+
+spring:
+  datasource:
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  mail:
+    host: ${SMTP_HOST}
+    port: ${SMTP_PORT}
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:true}
+          starttls:
+            enable: ${SMTP_STARTTLS:true}
+
+aisales:
+  notification:
+    delivery-mode: ${NOTIFICATION_DELIVERY_MODE:smtp}
+    from-address: ${SMTP_FROM}

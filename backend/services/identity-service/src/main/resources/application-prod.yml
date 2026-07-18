@@ -1,0 +1,19 @@
+# Production profile — secrets MUST come from Vault / Secret Manager → K8s env.
+# SPRING_PROFILES_ACTIVE=prod
+
+spring:
+  datasource:
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+aisales:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+  notification:
+    fallback-logging: false
+  startup-validation:
+    enabled: true
+    required-config-values:
+      - aisales.security.jwt.secret
+      - spring.datasource.password

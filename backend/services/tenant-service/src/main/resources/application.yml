@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: 8082
 
 spring:
@@ -12,7 +12,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/aisales_tenant
     username: aisales
-    password: aisales
+    password: ${DB_PASSWORD:${SPRING_DATASOURCE_PASSWORD:aisales}}
   jpa:
     hibernate:
       ddl-auto: validate
