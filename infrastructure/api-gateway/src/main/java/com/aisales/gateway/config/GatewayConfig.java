@@ -18,6 +18,7 @@ public class GatewayConfig {
     private final KeyResolver clientIpKeyResolver;
     private RedisRateLimiter authRedisRateLimiter;
     private RedisRateLimiter passwordResetRedisRateLimiter;
+    private RedisRateLimiter aiExecuteRedisRateLimiter;
 
     public GatewayConfig(GatewayRateLimitProperties rateLimitProperties, KeyResolver clientIpKeyResolver) {
         this.rateLimitProperties = rateLimitProperties;
@@ -27,9 +28,11 @@ public class GatewayConfig {
     @Autowired(required = false)
     public void setRateLimiters(
             @Qualifier("authRedisRateLimiter") RedisRateLimiter authRedisRateLimiter,
-            @Qualifier("passwordResetRedisRateLimiter") RedisRateLimiter passwordResetRedisRateLimiter) {
+            @Qualifier("passwordResetRedisRateLimiter") RedisRateLimiter passwordResetRedisRateLimiter,
+            @Qualifier("aiExecuteRedisRateLimiter") RedisRateLimiter aiExecuteRedisRateLimiter) {
         this.authRedisRateLimiter = authRedisRateLimiter;
         this.passwordResetRedisRateLimiter = passwordResetRedisRateLimiter;
+        this.aiExecuteRedisRateLimiter = aiExecuteRedisRateLimiter;
     }
 
     @Bean
@@ -59,6 +62,17 @@ public class GatewayConfig {
                             .uri("lb://identity-service"));
         }
 
+        if (rateLimitProperties.isEnabled() && aiExecuteRedisRateLimiter != null) {
+            // More specific than the catch-all ai-service route below.
+            routes = routes.route("ai-execute-rate-limited", r -> r
+                    .path("/api/v1/ai/execute")
+                    .filters(f -> f.requestRateLimiter(config -> config
+                            .setRateLimiter(aiExecuteRedisRateLimiter)
+                            .setKeyResolver(clientIpKeyResolver)
+                            .setDenyEmptyKey(false)))
+                    .uri("lb://ai-service"));
+        }
+
         return routes
                 .route("identity-service", r -> r.path("/api/v1/auth/**", "/api/v1/users/**")
                         .uri("lb://identity-service"))
@@ -78,6 +92,7 @@ public class GatewayConfig {
                                 "/api/v1/ai/**",
                                 "/api/v1/prompts/**",
                                 "/api/v1/embeddings/**",
+                                "/api/v1/token-usage/**",
                                 "/api/v1/knowledge-bases/**",
                                 "/api/v1/knowledge-documents/**")
                         .uri("lb://ai-service"))
@@ -85,7 +100,11 @@ public class GatewayConfig {
                         .uri("lb://workflow-service"))
                 .route("notification-service", r -> r.path("/api/v1/notifications/**", "/api/v1/notification/**")
                         .uri("lb://notification-service"))
-                .route("billing-service", r -> r.path("/api/v1/billing/**", "/api/v1/subscriptions/**")
+                .route("billing-service", r -> r.path(
+                                "/api/v1/billing/**",
+                                "/api/v1/subscriptions/**",
+                                "/api/v1/invoices/**",
+                                "/api/v1/payments/**")
                         .uri("lb://billing-service"))
                 .route("integration-service", r -> r.path("/api/v1/integrations/**", "/api/v1/integration/**")
                         .uri("lb://integration-service"))

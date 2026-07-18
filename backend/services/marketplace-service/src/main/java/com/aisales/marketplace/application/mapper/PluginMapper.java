@@ -17,6 +17,7 @@ public class PluginMapper {
                 .pluginKey(entry.getPluginKey())
                 .type(entry.getType())
                 .version(entry.getVersion())
+                .minPlatformVersion(entry.getMinPlatformVersion())
                 .displayName(entry.getDisplayName())
                 .description(entry.getDescription())
                 .capabilities(entry.getCapabilities() != null

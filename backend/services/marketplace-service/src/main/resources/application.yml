@@ -26,6 +26,8 @@ spring:
     bootstrap-servers: localhost:9092
 
 aisales:
+  platform:
+    version: ${AISALES_PLATFORM_VERSION:1.0.0}
   security:
     use-platform-defaults: true
   events:

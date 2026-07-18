@@ -52,6 +52,9 @@ public class OutboxEvent {
 
     private Instant publishedAt;
 
+    /** Set when claimed for dispatch; used to reclaim stale DISPATCHING rows after crashes. */
+    private Instant claimedAt;
+
     private int retryCount;
 
     public enum OutboxStatus {

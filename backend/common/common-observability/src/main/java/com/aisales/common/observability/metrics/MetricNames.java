@@ -21,6 +21,8 @@ public final class MetricNames {
     public static final String EVENT_DLQ = "platform_event_dlq_total";
     public static final String KAFKA_PUBLISH_LATENCY = "platform_kafka_publish_latency";
     public static final String OUTBOX_PENDING = "platform_outbox_pending";
+    public static final String OUTBOX_DISPATCHING = "platform_outbox_dispatching";
+    public static final String OUTBOX_FAILED = "platform_outbox_failed";
     public static final String OUTBOX_DISPATCHED = "platform_outbox_dispatched_total";
 
     // Auth / JWT

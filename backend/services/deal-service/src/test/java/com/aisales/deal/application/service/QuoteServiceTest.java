@@ -34,6 +34,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
 
 @ExtendWith(MockitoExtension.class)
 class QuoteServiceTest {
@@ -58,7 +62,17 @@ class QuoteServiceTest {
                 opportunityService,
                 catalogQuoteGateway,
                 new DealMapper(),
-                eventPublisher);
+                eventPublisher,
+                noopTxManager(), org.mockito.Mockito.mock(QuoteIdempotencyService.class));
+    }
+
+    private static PlatformTransactionManager noopTxManager() {
+        return new AbstractPlatformTransactionManager() {
+            @Override protected Object doGetTransaction() { return new Object(); }
+            @Override protected void doBegin(Object transaction, TransactionDefinition definition) {}
+            @Override protected void doCommit(DefaultTransactionStatus status) {}
+            @Override protected void doRollback(DefaultTransactionStatus status) {}
+        };
     }
 
     @AfterEach
@@ -112,10 +126,6 @@ class QuoteServiceTest {
     @Test
     void shouldRequireOfferIdForPricing() {
         when(opportunityService.requireOpportunity(opportunityId)).thenReturn(openOpportunity());
-        when(quoteRepository.findByTenantIdAndOpportunityIdAndDeletedAtIsNullOrderByQuoteVersionDesc(
-                        tenantId, opportunityId))
-                .thenReturn(Collections.emptyList());
-        when(quoteRepository.findMaxVersion(tenantId, opportunityId)).thenReturn(0);
         when(catalogQuoteGateway.requireProduct(any())).thenReturn(
                 com.aisales.common.contracts.catalog.CatalogProductDto.builder()
                         .id(UUID.randomUUID())
@@ -138,7 +148,7 @@ class QuoteServiceTest {
     void shouldSendQuoteAndMarkOpportunityQuoted() {
         UUID quoteId = UUID.randomUUID();
         Quote quote = draftQuote(quoteId);
-        when(quoteRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, quoteId))
+        when(quoteRepository.findWithLineItemsByTenantIdAndId(tenantId, quoteId))
                 .thenReturn(Optional.of(quote));
         when(quoteRepository.save(any(Quote.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -156,7 +166,7 @@ class QuoteServiceTest {
         UUID quoteId = UUID.randomUUID();
         Quote quote = draftQuote(quoteId);
         quote.setStatus(QuoteStatus.SENT);
-        when(quoteRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, quoteId))
+        when(quoteRepository.findWithLineItemsByTenantIdAndId(tenantId, quoteId))
                 .thenReturn(Optional.of(quote));
         when(quoteRepository.save(any(Quote.class))).thenAnswer(inv -> inv.getArgument(0));
 

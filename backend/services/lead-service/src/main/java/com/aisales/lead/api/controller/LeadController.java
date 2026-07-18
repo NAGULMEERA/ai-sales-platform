@@ -33,6 +33,7 @@ import com.aisales.common.contracts.lead.ScheduleLeadVisitRequest;
 import com.aisales.common.contracts.lead.ScoreLeadRequest;
 import com.aisales.common.contracts.lead.UpdateLeadRequest;
 import com.aisales.common.contracts.lead.UpsertAssignmentPoolMemberRequest;
+import com.aisales.common.core.constant.ApiConstants;
 import com.aisales.common.core.dto.ApiResponse;
 import com.aisales.common.core.dto.PageResponse;
 import com.aisales.common.core.util.CorrelationIdUtils;
@@ -75,8 +76,11 @@ public class LeadController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create lead")
-    public ApiResponse<LeadDto> createLead(@Valid @RequestBody CreateLeadRequest request) {
-        return ok("Lead created", leadService.createLead(request));
+    public ApiResponse<LeadDto> createLead(
+            @Valid @RequestBody CreateLeadRequest request,
+            @org.springframework.web.bind.annotation.RequestHeader(
+                    value = ApiConstants.IDEMPOTENCY_KEY_HEADER, required = false) String idempotencyKey) {
+        return ok("Lead created", leadService.createLead(request, idempotencyKey));
     }
 
     @GetMapping

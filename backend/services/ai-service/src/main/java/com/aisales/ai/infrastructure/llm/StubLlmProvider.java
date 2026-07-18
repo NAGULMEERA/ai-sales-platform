@@ -1,23 +1,23 @@
 package com.aisales.ai.infrastructure.llm;
 
+import com.aisales.ai.domain.llm.LlmClient;
 import com.aisales.ai.domain.llm.LlmCompletionRequest;
 import com.aisales.ai.domain.llm.LlmCompletionResult;
-import com.aisales.ai.domain.llm.LlmProvider;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Deterministic stub for local/dev and tests. Swap provider via aisales.ai.llm.provider.
+ * Deterministic stub for local/dev and tests. Selected when {@code aisales.ai.llm.provider=STUB}.
  */
 @Component
-@ConditionalOnProperty(name = "aisales.ai.llm.provider", havingValue = "STUB", matchIfMissing = true)
-public class StubLlmProvider implements LlmProvider {
+public class StubLlmProvider implements LlmClient {
+
+    public static final String NAME = "STUB";
 
     @Override
     public String name() {
-        return "STUB";
+        return NAME;
     }
 
     @Override
@@ -39,7 +39,7 @@ public class StubLlmProvider implements LlmProvider {
         int completionTokens = estimateTokens(raw);
 
         return new LlmCompletionResult(
-                "STUB",
+                NAME,
                 "stub-model",
                 raw,
                 structured,

@@ -21,11 +21,11 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
  * Coordinates AI Gateway qualification. AI recommends; Lead aggregate decides.
+ * AI Feign execute runs outside any DB transaction; persistence uses short local TXs.
  */
 @Slf4j
 @Service
@@ -42,7 +42,6 @@ public class LeadAiQualificationService {
     private final LeadExtensionService extensionService;
     private final LeadMapper leadMapper;
 
-    @Transactional
     public AiLeadQualificationResultDto qualifyWithAi(UUID leadId, QualifyLeadWithAiRequest request) {
         Lead lead = leadRepository.findByTenantIdAndIdAndDeletedAtIsNull(requireTenantId(), leadId)
                 .orElseThrow(() -> new NotFoundException("Lead not found: " + leadId));
@@ -50,6 +49,7 @@ public class LeadAiQualificationService {
         Map<String, String> variables = variableMapper.toVariables(
                 lead.getCustomerName(), lead.getAttributes(), request.getVariableKeys());
 
+        // Remote AI call — must not hold a DB connection / transaction.
         AiExecuteResponse ai = executeAi(request.getPromptCode().trim().toUpperCase(Locale.ROOT),
                 variables, leadId.toString());
 
@@ -68,6 +68,7 @@ public class LeadAiQualificationService {
         raw.put("confidence", ai.getConfidence());
 
         int scoreForRecord = suggestedScore != null ? suggestedScore : confidenceToScore(ai.getConfidence());
+        // Each of these opens its own short @Transactional boundary.
         extensionService.recordQualityScore(leadId, RecordLeadQualityScoreRequest.builder()
                 .overallScore(scoreForRecord)
                 .nextAction(recommendation)

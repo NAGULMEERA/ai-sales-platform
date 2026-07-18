@@ -41,16 +41,48 @@ aisales:
       enabled: false
   startup-validation:
     enabled: false
+  clients:
+    media-service:
+      url: http://localhost:8095
   ai:
     llm:
-      provider: STUB
+      # Plug/flag switch — change only `provider` (STUB | GEMINI | OPENAI).
+      # Dev default: Gemini. Offline without a key: set provider=STUB.
+      provider: GEMINI
+      gemini:
+        enabled: true
+        api-key: ${GEMINI_API_KEY:}
+      openai:
+        enabled: false
+        api-key: ${OPENAI_API_KEY:}
     semantic-cache:
       enabled: false
+    rag:
+      # Plug/flag — change only `chunker` (CHAR | TOKEN). Dev/prod default: TOKEN.
+      chunker: TOKEN
+      # Plug/flag — AUTO | TEXT | PDF for media ingest extraction.
+      extractor: AUTO
+      # Plug/flag — change only `reranker` (NONE | STUB | TEI). Dev default: STUB (free).
+      # Prod quality: reranker=TEI + rerank.tei.enabled=true (+ TEI cross-encoder on :8098).
+      reranker: STUB
+      rerank:
+        tei:
+          enabled: false
     embedding:
+      # Plug/flag switch — change only `provider` (STUB | TEI | OPENAI).
+      # Dev default: STUB (free). Quality local RAG: provider=TEI + open-source.enabled=true.
+      # Paid: provider=OPENAI + commercial.enabled=true + OPENAI_API_KEY.
+      provider: STUB
+      stub:
+        enabled: true
+      default-model: stub-embedding-1024
       open-source:
         enabled: false
+        base-url: http://localhost:8099
       commercial:
         enabled: false
+        openai:
+          api-key: ${OPENAI_API_KEY:}
 
 logging:
   level:

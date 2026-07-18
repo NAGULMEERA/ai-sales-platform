@@ -17,11 +17,30 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+aisales:
+  media:
+    # Plug/flag: LOCAL | S3 (matching bean must be available)
+    storage: LOCAL
+    local:
+      base-path: ./data/media
+    s3:
+      enabled: false
+      bucket: aisales-media
+      region: us-east-1
+      endpoint: ${AWS_S3_ENDPOINT:}
+      access-key: ${AWS_ACCESS_KEY_ID:}
+      secret-key: ${AWS_SECRET_ACCESS_KEY:}
+      path-style-access: false
 
 management:
   endpoints:

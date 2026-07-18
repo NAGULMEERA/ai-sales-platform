@@ -22,12 +22,15 @@ import java.util.List;
 
 /**
  * Self-hosted BAAI/bge-m3 via Text Embeddings Inference (TEI) compatible API.
+ * Selected when {@code aisales.ai.embedding.provider=TEI}.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "aisales.ai.embedding.open-source.enabled", havingValue = "true", matchIfMissing = true)
 public class BgeM3EmbeddingProvider implements EmbeddingProvider {
+
+    public static final String NAME = "TEI";
 
     private static final String TARGET_SERVICE = "bge-m3-embedding";
 
@@ -39,6 +42,11 @@ public class BgeM3EmbeddingProvider implements EmbeddingProvider {
 
     private final EmbeddingProperties properties;
     private final RestClient.Builder restClientBuilder;
+
+    @Override
+    public String name() {
+        return NAME;
+    }
 
     @Override
     public EmbeddingProviderKind kind() {

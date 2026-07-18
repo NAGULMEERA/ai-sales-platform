@@ -10,10 +10,12 @@ CREATE TABLE outbox_events (
     status VARCHAR(20) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     published_at TIMESTAMP,
+    claimed_at TIMESTAMP,
     retry_count INT NOT NULL DEFAULT 0
 );
 
 CREATE INDEX idx_outbox_events_status_created ON outbox_events(status, created_at);
+CREATE INDEX idx_outbox_events_dispatching_claimed ON outbox_events(status, claimed_at);
 
 CREATE TABLE processed_events (
     event_id VARCHAR(255) NOT NULL,

@@ -19,6 +19,7 @@ public final class SecurityConstants {
     public static final String[] PUBLIC_PATHS = {
             "/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
             "/api/v1/auth/**", "/api/v1/public/**",
+            "/api/v1/payments/webhooks/**",
             "/.well-known/jwks.json", "/api/v1/.well-known/jwks.json",
             "/oauth2/**", "/login/oauth2/**"
     };

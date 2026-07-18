@@ -39,6 +39,9 @@ management:
 aisales:
   security:
     use-platform-defaults: true
+  clients:
+    media-service:
+      url: http://localhost:8095
   cache:
     enabled: false
   events:
@@ -48,19 +51,88 @@ aisales:
     inbox:
       enabled: false
   ai:
+    quota:
+      enabled: true
+      daily-token-limit: 500000
+    cost:
+      # Ledger estimates only — not billing invoices
+      enabled: true
+      models:
+        gpt-4o-mini:
+          prompt-per-1k: 0.00015
+          completion-per-1k: 0.0006
+        gemini-2.0-flash:
+          prompt-per-1k: 0.0001
+          completion-per-1k: 0.0004
+        stub-model:
+          prompt-per-1k: 0
+          completion-per-1k: 0
+        stub-embedding-1024:
+          embedding-per-1k: 0
+        "BAAI/bge-m3":
+          embedding-per-1k: 0
+        text-embedding-3-small:
+          embedding-per-1k: 0.00002
     llm:
+      # Plug/flag: STUB | OPENAI | GEMINI (target client must be enabled below)
       provider: STUB
+      openai:
+        enabled: false
+        api-key: ${OPENAI_API_KEY:}
+        base-url: https://api.openai.com/v1
+        model: gpt-4o-mini
+        temperature: 0.2
+        max-tokens: 2048
+        connect-timeout-ms: 3000
+        read-timeout-ms: 60000
+        json-object-response: true
+      gemini:
+        enabled: false
+        api-key: ${GEMINI_API_KEY:}
+        base-url: https://generativelanguage.googleapis.com/v1beta
+        model: gemini-2.0-flash
+        temperature: 0.2
+        max-output-tokens: 2048
+        connect-timeout-ms: 3000
+        read-timeout-ms: 60000
+        json-object-response: true
     semantic-cache:
       enabled: true
       max-cosine-distance: 0.1
       default-ttl: 7d
       redis-ttl: 1h
+    rag:
+      default-top-k: 5
+      max-cosine-distance: 0.45
+      # Plug/flag: CHAR | TOKEN (TOKEN recommended for RAG quality; free/local)
+      chunker: TOKEN
+      # Plug/flag: AUTO | TEXT | PDF (AUTO picks from content-type / filename)
+      extractor: AUTO
+      char-window:
+        chunk-size: 800
+        overlap: 120
+      token-window:
+        chunk-size: 200
+        overlap: 40
+      # Plug/flag: NONE | STUB | TEI (STUB free local; TEI needs cross-encoder process)
+      reranker: STUB
+      rerank:
+        candidate-multiplier: 3
+        max-candidates: 30
+        tei:
+          enabled: false
+          base-url: http://localhost:8098
+
     embedding:
+      # Plug/flag: STUB | TEI | OPENAI (matching bean must be enabled below)
+      provider: STUB
       default-provider-kind: OPEN_SOURCE
-      default-model: BAAI/bge-m3
+      default-model: stub-embedding-1024
       default-dimension: 1024
-      open-source:
+      stub:
         enabled: true
+      open-source:
+        enabled: false
         base-url: http://localhost:8099
         model: BAAI/bge-m3
         dimension: 1024
@@ -70,6 +142,7 @@ aisales:
           api-key: ${OPENAI_API_KEY:}
           model: text-embedding-3-small
           dimension: 1536
+
 
 resilience4j:
   retry:
@@ -90,9 +163,43 @@ resilience4j:
         enable-randomized-wait: true
         randomized-wait-factor: 0.5
         retry-exception-predicate: com.aisales.common.observability.http.TransientFailurePredicate
+      openAiLlm:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        enable-randomized-wait: true
+        randomized-wait-factor: 0.5
+        retry-exception-predicate: com.aisales.common.observability.http.TransientFailurePredicate
+      geminiLlm:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        enable-randomized-wait: true
+        randomized-wait-factor: 0.5
+        retry-exception-predicate: com.aisales.common.observability.http.TransientFailurePredicate
   circuitbreaker:
     instances:
       openAiEmbedding:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        record-failure-predicate: com.aisales.common.observability.http.TransientFailurePredicate
+      openAiLlm:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        record-failure-predicate: com.aisales.common.observability.http.TransientFailurePredicate
+      geminiLlm:
         sliding-window-type: COUNT_BASED
         sliding-window-size: 10
         minimum-number-of-calls: 5

@@ -32,6 +32,11 @@ class RealEstatePluginTest {
                 .containsEntry("defaultFollowupType", "VISIT_FOLLOWUP")
                 .containsEntry("conversationSubjectTemplate", "Visit follow-up")
                 .containsEntry("inPersonEngagementLabel", "Site visit");
+        @SuppressWarnings("unchecked")
+        var template = (java.util.Map<String, Object>) plugin.descriptor().getDefaultConfig().get("pipelineTemplate");
+        assertThat(template).containsEntry("code", "REAL_ESTATE_SALES_V1");
+        assertThat(template.get("stages")).asList().isNotEmpty();
+        assertThat(template.get("transitions")).asList().isNotEmpty();
         assertThat(plugin.descriptor().getMetadata())
                 .containsEntry("industryQuoteType", false)
                 .containsEntry("industryConversationType", false);

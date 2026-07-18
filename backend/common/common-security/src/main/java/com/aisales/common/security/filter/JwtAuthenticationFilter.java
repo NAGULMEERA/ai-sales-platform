@@ -8,8 +8,11 @@ import com.aisales.common.core.util.TenantContext;
 import com.aisales.common.observability.metrics.MetricNames;
 import com.aisales.common.observability.metrics.PlatformMetrics;
 import com.aisales.common.observability.tracing.TraceContextEnricher;
+import com.aisales.common.exception.exception.UnauthorizedException;
 import com.aisales.common.security.model.UserPrincipal;
+import com.aisales.common.security.util.JwtTokenValidator;
 import com.aisales.common.security.util.JwtUtils;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -31,6 +34,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
+    private final JwtTokenValidator jwtTokenValidator;
     private final TenantHibernateFilterEnabler tenantHibernateFilterEnabler;
     private final ObjectProvider<TraceContextEnricher> traceContextEnricher;
     private final ObjectProvider<PlatformMetrics> platformMetrics;
@@ -42,27 +46,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = resolveToken(request);
             if (StringUtils.hasText(token) && SecurityContextHolder.getContext().getAuthentication() == null) {
                 try {
-                    var claims = jwtUtils.parseClaims(token);
-                    if (jwtUtils.isTokenExpired(claims)) {
-                        recordJwtFailure("expired");
-                    } else {
-                        UserPrincipal principal = jwtUtils.toUserPrincipal(claims);
-                        if (!validatePropagatedTenantHeader(request, response, principal)) {
-                            return;
-                        }
-                        if (principal.getRoles() != null && principal.getRoles().contains("SUPER_ADMIN")) {
-                            TenantContext.setPlatformAdmin(true);
-                        }
-                        if (principal.getTenantId() != null) {
-                            TenantContext.setTenantId(principal.getTenantId());
-                        }
-                        var authentication = new UsernamePasswordAuthenticationToken(
-                                principal, null, principal.getAuthorities());
-                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
-                        TenantContext.setUserId(principal.getUserId());
-                        tenantHibernateFilterEnabler.enableTenantFilter();
+                    // Access tokens only — refresh tokens must not authenticate business APIs.
+                    Claims claims = jwtTokenValidator.validateAccessToken(token);
+                    UserPrincipal principal = jwtUtils.toUserPrincipal(claims);
+                    if (!validatePropagatedTenantHeader(request, response, principal)) {
+                        return;
                     }
+                    if (principal.getRoles() != null && principal.getRoles().contains("SUPER_ADMIN")) {
+                        TenantContext.setPlatformAdmin(true);
+                    }
+                    if (principal.getTenantId() != null) {
+                        TenantContext.setTenantId(principal.getTenantId());
+                    }
+                    String organizationId = jwtUtils.extractOrganizationId(claims);
+                    if (StringUtils.hasText(organizationId)) {
+                        TenantContext.setOrganizationId(organizationId);
+                    }
+                    var authentication = new UsernamePasswordAuthenticationToken(
+                            principal, null, principal.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    TenantContext.setUserId(principal.getUserId());
+                    tenantHibernateFilterEnabler.enableTenantFilter();
+                } catch (UnauthorizedException ex) {
+                    recordJwtFailure(ex.getMessage() != null && ex.getMessage().contains("expired")
+                            ? "expired"
+                            : "invalid");
                 } catch (JwtException | IllegalArgumentException ex) {
                     recordJwtFailure("invalid");
                 }

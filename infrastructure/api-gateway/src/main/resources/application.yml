@@ -25,6 +25,9 @@ aisales:
   gateway:
     rate-limit:
       enabled: true
+      # Empty = never trust X-Forwarded-For (clients cannot spoof rate-limit keys).
+      # Local/docker LB peers, e.g. 10.0.0.0/8, 172.16.0.0/12, 127.0.0.1/32
+      trusted-proxy-cidrs: []
       auth:
         # Steady-state login/register/refresh budget per client IP (token bucket via Redis).
         replenish-rate: 5
@@ -33,6 +36,10 @@ aisales:
         # Stricter budget for forgot/reset/resend flows to reduce enumeration and email abuse.
         replenish-rate: 2
         burst-capacity: 5
+      ai-execute:
+        # AI Gateway execute budget per client IP.
+        replenish-rate: 20
+        burst-capacity: 40
 
 eureka:
   client:

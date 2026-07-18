@@ -17,6 +17,8 @@ import com.aisales.common.exception.exception.ValidationException;
 import com.aisales.marketplace.application.mapper.PluginMapper;
 import com.aisales.marketplace.domain.entity.PluginCatalogEntry;
 import com.aisales.marketplace.domain.entity.PluginInstallation;
+import com.aisales.marketplace.domain.service.SemVer;
+import com.aisales.marketplace.infrastructure.configuration.PlatformVersionProperties;
 import com.aisales.marketplace.infrastructure.persistence.PluginCatalogRepository;
 import com.aisales.marketplace.infrastructure.persistence.PluginInstallationRepository;
 import java.time.Instant;
@@ -43,6 +45,7 @@ public class PluginRegistryService {
     private final PluginInstallationRepository installationRepository;
     private final PluginMapper mapper;
     private final EventPublisher eventPublisher;
+    private final PlatformVersionProperties platformVersionProperties;
 
     @Transactional(readOnly = true)
     public PageResponse<PluginCatalogDto> listCatalog(int page, int size, PluginTypeDto type) {
@@ -80,6 +83,7 @@ public class PluginRegistryService {
         UUID tenantId = requireTenantId();
         UUID actor = actorId();
         PluginCatalogEntry catalog = requireCatalog(pluginKey);
+        assertPlatformCompatible(catalog);
 
         Map<String, Object> config = mergeConfig(catalog.getDefaultConfig(),
                 request != null ? request.getConfig() : null);
@@ -147,6 +151,20 @@ public class PluginRegistryService {
         }
         return catalogRepository.findByPluginKeyAndAvailableTrue(pluginKey.trim())
                 .orElseThrow(() -> new NotFoundException("Plugin not found: " + pluginKey));
+    }
+
+    private void assertPlatformCompatible(PluginCatalogEntry catalog) {
+        String platformVersion = platformVersionProperties.getVersion();
+        String required = catalog.getMinPlatformVersion();
+        if (!StringUtils.hasText(required)) {
+            return;
+        }
+        if (!SemVer.isAtLeast(platformVersion, required)) {
+            throw new ValidationException(
+                    "Plugin " + catalog.getPluginKey()
+                            + " requires platform version >= " + required
+                            + " but running platform is " + platformVersion);
+        }
     }
 
     private static Map<String, Object> mergeConfig(Map<String, Object> defaults, Map<String, Object> overrides) {

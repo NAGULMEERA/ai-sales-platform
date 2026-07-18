@@ -3,9 +3,15 @@ package com.aisales.ai.domain.embedding;
 import java.util.List;
 
 /**
- * Pluggable embedding backend (BGE-M3 via TEI, OpenAI, etc.).
+ * Pluggable embedding backend. Selected by {@code aisales.ai.embedding.provider}
+ * ({@code STUB} | {@code TEI} | {@code OPENAI}).
  */
 public interface EmbeddingProvider {
+
+    /**
+     * Router key matching {@code aisales.ai.embedding.provider} (e.g. STUB, TEI, OPENAI).
+     */
+    String name();
 
     EmbeddingProviderKind kind();
 

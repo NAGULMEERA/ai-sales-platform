@@ -1,6 +1,8 @@
 package com.aisales.common.contracts.ai;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -29,4 +31,7 @@ public class AiExecuteResponse {
     private Integer promptTokens;
     private Integer completionTokens;
     private String businessReference;
+    private UUID knowledgeBaseId;
+    @Builder.Default
+    private List<RetrievedKnowledgeChunkDto> retrievedChunks = new ArrayList<>();
 }

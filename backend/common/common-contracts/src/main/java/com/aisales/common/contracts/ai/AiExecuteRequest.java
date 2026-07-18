@@ -29,4 +29,19 @@ public class AiExecuteRequest {
 
     /** Optional correlation for business callers (leadId, etc.). Not stored as FK. */
     private String businessReference;
+
+    /**
+     * When set, AI Gateway retrieves tenant-scoped chunks from this knowledge base
+     * and assembles them into the prompt context (RAG).
+     */
+    private UUID knowledgeBaseId;
+
+    /**
+     * Optional retrieval query. Defaults to {@code variables.question}, then
+     * {@code variables.query}, then a concatenation of variable values.
+     */
+    private String retrievalQuery;
+
+    /** Max chunks to retrieve (default applied in AI Gateway). */
+    private Integer retrievalTopK;
 }

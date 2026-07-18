@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Commercial OpenAI embeddings (optional; enable when tenants upgrade from open-source).
+ * Commercial OpenAI embeddings. Selected when {@code aisales.ai.embedding.provider=OPENAI}.
  */
 @Slf4j
 @Component
@@ -30,10 +30,17 @@ import java.util.List;
 @ConditionalOnProperty(name = "aisales.ai.embedding.commercial.enabled", havingValue = "true")
 public class OpenAiCommercialEmbeddingProvider implements EmbeddingProvider {
 
+    public static final String NAME = "OPENAI";
+
     private static final String TARGET_SERVICE = "openai-embeddings";
 
     private final EmbeddingProperties properties;
     private final RestClient.Builder restClientBuilder;
+
+    @Override
+    public String name() {
+        return NAME;
+    }
 
     @Override
     public EmbeddingProviderKind kind() {

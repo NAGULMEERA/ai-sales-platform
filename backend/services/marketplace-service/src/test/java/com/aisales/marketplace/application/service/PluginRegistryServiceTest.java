@@ -16,9 +16,11 @@ import com.aisales.common.events.model.PluginDisabledEvent;
 import com.aisales.common.events.model.PluginEnabledEvent;
 import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.NotFoundException;
+import com.aisales.common.exception.exception.ValidationException;
 import com.aisales.marketplace.application.mapper.PluginMapper;
 import com.aisales.marketplace.domain.entity.PluginCatalogEntry;
 import com.aisales.marketplace.domain.entity.PluginInstallation;
+import com.aisales.marketplace.infrastructure.configuration.PlatformVersionProperties;
 import com.aisales.marketplace.infrastructure.persistence.PluginCatalogRepository;
 import com.aisales.marketplace.infrastructure.persistence.PluginInstallationRepository;
 import java.time.Instant;
@@ -42,6 +44,7 @@ class PluginRegistryServiceTest {
     @Mock private EventPublisher eventPublisher;
 
     private PluginRegistryService service;
+    private PlatformVersionProperties platformVersionProperties;
     private UUID tenantId;
 
     @BeforeEach
@@ -49,8 +52,14 @@ class PluginRegistryServiceTest {
         tenantId = UUID.randomUUID();
         TenantContext.setTenantId(tenantId.toString());
         TenantContext.setUserId(UUID.randomUUID().toString());
+        platformVersionProperties = new PlatformVersionProperties();
+        platformVersionProperties.setVersion("1.0.0");
         service = new PluginRegistryService(
-                catalogRepository, installationRepository, new PluginMapper(), eventPublisher);
+                catalogRepository,
+                installationRepository,
+                new PluginMapper(),
+                eventPublisher,
+                platformVersionProperties);
     }
 
     @AfterEach
@@ -129,12 +138,35 @@ class PluginRegistryServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
+    @Test
+    void shouldRejectEnableWhenPlatformBelowMinVersion() {
+        PluginCatalogEntry catalog = catalog("future-plugin", PluginTypeDto.CAPABILITY);
+        catalog.setMinPlatformVersion("2.0.0");
+        when(catalogRepository.findByPluginKeyAndAvailableTrue("future-plugin"))
+                .thenReturn(Optional.of(catalog));
+
+        assertThatThrownBy(() -> service.enable("future-plugin", EnablePluginRequest.builder().build()))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("requires platform version >= 2.0.0");
+    }
+
+    @Test
+    void shouldExposeMinPlatformVersionOnCatalogDto() {
+        when(catalogRepository.findByPluginKeyAndAvailableTrue("real-estate"))
+                .thenReturn(Optional.of(catalog("real-estate", PluginTypeDto.INDUSTRY)));
+
+        PluginCatalogDto dto = service.getCatalogEntry("real-estate");
+
+        assertThat(dto.getMinPlatformVersion()).isEqualTo("1.0.0");
+    }
+
     private PluginCatalogEntry catalog(String key, PluginTypeDto type) {
         return PluginCatalogEntry.builder()
                 .id(UUID.randomUUID())
                 .pluginKey(key)
                 .type(type)
                 .version("1.0.0")
+                .minPlatformVersion("1.0.0")
                 .displayName(key)
                 .description("test")
                 .capabilities(java.util.List.of("test"))

@@ -2,8 +2,6 @@ package com.aisales.ai.application.service;
 
 import com.aisales.ai.domain.cache.CachedLlmResponse;
 import com.aisales.ai.domain.embedding.EmbeddingProvider;
-import com.aisales.ai.domain.embedding.EmbeddingProviderKind;
-import com.aisales.ai.infrastructure.configuration.EmbeddingProperties;
 import com.aisales.ai.infrastructure.configuration.SemanticCacheProperties;
 import com.aisales.ai.infrastructure.embedding.EmbeddingProviderRegistry;
 import com.aisales.ai.infrastructure.persistence.SemanticCacheEntry;
@@ -36,7 +34,6 @@ public class SemanticCacheService {
     private final SemanticCacheJpaRepository cacheRepository;
     private final SemanticCacheVectorRepository vectorRepository;
     private final EmbeddingProviderRegistry providerRegistry;
-    private final EmbeddingProperties embeddingProperties;
     private final SemanticCacheProperties cacheProperties;
     private final ObjectProvider<PlatformCacheService> platformCacheService;
 
@@ -58,7 +55,7 @@ public class SemanticCacheService {
             return recordHit(exact.get(), cacheKey);
         }
 
-        EmbeddingProvider provider = resolveProvider(model);
+        EmbeddingProvider provider = resolveProvider();
         float[] embedding = provider.embed(List.of(queryText)).getFirst();
         Optional<UUID> similarId = vectorRepository.findMostSimilarId(
                 tenantId, model, embedding, cacheProperties.getMaxCosineDistance());
@@ -77,7 +74,7 @@ public class SemanticCacheService {
             return;
         }
 
-        EmbeddingProvider provider = resolveProvider(model);
+        EmbeddingProvider provider = resolveProvider();
         float[] embedding = provider.embed(List.of(queryText)).getFirst();
         String hash = queryHash(tenantId, queryText);
         Instant expiresAt = Instant.now().plus(cacheProperties.getDefaultTtl());
@@ -153,10 +150,9 @@ public class SemanticCacheService {
                 .build();
     }
 
-    private EmbeddingProvider resolveProvider(String model) {
-        EmbeddingProviderKind kind = embeddingProperties.getDefaultProviderKind();
-        String modelName = model != null ? model : embeddingProperties.getDefaultModel();
-        return providerRegistry.resolve(kind, modelName);
+    private EmbeddingProvider resolveProvider() {
+        // Cache key uses the LLM model; vectors always come from the configured embedding provider.
+        return providerRegistry.resolveDefault();
     }
 
     private String cacheKey(UUID tenantId, String queryText, String model) {

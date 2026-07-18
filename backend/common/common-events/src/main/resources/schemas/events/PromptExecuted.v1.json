@@ -18,6 +18,9 @@
     "provider": {"type": "string", "minLength": 1},
     "model": {"type": "string", "minLength": 1},
     "confidence": {"type": "string"},
-    "businessReference": {"type": "string"}
+    "businessReference": {"type": "string"},
+    "promptTokens": {"type": "integer", "minimum": 0},
+    "completionTokens": {"type": "integer", "minimum": 0},
+    "totalTokens": {"type": "integer", "minimum": 0}
   }
 }

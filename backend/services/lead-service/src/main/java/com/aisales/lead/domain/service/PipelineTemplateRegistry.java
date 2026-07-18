@@ -9,17 +9,19 @@ import java.util.Set;
 import org.springframework.stereotype.Component;
 
 /**
- * Known pipeline bootstrap templates. Long-term source of truth moves to plugin/config metadata.
+ * Known pipeline bootstrap templates.
+ * Industry graphs load from classpath JSON (plugin metadata SoT); DEFAULT remains platform Java.
  */
 @Component
 public class PipelineTemplateRegistry {
 
     private final Map<String, PipelineTemplateDefinition> templates = new LinkedHashMap<>();
 
-    public PipelineTemplateRegistry() {
+    public PipelineTemplateRegistry(ClasspathPipelineTemplateLoader metadataLoader) {
         register(new DefaultPipelineTemplateAdapter());
-        register(RealEstateSalesPipelineDefinition.INSTANCE);
-        register(AutomobileSalesPipelineDefinition.INSTANCE);
+        for (PipelineTemplateDefinition template : metadataLoader.loadAll()) {
+            register(template);
+        }
     }
 
     public PipelineTemplateDefinition require(String code) {

@@ -2,8 +2,6 @@ package com.aisales.ai.application.service;
 
 import com.aisales.ai.domain.cache.CachedLlmResponse;
 import com.aisales.ai.domain.embedding.EmbeddingProvider;
-import com.aisales.ai.domain.embedding.EmbeddingProviderKind;
-import com.aisales.ai.infrastructure.configuration.EmbeddingProperties;
 import com.aisales.ai.infrastructure.configuration.SemanticCacheProperties;
 import com.aisales.ai.infrastructure.embedding.EmbeddingProviderRegistry;
 import com.aisales.ai.infrastructure.persistence.SemanticCacheEntry;
@@ -53,12 +51,10 @@ class SemanticCacheServiceTest {
     @BeforeEach
     void setUp() {
         SemanticCacheProperties cacheProperties = new SemanticCacheProperties();
-        EmbeddingProperties embeddingProperties = new EmbeddingProperties();
         semanticCacheService = new SemanticCacheService(
                 cacheRepository,
                 vectorRepository,
                 providerRegistry,
-                embeddingProperties,
                 cacheProperties,
                 platformCacheService);
     }
@@ -88,7 +84,7 @@ class SemanticCacheServiceTest {
 
     @Test
     void shouldStoreResponseWithEmbedding() {
-        when(providerRegistry.resolve(EmbeddingProviderKind.OPEN_SOURCE, "BAAI/bge-m3")).thenReturn(embeddingProvider);
+        when(providerRegistry.resolveDefault()).thenReturn(embeddingProvider);
         when(embeddingProvider.embed(List.of("query"))).thenReturn(List.of(new float[] {0.1f, 0.2f}));
         when(cacheRepository.findByTenantIdAndQueryHashAndModelUsed(eq(tenantId), any(), eq("BAAI/bge-m3")))
                 .thenReturn(Optional.empty());

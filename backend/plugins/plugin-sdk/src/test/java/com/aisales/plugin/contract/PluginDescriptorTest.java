@@ -32,5 +32,19 @@ class PluginDescriptorTest {
                 .build();
         assertThat(descriptor.getType()).isEqualTo(PluginType.CAPABILITY);
         assertThat(descriptor.getCapabilities()).containsExactly("notification.email");
+        assertThat(descriptor.getMinPlatformVersion()).isEqualTo("1.0.0");
+    }
+
+    @Test
+    void shouldHonorExplicitMinPlatformVersion() {
+        PluginDescriptor descriptor = PluginDescriptor.builder()
+                .pluginKey("future")
+                .type(PluginType.CAPABILITY)
+                .version("2.0.0")
+                .minPlatformVersion("1.5.0")
+                .displayName("Future")
+                .capabilities(List.of("x"))
+                .build();
+        assertThat(descriptor.getMinPlatformVersion()).isEqualTo("1.5.0");
     }
 }

@@ -18,6 +18,7 @@ public class WhatsAppChannelPlugin implements CapabilityPlugin {
             .pluginKey(PLUGIN_KEY)
             .type(PluginType.CAPABILITY)
             .version("1.0.0")
+            .minPlatformVersion("1.0.0")
             .displayName("WhatsApp Channel")
             .description("Capability metadata for WhatsApp notifications. Meta Cloud API remains outside Platform Core plugins.")
             .capabilities(List.of("notification.whatsapp"))

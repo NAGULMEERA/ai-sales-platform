@@ -17,11 +17,23 @@ public class PromptExecutedEvent extends BaseEvent {
     private String model;
     private String confidence;
     private String businessReference;
+    private Integer promptTokens;
+    private Integer completionTokens;
+    private Integer totalTokens;
 
     public static PromptExecutedEvent of(String tenantId, String executionId, String promptCode,
                                          String promptVersion, String provider, String model,
                                          String confidence, String businessReference,
                                          String correlationId) {
+        return of(tenantId, executionId, promptCode, promptVersion, provider, model,
+                confidence, businessReference, correlationId, null, null);
+    }
+
+    public static PromptExecutedEvent of(String tenantId, String executionId, String promptCode,
+                                         String promptVersion, String provider, String model,
+                                         String confidence, String businessReference,
+                                         String correlationId,
+                                         Integer promptTokens, Integer completionTokens) {
         PromptExecutedEvent event = new PromptExecutedEvent();
         event.init("PromptExecuted", tenantId, executionId, correlationId);
         event.promptCode = promptCode;
@@ -30,6 +42,12 @@ public class PromptExecutedEvent extends BaseEvent {
         event.model = model;
         event.confidence = confidence;
         event.businessReference = businessReference;
+        event.promptTokens = promptTokens;
+        event.completionTokens = completionTokens;
+        if (promptTokens != null || completionTokens != null) {
+            event.totalTokens = (promptTokens != null ? promptTokens : 0)
+                    + (completionTokens != null ? completionTokens : 0);
+        }
         return event;
     }
 }

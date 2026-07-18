@@ -1,16 +1,18 @@
 package com.aisales.common.events.inbox;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class InboxServiceTest {
@@ -22,21 +24,26 @@ class InboxServiceTest {
     private InboxService inboxService;
 
     @Test
-    void shouldSkipWhenAlreadyProcessed() {
-        when(processedEventRepository.existsByEventIdAndConsumerName("evt-1", "tenant-service")).thenReturn(true);
+    void shouldClaimWhenInsertSucceeds() {
+        when(processedEventRepository.insertIgnoreConflict(eq("evt-1"), eq("tenant-service"), any(Instant.class)))
+                .thenReturn(1);
 
-        inboxService.markProcessed("evt-1", "tenant-service");
-
-        verify(processedEventRepository, never()).save(any());
+        assertThat(inboxService.tryClaim("evt-1", "tenant-service")).isTrue();
     }
 
     @Test
-    void shouldIgnoreDuplicateKeyOnConcurrentMark() {
-        when(processedEventRepository.existsByEventIdAndConsumerName("evt-1", "tenant-service")).thenReturn(false);
-        when(processedEventRepository.save(any())).thenThrow(new DataIntegrityViolationException("duplicate"));
+    void shouldNotClaimWhenConflict() {
+        when(processedEventRepository.insertIgnoreConflict(eq("evt-1"), eq("tenant-service"), any(Instant.class)))
+                .thenReturn(0);
 
-        inboxService.markProcessed("evt-1", "tenant-service");
+        assertThat(inboxService.tryClaim("evt-1", "tenant-service")).isFalse();
+    }
 
-        verify(processedEventRepository).save(any());
+    @Test
+    void shouldDetectAlreadyProcessed() {
+        when(processedEventRepository.existsByEventIdAndConsumerName("evt-1", "tenant-service")).thenReturn(true);
+
+        assertThat(inboxService.isProcessed("evt-1", "tenant-service")).isTrue();
+        verify(processedEventRepository, never()).insertIgnoreConflict(any(), any(), any());
     }
 }

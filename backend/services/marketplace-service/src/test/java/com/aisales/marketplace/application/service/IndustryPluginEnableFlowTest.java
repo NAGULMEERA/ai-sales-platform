@@ -15,6 +15,7 @@ import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.marketplace.application.mapper.PluginMapper;
 import com.aisales.marketplace.domain.entity.PluginCatalogEntry;
 import com.aisales.marketplace.domain.entity.PluginInstallation;
+import com.aisales.marketplace.infrastructure.configuration.PlatformVersionProperties;
 import com.aisales.marketplace.infrastructure.persistence.PluginCatalogRepository;
 import com.aisales.marketplace.infrastructure.persistence.PluginInstallationRepository;
 import java.time.Instant;
@@ -49,8 +50,14 @@ class IndustryPluginEnableFlowTest {
         tenantId = UUID.randomUUID();
         TenantContext.setTenantId(tenantId.toString());
         TenantContext.setUserId(UUID.randomUUID().toString());
+        PlatformVersionProperties platformVersion = new PlatformVersionProperties();
+        platformVersion.setVersion("1.0.0");
         service = new PluginRegistryService(
-                catalogRepository, installationRepository, new PluginMapper(), eventPublisher);
+                catalogRepository,
+                installationRepository,
+                new PluginMapper(),
+                eventPublisher,
+                platformVersion);
     }
 
     @AfterEach
@@ -130,6 +137,7 @@ class IndustryPluginEnableFlowTest {
                 .pluginKey(pluginKey)
                 .type(PluginTypeDto.INDUSTRY)
                 .version("1.0.0")
+                .minPlatformVersion("1.0.0")
                 .displayName(pluginKey)
                 .description("Industry metadata plugin")
                 .capabilities(List.of("industry." + industryCode.toLowerCase()))

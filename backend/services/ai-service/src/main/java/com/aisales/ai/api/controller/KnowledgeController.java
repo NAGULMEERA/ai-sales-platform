@@ -1,7 +1,11 @@
 package com.aisales.ai.api.controller;
 
+import com.aisales.ai.application.service.KnowledgeIndexingService;
+import com.aisales.ai.application.service.KnowledgeIngestService;
 import com.aisales.ai.application.service.KnowledgeService;
 import com.aisales.common.contracts.ai.CreateKnowledgeBaseRequest;
+import com.aisales.common.contracts.ai.IndexKnowledgeDocumentRequest;
+import com.aisales.common.contracts.ai.IngestKnowledgeDocumentRequest;
 import com.aisales.common.contracts.ai.KnowledgeBaseDto;
 import com.aisales.common.contracts.ai.KnowledgeDocumentDto;
 import com.aisales.common.contracts.ai.RegisterKnowledgeDocumentRequest;
@@ -24,10 +28,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Knowledge", description = "Knowledge base metadata (binaries in media-service/S3)")
+@Tag(name = "Knowledge", description = "Knowledge base metadata + RAG indexing/ingest")
 public class KnowledgeController {
 
     private final KnowledgeService knowledgeService;
+    private final KnowledgeIndexingService knowledgeIndexingService;
+    private final KnowledgeIngestService knowledgeIngestService;
 
     @PostMapping("/api/v1/knowledge-bases")
     @ResponseStatus(HttpStatus.CREATED)
@@ -68,5 +74,20 @@ public class KnowledgeController {
     @Operation(summary = "Get knowledge document metadata")
     public ApiResponse<KnowledgeDocumentDto> getDocument(@PathVariable UUID id) {
         return ApiResponse.ok(knowledgeService.getDocument(id));
+    }
+
+    @PostMapping("/api/v1/knowledge-documents/{id}/index")
+    @Operation(summary = "Index plain text into chunks + embeddings")
+    public ApiResponse<KnowledgeDocumentDto> indexDocument(
+            @PathVariable UUID id, @Valid @RequestBody IndexKnowledgeDocumentRequest request) {
+        return ApiResponse.ok(knowledgeIndexingService.indexDocument(id, request));
+    }
+
+    @PostMapping("/api/v1/knowledge-documents/{id}/ingest")
+    @Operation(summary = "Download media (S3/LOCAL) → extract TEXT/PDF → index for RAG")
+    public ApiResponse<KnowledgeDocumentDto> ingestDocument(
+            @PathVariable UUID id, @RequestBody(required = false) IngestKnowledgeDocumentRequest request) {
+        return ApiResponse.ok(knowledgeIngestService.ingest(
+                id, request != null ? request : IngestKnowledgeDocumentRequest.builder().build()));
     }
 }

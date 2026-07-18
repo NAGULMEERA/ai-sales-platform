@@ -41,6 +41,7 @@ public enum ErrorCode {
     // AI domain
     AI_RATE_LIMIT("AI_001", "AI rate limit exceeded", HttpStatus.TOO_MANY_REQUESTS),
     AI_UNAVAILABLE("AI_002", "AI service unavailable", HttpStatus.SERVICE_UNAVAILABLE),
+    AI_BUDGET_EXCEEDED("AI_003", "AI token budget exceeded", HttpStatus.TOO_MANY_REQUESTS),
 
     // Billing
     BILLING_PAYMENT_REQUIRED("BILLING_001", "Payment required to continue", HttpStatus.PAYMENT_REQUIRED);

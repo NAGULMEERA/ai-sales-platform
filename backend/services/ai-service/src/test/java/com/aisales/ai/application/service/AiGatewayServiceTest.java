@@ -2,9 +2,11 @@ package com.aisales.ai.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.aisales.ai.application.rag.KnowledgeContextAssembler;
 import com.aisales.ai.domain.entity.PromptTemplate;
 import com.aisales.ai.domain.entity.PromptVersionEntity;
 import com.aisales.ai.domain.llm.LlmCompletionResult;
@@ -12,6 +14,7 @@ import com.aisales.ai.domain.llm.LlmProvider;
 import com.aisales.common.contracts.ai.AiExecuteRequest;
 import com.aisales.common.contracts.ai.AiExecuteResponse;
 import com.aisales.common.contracts.ai.PromptStatus;
+import com.aisales.common.contracts.ai.RetrievedKnowledgeChunkDto;
 import com.aisales.common.core.util.TenantContext;
 import com.aisales.common.events.model.PromptExecutedEvent;
 import com.aisales.common.events.publisher.EventPublisher;
@@ -33,6 +36,9 @@ class AiGatewayServiceTest {
     @Mock private PromptService promptService;
     @Mock private LlmProvider llmProvider;
     @Mock private EventPublisher eventPublisher;
+    @Mock private KnowledgeRetrievalService knowledgeRetrievalService;
+    @Mock private AiQuotaService aiQuotaService;
+    @Mock private TokenUsageService tokenUsageService;
 
     private AiGatewayService aiGatewayService;
     private UUID tenantId;
@@ -42,7 +48,14 @@ class AiGatewayServiceTest {
         tenantId = UUID.randomUUID();
         TenantContext.setTenantId(tenantId.toString());
         aiGatewayService = new AiGatewayService(
-                promptService, new PromptRenderer(), llmProvider, eventPublisher);
+                promptService,
+                new PromptRenderer(),
+                llmProvider,
+                eventPublisher,
+                knowledgeRetrievalService,
+                new KnowledgeContextAssembler(),
+                aiQuotaService,
+                tokenUsageService);
     }
 
     @AfterEach
@@ -99,6 +112,45 @@ class AiGatewayServiceTest {
         verify(eventPublisher).publish(captor.capture());
         assertThat(captor.getValue().getEventType()).isEqualTo("PromptExecuted");
         assertThat(captor.getValue().getBusinessReference()).isEqualTo("lead-1");
+        assertThat(captor.getValue().getPromptTokens()).isEqualTo(10);
+        assertThat(captor.getValue().getCompletionTokens()).isEqualTo(5);
+        assertThat(captor.getValue().getTotalTokens()).isEqualTo(15);
+        verify(aiQuotaService).assertWithinDailyBudget(tenantId);
+        verify(tokenUsageService).recordExecuteUsage(
+                eq(tenantId), any(UUID.class), eq("LEAD_QUALIFY"), any(), eq("lead-1"));
+    }
+
+    @Test
+    void shouldInjectRetrievedKnowledgeIntoPromptWhenKnowledgeBaseSet() {
+        UUID knowledgeBaseId = UUID.randomUUID();
+        stubPrompt("FAQ_ANSWER", "Answer the customer.", List.of());
+
+        when(knowledgeRetrievalService.resolveQuery(eq("warranty policy"), any()))
+                .thenReturn("warranty policy");
+        when(knowledgeRetrievalService.retrieve(eq(knowledgeBaseId), eq("warranty policy"), eq(3)))
+                .thenReturn(List.of(RetrievedKnowledgeChunkDto.builder()
+                        .chunkId(UUID.randomUUID())
+                        .documentId(UUID.randomUUID())
+                        .chunkIndex(0)
+                        .content("Warranty covers 3 years or 36000 miles.")
+                        .distance(0.12)
+                        .build()));
+
+        when(llmProvider.complete(any())).thenReturn(new LlmCompletionResult(
+                "STUB", "stub-model", "{\"answer\":\"3 years\"}", Map.of("answer", "3 years"), 0.9, 20, 8));
+
+        AiExecuteResponse response = aiGatewayService.execute(AiExecuteRequest.builder()
+                .promptCode("FAQ_ANSWER")
+                .knowledgeBaseId(knowledgeBaseId)
+                .retrievalQuery("warranty policy")
+                .retrievalTopK(3)
+                .build());
+
+        assertThat(response.getKnowledgeBaseId()).isEqualTo(knowledgeBaseId);
+        assertThat(response.getRetrievedChunks()).hasSize(1);
+        assertThat(response.getRenderedUserPrompt())
+                .contains("## Retrieved knowledge")
+                .contains("Warranty covers 3 years");
     }
 
     @Test

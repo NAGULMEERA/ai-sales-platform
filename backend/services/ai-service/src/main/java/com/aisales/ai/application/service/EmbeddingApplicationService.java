@@ -9,15 +9,17 @@ import com.aisales.ai.infrastructure.configuration.EmbeddingProperties;
 import com.aisales.ai.infrastructure.embedding.EmbeddingProviderRegistry;
 import com.aisales.common.core.util.TenantContext;
 import com.aisales.common.exception.exception.ValidationException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -25,16 +27,18 @@ public class EmbeddingApplicationService {
 
     private final EmbeddingProviderRegistry providerRegistry;
     private final EmbeddingProperties properties;
+    private final AiQuotaService aiQuotaService;
+    private final TokenUsageService tokenUsageService;
 
     public EmbeddingResponse embed(EmbeddingRequest request) {
         if (request.getTexts() == null || request.getTexts().isEmpty()) {
             throw new ValidationException("At least one text is required");
         }
 
-        EmbeddingProviderKind kind = resolveKind(request);
-        String modelName = resolveModelName(request, kind);
-        EmbeddingProvider provider = providerRegistry.resolve(kind, modelName);
+        UUID tenantId = requireTenantId();
+        aiQuotaService.assertWithinDailyBudget(tenantId);
 
+        EmbeddingProvider provider = resolveProvider(request);
         List<float[]> vectors = provider.embed(request.getTexts());
         List<EmbeddingVectorResponse> results = new ArrayList<>(vectors.size());
 
@@ -47,31 +51,47 @@ public class EmbeddingApplicationService {
                     .build());
         }
 
+        String providerLabel = provider.name().toLowerCase(Locale.ROOT);
+        tokenUsageService.recordEmbeddingUsage(
+                tenantId,
+                providerLabel,
+                provider.modelName(),
+                request.getTexts(),
+                request.getCollectionKey(),
+                request.getCollectionKey() != null ? request.getCollectionKey() : "EMBED");
+
         return EmbeddingResponse.builder()
                 .tenantId(TenantContext.getTenantId())
                 .collectionKey(request.getCollectionKey())
                 .modelName(provider.modelName())
-                .modelProvider(kind == EmbeddingProviderKind.OPEN_SOURCE ? "baai" : "openai")
-                .providerKind(kind.name())
+                .modelProvider(providerLabel)
+                .providerKind(provider.kind().name())
                 .dimension(provider.dimension())
                 .embeddings(results)
                 .build();
     }
 
-    private EmbeddingProviderKind resolveKind(EmbeddingRequest request) {
-        if (request.getProviderKind() != null) {
-            return request.getProviderKind();
+    private EmbeddingProvider resolveProvider(EmbeddingRequest request) {
+        if (request.getProviderKind() == null && !StringUtils.hasText(request.getModelName())) {
+            return providerRegistry.resolveDefault();
         }
-        return properties.getDefaultProviderKind();
+        EmbeddingProviderKind kind = request.getProviderKind() != null
+                ? request.getProviderKind()
+                : properties.getDefaultProviderKind();
+        String modelName = StringUtils.hasText(request.getModelName())
+                ? request.getModelName()
+                : (kind == EmbeddingProviderKind.OPEN_SOURCE
+                        ? properties.getOpenSource().getModel()
+                        : properties.getCommercial().getOpenai().getModel());
+        return providerRegistry.resolve(kind, modelName);
     }
 
-    private String resolveModelName(EmbeddingRequest request, EmbeddingProviderKind kind) {
-        if (request.getModelName() != null) {
-            return request.getModelName();
+    private UUID requireTenantId() {
+        String raw = TenantContext.getTenantId();
+        if (!StringUtils.hasText(raw)) {
+            throw new ValidationException("Tenant context is required");
         }
-        return kind == EmbeddingProviderKind.OPEN_SOURCE
-                ? properties.getOpenSource().getModel()
-                : properties.getCommercial().getOpenai().getModel();
+        return UUID.fromString(raw);
     }
 
     private static String sha256(String input) {
