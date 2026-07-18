@@ -49,4 +49,10 @@ public class AuthProperties {
 
     /** Frontend or dev link base used in password reset emails. */
     private String passwordResetLinkBaseUrl = "http://localhost:3000/reset-password";
+
+    /** Failed password attempts before the account is locked. */
+    private int maxFailedLoginAttempts = 5;
+
+    /** How long a locked account stays locked before automatic unlock on next login. */
+    private int lockoutDurationMinutes = 15;
 }

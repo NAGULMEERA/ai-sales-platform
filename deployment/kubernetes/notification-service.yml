@@ -73,6 +73,8 @@ spec:
                 secretKeyRef:
                   name: aisales-secrets
                   key: NOTIFICATION_DELIVERY_MODE
+            - name: AISALES_SECURITY_JWT_JWK_SET_URI
+              value: http://identity-service:8081/.well-known/jwks.json
           readinessProbe:
             httpGet:
               path: /actuator/health

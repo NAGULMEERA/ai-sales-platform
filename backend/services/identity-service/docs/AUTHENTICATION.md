@@ -58,14 +58,14 @@ The client **registers** an account → **verifies email** (link or API) → **p
 | Capability | Owner | Notes |
 |------------|-------|-------|
 | User credentials (email + password hash) | identity-service | BCrypt, never plain text |
-| JWT access tokens | identity-service signs them | Validated by all services via shared secret |
+| JWT access tokens | identity-service signs them (RS256) | Validated via JWKS / public key (no shared secret) |
 | Refresh tokens | identity-service | Opaque random strings in `refresh_tokens` table |
 | Sessions | identity-service | Device/IP tracking linked to refresh token |
 | Google OAuth linkage | identity-service | `oauth_accounts` table |
 | RBAC permission catalog | identity-service | Roles → permissions resolved at token issue |
 | Tenant created at registration | identity-service | `tenants` + FREE subscription |
 | Email verification tokens | identity-service | `email_verification_tokens` table |
-| Transactional email delivery | **notification-service** | identity calls REST; templates + SMTP/log |
+| Transactional email delivery | **notification-service** | Consumes identity outbox events (`EmailVerificationRequested`, `PasswordResetRequested`) |
 
 ### 2.2 Three ways to authenticate
 
@@ -105,7 +105,7 @@ By default:
 | `aisales.auth.auto-login-after-register` | `false` | **No JWT** returned on register |
 | `aisales.auth.require-email-verification-for-login` | `true` | Login blocked until `users.email_verified = true` |
 
-Registration always sets `emailVerificationRequired: true` and sends a verification email via **notification-service**.
+Registration always sets `emailVerificationRequired: true` and publishes `EmailVerificationRequested` via outbox; **notification-service** delivers the email.
 
 ---
 
@@ -122,7 +122,7 @@ This is the most important design decision in the current implementation.
 │ ACCESS TOKEN (JWT)         │ REFRESH TOKEN (opaque)              │
 ├────────────────────────────┼────────────────────────────────────┤
 │ Format: eyJhbGciOiJ...     │ Format: random Base64 URL (~43 chars)│
-│ Signed by HMAC-SHA256      │ NOT a JWT — random bytes            │
+│ Signed by RS256 (RSA)      │ NOT a JWT — random bytes            │
 │ Contains: userId, tenant,  │ Stored in refresh_tokens table      │
 │   roles, permissions       │ Lookup by exact string match        │
 │ TTL: ~1 hour               │ TTL: ~24 hours (DB expires_at)      │
@@ -215,11 +215,12 @@ flowchart TB
         Auth[AuthService]
         OAuthSvc[OAuth2LoginService]
         Token[TokenService]
-        Email[EmailNotificationService]
+        EmailVerify[EmailVerificationService]
         RBAC[RbacService]
         Refresh[RefreshTokenService]
         Session[SessionService]
         Opaque[OpaqueRefreshTokenGenerator]
+        Events[EventPublisher / Outbox]
     end
 
     subgraph Platform["common-security"]
@@ -228,13 +229,15 @@ flowchart TB
     end
 
     DB[(PostgreSQL aisales_identity :5433 local)]
+    Kafka[(Kafka aisales-events)]
 
     Client --> Identity
     Identity --> Security
     Security --> App
-    Reg --> Email
-    Auth --> Email
-    Email -->|POST /notifications/email| Notification
+    Reg --> EmailVerify
+    EmailVerify --> Events
+    Events --> Kafka
+    Kafka --> Notification
     Token --> Provider
     Token --> Opaque
     Token --> Refresh
@@ -345,12 +348,11 @@ All other paths require a valid access JWT.
 | `RbacService` | Resolve role names → permission codes from DB |
 | `OAuth2LoginService` | Google user → find/create User → `TokenService` |
 | `SlugGenerator` | `companyName` → URL slug (`acme-corp`, `acme-corp-1`) |
-| `EmailVerificationService` | Create/consume verification tokens; trigger email send |
-| `EmailNotificationService` | Build email request; call notification-service |
-| `PasswordResetTokenService` | One-time password reset tokens + reset email |
-| `AuditService` | Immutable security audit log |
+| `EmailVerificationService` | Create/consume verification tokens; publish `EmailVerificationRequested` |
+| `PasswordResetTokenService` | One-time password reset tokens; publish `PasswordResetRequested` |
+| `AuditService` | Immutable security audit log + `AuditRecorded` outbox events |
 
-**Infrastructure client:** `NotificationRestClient` → `POST http://localhost:8090/api/v1/notifications/email`
+**Email delivery:** Identity publishes integration events via outbox → Kafka → **notification-service** (no REST client in Identity).
 
 ### 6.3 Domain entities (auth-related)
 
@@ -379,14 +381,15 @@ All other paths require a valid access JWT.
 
 | Class | Role |
 |-------|------|
-| `JwtTokenProvider` | **Signs** access JWTs (HMAC-SHA256 / JJWT) |
+| `JwtTokenProvider` | **Signs** access JWTs (RS256 / JJWT) when `signing-enabled=true` |
+| `PlatformRsaKeyProvider` | Loads PEM keys; exposes JWKS for verifiers |
 | `JwtUtils` | **Parses and validates** JWTs on incoming requests |
 | `JwtAuthenticationFilter` | Servlet filter — Bearer token → SecurityContext |
 | `UserPrincipal` | Spring Security principal (userId, tenantId, roles) |
 | `SecurityConstants` | Claim names, public paths |
 
-**Write path:** identity-service (`JwtTokenProvider`)  
-**Read path:** every secured service (`JwtAuthenticationFilter` + `JwtUtils`)
+**Write path:** identity-service (`JwtTokenProvider` + private key)  
+**Read path:** every secured service (`JwtAuthenticationFilter` + JWKS / public key)
 
 ---
 
@@ -415,9 +418,8 @@ Client
        ├─ TenantRepository.save(Tenant)
        ├─ TenantSubscriptionRepository.save(FREE)
        ├─ UserRepository.save(User, role=TENANT_ADMIN)
-       ├─ EventPublisher → TenantCreated, UserCreated (Kafka or logging in local)
-       ├─ EmailVerificationService → token in DB
-       ├─ EmailNotificationService → notification-service (verification email)
+       ├─ EventPublisher → TenantCreated, UserCreated (outbox → Kafka)
+       ├─ EmailVerificationService → token in DB + EmailVerificationRequested (outbox)
        ├─ AuditService (USER_REGISTERED)
        └─ TokenService.issueTokens()  ← ONLY if auto-login-after-register=true (default: false)
   ← RegistrationResponse (no authentication block by default)
@@ -569,7 +571,7 @@ Requires valid `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 ```
 POST /api/v1/auth/forgot-password
   → PasswordResetTokenService.issueResetToken()
-  → EmailNotificationService → notification-service (PASSWORD_RESET template)
+  → EventPublisher → PasswordResetRequested (outbox → Kafka → notification-service)
   → generic response (no email enumeration)
 
 POST /api/v1/auth/reset-password
@@ -587,10 +589,8 @@ POST /api/v1/auth/reset-password
 RegistrationService / AuthService.resendVerificationEmail()
   → EmailVerificationService.issueVerificationToken()
        ├─ INSERT email_verification_tokens (UUID token, expires 24h)
-       └─ EmailNotificationService.sendVerificationEmail()
-            └─ POST notification-service /api/v1/notifications/email
-                 template: EMAIL_VERIFICATION
-                 variables: firstName, token, verificationLink
+       └─ EventPublisher → EmailVerificationRequested (outbox → Kafka)
+            └─ notification-service renders EMAIL_VERIFICATION + SMTP/Mailpit
 ```
 
 **Verify (no JWT created):**
@@ -605,6 +605,7 @@ AuthService.verifyEmail()
   ├─ Load token (not consumed, not expired)
   ├─ user.emailVerified = true
   ├─ token.consumedAt = now
+  ├─ EventPublisher → EmailVerified (outbox → Kafka → workflow-service)
   └─ AuditService (EMAIL_VERIFIED)
   ← MessageResponse — still no JWT; user must login
 ```
@@ -626,15 +627,15 @@ SELECT token FROM email_verification_tokens ORDER BY created_at DESC LIMIT 1;
 A **JSON Web Token** — three Base64 parts separated by dots:
 
 ```
-eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIuLi4ifQ.signature
+eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIuLi4ifQ.signature
      HEADER              PAYLOAD           SIGNATURE
 ```
 
-- **Header:** algorithm (HS256)
+- **Header:** algorithm (RS256)
 - **Payload:** claims (user data)
-- **Signature:** HMAC using `aisales.security.jwt.secret`
+- **Signature:** RSA private key (`aisales.security.jwt.private-key-pem`)
 
-Anyone with the secret can **verify** the token was issued by identity-service and was not tampered with.
+Verifiers use the public key or `GET /.well-known/jwks.json` — the private key never leaves identity-service.
 
 ### 8.2 Access token claims
 
@@ -943,7 +944,7 @@ Optional: **Resend verification** if email token expired.
 | `TokenService` | `issueTokens()` | **JWT creation** (login/refresh/OAuth) |
 | `AuthService` | `login()` | Login (after email verified) |
 | `AuthService` | `verifyEmail()` | Email verification (no JWT) |
-| `EmailNotificationService` | `sendVerificationEmail()` | Calls notification-service |
+| `EmailVerificationService` | `issueVerificationToken()` | Outbox EmailVerificationRequested |
 | `JwtAuthenticationFilter` | `doFilterInternal()` | Every protected request |
 
 ---
@@ -957,16 +958,16 @@ Optional: **Resend verification** if email token expired.
 | `server.port` | `8081` | HTTP port |
 | `spring.profiles.default` | `local` | Active profile when none specified |
 | `aisales.security.use-platform-defaults` | `false` | Use IdentitySecurityConfig (OAuth) |
-| `aisales.security.jwt.secret` | dev secret | JWT signing key — **change in production** |
+| `aisales.security.jwt.signing-enabled` | `true` | Identity mints RS256 access tokens |
+| `aisales.security.jwt.private-key-location` | classpath PEM / `JWT_PRIVATE_KEY_PEM` | RSA private key (identity only) |
+| `aisales.security.jwt.public-key-location` | classpath PEM | RSA public key / JWKS source |
+| `aisales.security.jwt.jwk-set-uri` | (optional) | JWKS URI for resource servers |
 | `aisales.security.jwt.access-token-expiration-ms` | `3600000` | 1 hour |
 | `aisales.security.jwt.refresh-token-expiration-ms` | `86400000` | 24 hours |
 | `aisales.auth.auto-login-after-register` | `false` | Issue tokens on register (usually off) |
 | `aisales.auth.require-email-verification-for-login` | `true` | Block login until email verified |
 | `aisales.auth.verification-link-base-url` | frontend URL | Link in verification email |
 | `aisales.auth.password-reset-link-base-url` | frontend URL | Link in reset email |
-| `aisales.notification.base-url` | `http://localhost:8090` | notification-service REST URL |
-| `aisales.notification.enabled` | `true` | Call notification-service for emails |
-| `aisales.notification.fallback-logging` | `true` | Log if notification-service down |
 | `GOOGLE_CLIENT_ID` / `SECRET` | `change-me` | Google OAuth |
 
 ### application-local.yml (overrides)
@@ -974,9 +975,8 @@ Optional: **Resend verification** if email token expired.
 | Property | Value | Purpose |
 |----------|-------|---------|
 | `spring.datasource.url` | `localhost:5433/aisales_identity` | Docker Postgres |
-| `aisales.events.publisher` | `logging` | No Kafka required |
+| `aisales.events.publisher` | outbox + Kafka | Local stack expects Kafka for email/workflow events |
 | `aisales.auth.verification-link-base-url` | `http://localhost:8081/api/v1/auth/verify-email` | Clickable verify link in local dev |
-| `aisales.notification.base-url` | `http://localhost:8090` | notification-service |
 | `eureka.client.enabled` | `false` | No service registry |
 | `spring.cloud.config.enabled` | `false` | No config server |
 | `management.tracing.enabled` | `false` | No Zipkin required locally |
@@ -1006,8 +1006,8 @@ Optional: **Resend verification** if email token expired.
 | RBAC | `RbacService`, `PermissionRepository` |
 | Sessions | `SessionService`, `UserSession` |
 | Email verification | `EmailVerificationService`, `EmailVerificationToken` |
-| Email delivery (client) | `EmailNotificationService`, `NotificationRestClient` |
-| Password reset email | `PasswordResetTokenService` → `EmailNotificationService` |
+| Email delivery | Outbox events → notification-service Kafka consumer |
+| Password reset email | `PasswordResetTokenService` → `PasswordResetRequested` event |
 | Security config | `IdentitySecurityConfig` |
 | Password hashing | `BCryptPasswordEncoder` |
 | Audit | `AuditService` |
@@ -1024,9 +1024,10 @@ Optional: **Resend verification** if email token expired.
 | RBAC catalog | **identity-service** (DB) |
 | Tenant at registration | **identity-service** |
 | Full tenant lifecycle UI/API | tenant-service (future) |
-| Email templates & delivery | **notification-service** (`POST /api/v1/notifications/email`) |
+| Email templates & delivery | **notification-service** (Kafka consumer; optional admin REST) |
+| Onboarding orchestration | **workflow-service** (`UserCreated` → `EmailVerified` → `WorkflowCompleted`) |
 | Verification/reset token ownership | **identity-service** (DB) |
-| JWT validation at gateway | api-gateway (same secret) |
+| JWT validation at gateway | api-gateway (JWKS / public key) |
 | Business authorization in other services | Each service reads JWT permissions |
 
 ---
@@ -1041,8 +1042,8 @@ Optional: **Resend verification** if email token expired.
 | value too long for varchar(512) | Old code stored JWT refresh | Rebuild service (opaque refresh + V8 migration) |
 | 401 on protected API | No/expired access token | Run **Login** after verify email |
 | Login: email verification required | `email_verified=false` | Verify email first or resend |
-| No email in inbox (local) | Log mode, not real SMTP | Check **notification-service** console logs |
-| notification-service connection refused | Service not on 8090 | Start notification-service; or `fallback-logging=true` |
+| No email in inbox (local) | Kafka/outbox lag or delivery-mode | Check outbox_events, Kafka, Mailpit http://localhost:8025 |
+| notification-service not consuming | Service/Kafka down | Start Kafka + notification-service (`local` profile) |
 | Register returns no tokens | Default behaviour | Expected — login after verify |
 | Email already registered | Duplicate email | Use new email or Register auto-email |
 | Config server warnings | Optional import | Safe to ignore with `local` profile |
@@ -1064,4 +1065,4 @@ Optional: **Resend verification** if email token expired.
 
 ---
 
-*Last updated: July 2026 — email verification, notification-service integration, JWT created at login/refresh/OAuth only, opaque refresh tokens, local profile, Postgres port 5433.*
+*Last updated: July 2026 — RS256/JWKS, outbox email events, account lockout, onboarding workflow, opaque refresh tokens, local profile, Postgres port 5433.*

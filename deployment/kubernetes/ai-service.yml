@@ -33,17 +33,8 @@ spec:
                 secretKeyRef:
                   name: aisales-secrets
                   key: DB_PASSWORD
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: aisales-secrets
-                  key: JWT_SECRET
-            - name: AISALES_SECURITY_JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: aisales-secrets
-                  key: JWT_SECRET
-            - name: OPENAI_API_KEY
+            - name: AISALES_SECURITY_JWT_JWK_SET_URI
+              value: http://identity-service:8081/.well-known/jwks.json            - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: aisales-secrets

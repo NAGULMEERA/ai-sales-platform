@@ -71,12 +71,43 @@ class IdentityCriticalPathsIntegrationTest extends IdentityIntegrationTestBase {
                 .isInstanceOf(UnauthorizedException.class);
 
         assertThat(auditLogRepository.countByAction(AuditAction.LOGIN_FAILED.name())).isGreaterThanOrEqualTo(1);
+        assertThat(outboxRepository.findByStatus(OutboxEvent.OutboxStatus.PENDING))
+                .extracting(OutboxEvent::getEventType)
+                .contains("AuditRecorded");
+    }
+
+    @Test
+    void shouldLockAccountAfterRepeatedFailedLogins() {
+        var registration = registerUser("lockout@example.com", "Lockout Corp");
+        verifyUserEmail(registration.getUserId());
+
+        for (int i = 0; i < 5; i++) {
+            assertThatThrownBy(() -> authService.login(
+                    LoginRequest.builder().email("lockout@example.com").password("WrongPassword1!").build(),
+                    "127.0.0.1", "JUnit"))
+                    .isInstanceOf(UnauthorizedException.class);
+        }
+
+        var user = userRepository.findById(registration.getUserId()).orElseThrow();
+        assertThat(user.getStatus()).isEqualTo(com.aisales.identity.user.domain.entity.User.UserStatus.LOCKED);
+        assertThat(user.getLockedUntil()).isNotNull();
+        assertThat(auditLogRepository.countByAction(AuditAction.ACCOUNT_LOCKED.name())).isGreaterThanOrEqualTo(1);
+
+        assertThatThrownBy(() -> authService.login(
+                LoginRequest.builder().email("lockout@example.com").password("Password123!").build(),
+                "127.0.0.1", "JUnit"))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessageContaining("locked");
     }
 
     @Test
     void shouldPersistRegistrationEventsInOutbox() {
         registerUser("outbox@example.com", "Outbox Corp");
-        assertThat(outboxRepository.findByStatus(OutboxEvent.OutboxStatus.PENDING)).hasSizeGreaterThanOrEqualTo(2);
+        // TenantCreated + UserCreated + EmailVerificationRequested (+ AuditRecorded rows)
+        assertThat(outboxRepository.findByStatus(OutboxEvent.OutboxStatus.PENDING)).hasSizeGreaterThanOrEqualTo(3);
+        assertThat(outboxRepository.findByStatus(OutboxEvent.OutboxStatus.PENDING))
+                .extracting(OutboxEvent::getEventType)
+                .contains("EmailVerificationRequested", "AuditRecorded");
     }
 
     @Test

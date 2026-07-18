@@ -11,5 +11,9 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "aisales.security.jwt")
 public class GatewayJwtProperties {
 
-    private String secret = "aisales-default-jwt-secret-key-change-in-production";
+    /**
+     * X.509 PEM content or Spring resource location for RS256 verification.
+     * Local default is the committed dev public key; production injects PEM via env/secret.
+     */
+    private String publicKeyLocation = "classpath:jwt/local-public.pem";
 }

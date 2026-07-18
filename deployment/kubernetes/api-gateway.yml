@@ -23,16 +23,11 @@ spec:
               value: prod
             - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
               value: http://service-registry:8761/eureka/
-            - name: JWT_SECRET
+            - name: JWT_PUBLIC_KEY_PEM
               valueFrom:
                 secretKeyRef:
                   name: aisales-secrets
-                  key: JWT_SECRET
-            - name: AISALES_SECURITY_JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: aisales-secrets
-                  key: JWT_SECRET
+                  key: JWT_PUBLIC_KEY_PEM
           readinessProbe:
             httpGet:
               path: /actuator/health

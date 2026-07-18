@@ -3,6 +3,7 @@ package com.aisales.notification.application.service;
 import com.aisales.common.contracts.notification.SendTransactionalEmailRequest;
 import com.aisales.common.observability.http.OutboundCallDiagnostics;
 import com.aisales.notification.domain.enums.EmailTemplateCode;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class EmailDeliveryService {
     private final JavaMailSender mailSender;
     private final MailProperties mailProperties;
 
+    @Bulkhead(name = "smtpEmail")
     @CircuitBreaker(name = "smtpEmail")
     @Retry(name = "smtpEmail")
     public void sendTransactionalEmail(SendTransactionalEmailRequest request) {

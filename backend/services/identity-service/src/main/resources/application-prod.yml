@@ -9,11 +9,13 @@ spring:
 aisales:
   security:
     jwt:
-      secret: ${JWT_SECRET}
-  notification:
-    fallback-logging: false
+      signing-enabled: true
+      # PKCS#8 PEM (inline) or file:/path/to/private.pem
+      private-key-location: ${JWT_PRIVATE_KEY_PEM}
+      public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:jwt/local-public.pem}
+      key-id: ${JWT_KEY_ID:aisales-1}
   startup-validation:
     enabled: true
     required-config-values:
-      - aisales.security.jwt.secret
+      - aisales.security.jwt.private-key-location
       - spring.datasource.password

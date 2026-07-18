@@ -9,6 +9,7 @@ import com.aisales.common.observability.metrics.PlatformMetrics;
 import com.aisales.common.observability.metrics.AiRequestMetrics;
 import com.aisales.common.observability.metrics.MetricsConfig;
 import com.aisales.common.observability.metrics.TimerAspect;
+import com.aisales.common.observability.resilience.BulkheadObservabilityConfig;
 import com.aisales.common.observability.resilience.CircuitBreakerObservabilityConfig;
 import com.aisales.common.observability.resilience.RetryObservabilityConfig;
 import com.aisales.common.observability.tracing.TraceContextEnricher;
@@ -23,7 +24,7 @@ import org.springframework.context.annotation.Import;
 
 @AutoConfiguration
 @Import({CoreConfig.class, GlobalExceptionHandler.class, MetricsConfig.class, TracingConfig.class,
-        RetryObservabilityConfig.class, CircuitBreakerObservabilityConfig.class})
+        RetryObservabilityConfig.class, CircuitBreakerObservabilityConfig.class, BulkheadObservabilityConfig.class})
 @ComponentScan(basePackageClasses = {
         CorrelationIdFilter.class,
         LoggingFilter.class,

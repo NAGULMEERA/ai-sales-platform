@@ -4,27 +4,29 @@ import com.aisales.common.core.constant.SecurityConstants;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Date;
 import java.util.List;
 
 /**
- * Stateless JWT parsing for gateway and other non-servlet components.
+ * Stateless JWT parsing for gateway and other non-servlet components (RSA / RS256).
  */
 public final class JwtClaimExtractor {
 
-    private final SecretKey secretKey;
+    private final RSAPublicKey publicKey;
 
-    public JwtClaimExtractor(String secret) {
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    public JwtClaimExtractor(RSAPublicKey publicKey) {
+        this.publicKey = publicKey;
+    }
+
+    public JwtClaimExtractor(String publicKeyPemOrLocation) {
+        this(PemKeyLoader.loadPublicKey(publicKeyPemOrLocation));
     }
 
     public Claims parseAndValidateAccessToken(String token) {
         Claims claims = Jwts.parser()
-                .verifyWith(secretKey)
+                .verifyWith(publicKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();

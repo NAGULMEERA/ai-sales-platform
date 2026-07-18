@@ -1,0 +1,37 @@
+# Local: Postgres (5433) + Kafka (9092)
+# docker compose -f deployment/docker-compose-infra.yml up -d
+
+spring:
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+  datasource:
+    url: jdbc:postgresql://localhost:5433/aisales_workflow
+    username: aisales
+    password: aisales
+  kafka:
+    bootstrap-servers: localhost:9092
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+aisales:
+  events:
+    default-topic: aisales-events
+    outbox:
+      enabled: true
+    inbox:
+      enabled: true
+
+management:
+  tracing:
+    enabled: false
+
+logging:
+  level:
+    com.aisales.workflow: INFO

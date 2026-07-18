@@ -1,23 +1,24 @@
 package com.aisales.identity.authentication.application;
 
+import com.aisales.common.events.model.EmailVerificationRequestedEvent;
+import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.BusinessException;
 import com.aisales.common.exception.model.ErrorCode;
+import com.aisales.identity.audit.application.AuditService;
+import com.aisales.identity.authentication.domain.entity.EmailVerificationToken;
+import com.aisales.identity.authentication.infrastructure.configuration.AuthProperties;
+import com.aisales.identity.authentication.infrastructure.persistence.EmailVerificationTokenRepository;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
-import com.aisales.identity.audit.application.AuditService;
-import com.aisales.identity.authentication.domain.entity.EmailVerificationToken;
-import com.aisales.identity.authentication.infrastructure.configuration.AuthProperties;
-import com.aisales.identity.authentication.infrastructure.persistence.EmailVerificationTokenRepository;
 
-
-
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -28,7 +29,7 @@ import static org.mockito.Mockito.when;
 class EmailVerificationServiceTest {
 
     @Mock private EmailVerificationTokenRepository tokenRepository;
-    @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private EventPublisher eventPublisher;
     @Mock private AuditService auditService;
 
     private AuthProperties authProperties;
@@ -40,18 +41,29 @@ class EmailVerificationServiceTest {
         authProperties.setVerificationResendCooldownMinutes(5);
         authProperties.setMaxVerificationResendsPerWindow(3);
         authProperties.setVerificationResendWindowHours(24);
-        emailVerificationService = new EmailVerificationService(tokenRepository, eventPublisher, authProperties, auditService);
+        authProperties.setVerificationLinkBaseUrl("http://localhost:3000/verify-email");
+        emailVerificationService = new EmailVerificationService(
+                tokenRepository, eventPublisher, authProperties, auditService);
     }
 
     @Test
     void shouldInvalidatePendingTokensOnInitialIssue() {
+        UUID tenantId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         when(tokenRepository.save(any(EmailVerificationToken.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        emailVerificationService.issueVerificationToken(UUID.randomUUID(), userId, "a@b.com", "A");
+        emailVerificationService.issueVerificationToken(tenantId, userId, "a@b.com", "A");
 
         verify(tokenRepository).invalidatePendingForUser(eq(userId), any(Instant.class));
         verify(tokenRepository).save(any(EmailVerificationToken.class));
+
+        ArgumentCaptor<EmailVerificationRequestedEvent> captor =
+                ArgumentCaptor.forClass(EmailVerificationRequestedEvent.class);
+        verify(eventPublisher).publish(captor.capture());
+        EmailVerificationRequestedEvent event = captor.getValue();
+        assertThat(event.getEventType()).isEqualTo("EmailVerificationRequested");
+        assertThat(event.getEmail()).isEqualTo("a@b.com");
+        assertThat(event.getVerificationLink()).startsWith("http://localhost:3000/verify-email?token=");
     }
 
     @Test

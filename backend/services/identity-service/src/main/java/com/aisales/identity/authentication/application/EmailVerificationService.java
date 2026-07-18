@@ -1,28 +1,27 @@
 package com.aisales.identity.authentication.application;
 
+import com.aisales.common.core.util.CorrelationIdUtils;
+import com.aisales.common.events.model.EmailVerificationRequestedEvent;
+import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.BusinessException;
 import com.aisales.common.exception.model.ErrorCode;
-import java.time.Instant;
-import java.util.UUID;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.aisales.identity.audit.application.AuditService;
+import com.aisales.identity.audit.domain.AuditAction;
 import com.aisales.identity.authentication.domain.entity.EmailVerificationToken;
 import com.aisales.identity.authentication.infrastructure.configuration.AuthProperties;
 import com.aisales.identity.authentication.infrastructure.persistence.EmailVerificationTokenRepository;
-import com.aisales.identity.audit.application.AuditService;
-import com.aisales.identity.audit.domain.AuditAction;
-import com.aisales.identity.notification.application.event.EmailVerificationRequestedEvent;
-
-
+import java.time.Instant;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class EmailVerificationService {
 
     private final EmailVerificationTokenRepository tokenRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final EventPublisher eventPublisher;
     private final AuthProperties authProperties;
     private final AuditService auditService;
 
@@ -54,7 +53,19 @@ public class EmailVerificationService {
                 .expiresAt(now.plusSeconds(authProperties.getEmailVerificationExpirationHours() * 3600))
                 .createdAt(now)
                 .build());
-        eventPublisher.publishEvent(new EmailVerificationRequestedEvent(tenantId, email, firstName, token));
+
+        String verificationLink = authProperties.getVerificationLinkBaseUrl() + "?token=" + token;
+        String correlationId = CorrelationIdUtils.get()
+                .orElseGet(CorrelationIdUtils::generate);
+        eventPublisher.publish(EmailVerificationRequestedEvent.of(
+                tenantId != null ? tenantId.toString() : null,
+                userId.toString(),
+                email,
+                firstName,
+                token,
+                verificationLink,
+                correlationId));
+
         auditService.logSecurityEvent(tenantId, userId, AuditAction.EMAIL_VERIFICATION_SENT, "user",
                 userId.toString(), null, null, null);
     }

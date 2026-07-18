@@ -1,28 +1,27 @@
 package com.aisales.identity.authentication.application;
 
+import com.aisales.common.core.util.CorrelationIdUtils;
+import com.aisales.common.events.model.PasswordResetRequestedEvent;
+import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.BusinessException;
 import com.aisales.common.exception.model.ErrorCode;
-import java.time.Instant;
-import java.util.UUID;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.aisales.identity.audit.application.AuditService;
+import com.aisales.identity.audit.domain.AuditAction;
 import com.aisales.identity.authentication.domain.entity.PasswordResetToken;
 import com.aisales.identity.authentication.infrastructure.configuration.AuthProperties;
 import com.aisales.identity.authentication.infrastructure.persistence.PasswordResetTokenRepository;
-import com.aisales.identity.audit.application.AuditService;
-import com.aisales.identity.audit.domain.AuditAction;
-import com.aisales.identity.notification.application.event.PasswordResetRequestedEvent;
-
-
+import java.time.Instant;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class PasswordResetTokenService {
 
     private final PasswordResetTokenRepository tokenRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final EventPublisher eventPublisher;
     private final AuthProperties authProperties;
     private final AuditService auditService;
 
@@ -38,7 +37,19 @@ public class PasswordResetTokenService {
                 .expiresAt(now.plusSeconds(authProperties.getPasswordResetExpirationHours() * 3600))
                 .createdAt(now)
                 .build());
-        eventPublisher.publishEvent(new PasswordResetRequestedEvent(tenantId, email, firstName, token));
+
+        String resetLink = authProperties.getPasswordResetLinkBaseUrl() + "?token=" + token;
+        String correlationId = CorrelationIdUtils.get()
+                .orElseGet(CorrelationIdUtils::generate);
+        eventPublisher.publish(PasswordResetRequestedEvent.of(
+                tenantId != null ? tenantId.toString() : null,
+                userId.toString(),
+                email,
+                firstName,
+                token,
+                resetLink,
+                correlationId));
+
         auditService.logSecurityEvent(tenantId, userId, AuditAction.PASSWORD_RESET_REQUESTED, "user",
                 userId.toString(), null, null, null);
     }

@@ -42,8 +42,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         String token = authHeader.substring("Bearer ".length());
         try {
-            JwtClaimExtractor extractor = new JwtClaimExtractor(jwtProperties.getSecret());
-            Claims claims = extractor.parseAndValidateAccessToken(token);
+            Claims claims = new JwtClaimExtractor(jwtProperties.getPublicKeyLocation())
+                    .parseAndValidateAccessToken(token);
             ServerWebExchange mutated = exchange.mutate()
                     .request(builder -> enrichDownstreamHeaders(builder, claims))
                     .build();

@@ -36,7 +36,7 @@ Per [service boundaries](../../docs/03-architecture/service-boundaries.md), this
 
 
 
-**Email delivery** is owned by **notification-service** (port **8090**). identity-service calls it via REST.
+**Email delivery** is owned by **notification-service** (port **8090**). Identity publishes `EmailVerificationRequested` / `PasswordResetRequested` via outbox → Kafka; notification-service consumes and sends SMTP/Mailpit.
 
 
 
@@ -44,13 +44,13 @@ Per [service boundaries](../../docs/03-architecture/service-boundaries.md), this
 
 
 
-Use the **`local`** profile — no Kafka, Eureka, or Config Server required.
+Use the **`local`** profile — no Eureka or Config Server. **Postgres + Kafka** are required for email (and optional workflow-service for onboarding).
 
 
 
 ```powershell
 
-# Option A: one script (starts Postgres + notification-service + identity-service)
+# Option A: one script (starts Postgres + Kafka + notification-service + identity-service)
 
 .\scripts\run-identity-local.ps1
 
@@ -58,11 +58,11 @@ Use the **`local`** profile — no Kafka, Eureka, or Config Server required.
 
 # Option B: manual steps
 
-docker compose -f deployment/docker-compose-infra.yml up -d postgres
+docker compose -f deployment/docker-compose-infra.yml up -d
 
 
 
-# Terminal 1 — notification-service (emails logged to console)
+# Terminal 1 — notification-service (Mailpit UI: http://localhost:8025)
 
 cd backend
 
@@ -94,9 +94,9 @@ Import Postman collection: `postman/identity-service.postman_collection.json`
 
 1. **Register** — no JWT by default; `emailVerificationRequired: true`
 
-2. Get verification **token** from notification-service logs or DB
+2. Get verification **token** from Mailpit (http://localhost:8025), notification logs, or `email_verification_tokens`
 
-3. **Verify Email** (POST or GET link)
+3. **Verify Email** (POST or GET link) — publishes `EmailVerified` for workflow-service
 
 4. **Login** — JWT created here; Postman saves tokens
 
@@ -146,13 +146,13 @@ Full table: [AUTHENTICATION.md §3.4](docs/AUTHENTICATION.md#34-when-jwt-is-crea
 
 | Login: email verification required | Run **Verify Email** first |
 
-| No email in inbox (local) | Check notification-service console (log mode) |
+| No email in inbox (local) | Check Kafka, outbox_events, Mailpit http://localhost:8025 |
 
 | Flyway / DB error | Postgres on **5433**; create `aisales_identity` / `aisales_notification` |
 
 | Password authentication failed | Use Docker Postgres on **5433**, not local 5432 |
 
-| Register fails on Kafka | Use `-Dspring-boot.run.profiles=local` |
+| Register / email events stuck | Ensure Kafka is up (`docker compose … up -d`) |
 
 | 401 on protected APIs | **Login** after verify; header `Authorization: Bearer {{accessToken}}` |
 
@@ -206,13 +206,13 @@ Full table: [AUTHENTICATION.md §3.4](docs/AUTHENTICATION.md#34-when-jwt-is-crea
 
 |----------|---------|-------------|
 
-| `aisales.security.jwt.secret` | dev secret | JWT signing key (min 256 bits) |
+| `aisales.security.jwt.signing-enabled` | `true` | Mint RS256 access tokens |
+
+| `aisales.security.jwt.private-key-location` | classpath PEM / env | RSA private key (identity only) |
 
 | `aisales.auth.auto-login-after-register` | `false` | Issue JWT on register |
 
 | `aisales.auth.require-email-verification-for-login` | `true` | Block login until verified |
-
-| `aisales.notification.base-url` | `http://localhost:8090` | notification-service URL |
 
 | `GOOGLE_CLIENT_ID` | change-me | Google OAuth client ID |
 

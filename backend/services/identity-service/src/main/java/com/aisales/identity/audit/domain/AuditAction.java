@@ -7,6 +7,7 @@ public enum AuditAction {
 
     USER_LOGIN,
     LOGIN_FAILED,
+    ACCOUNT_LOCKED,
     USER_LOGOUT,
     USER_LOGOUT_ALL,
     USER_REGISTERED,

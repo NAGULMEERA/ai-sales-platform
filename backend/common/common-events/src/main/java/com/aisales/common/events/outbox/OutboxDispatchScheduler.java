@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +20,7 @@ import java.util.List;
 public class OutboxDispatchScheduler {
 
     private final OutboxRepository outboxRepository;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final OutboxKafkaSender outboxKafkaSender;
     private final EventKafkaHeaderPropagator headerPropagator;
 
     @Value("${aisales.events.outbox.max-retries:5}")
@@ -41,7 +40,7 @@ public class OutboxDispatchScheduler {
             String key = outboxEvent.getAggregateId();
             ProducerRecord<String, String> record = headerPropagator.enrichProducerRecord(
                     outboxEvent.getTopic(), key, outboxEvent.getPayload());
-            kafkaTemplate.send(record).get();
+            outboxKafkaSender.send(record);
             outboxEvent.setStatus(OutboxEvent.OutboxStatus.PUBLISHED);
             outboxEvent.setPublishedAt(Instant.now());
         } catch (Exception ex) {
