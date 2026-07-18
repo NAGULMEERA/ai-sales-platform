@@ -47,6 +47,9 @@ docker-compose.override.yml
 !**/src/main/**
 !**/src/test/**
 
+# Local SMTP / provider secrets (must stay after !**/src/main/** so they remain ignored)
+**/application-local-secrets.yml
+
 # Test coverage
 .jacoco/
 coverage/
@@ -55,3 +58,6 @@ coverage/
 tmp/
 temp/
 *.tmp
+
+**/application-local-secrets*.yml
+**/application-local-secrets*.bak.yml

@@ -20,7 +20,8 @@ spring:
 aisales:
   security:
     jwt:
-      secret: ${JWT_SECRET:aisales-default-jwt-secret-key-change-in-production}
+      # Production: Vault/Secret Manager → env JWT_SECRET. Local/dev may use default below.
+      secret: ${JWT_SECRET:${AISALES_SECURITY_JWT_SECRET:aisales-default-jwt-secret-key-change-in-production}}
   gateway:
     rate-limit:
       enabled: true

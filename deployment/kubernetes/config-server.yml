@@ -1,4 +1,4 @@
-﻿apiVersion: apps/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: config-server
@@ -15,9 +15,18 @@ spec:
     spec:
       containers:
         - name: config-server
-          image: aisales/.0.0-SNAPSHOT
+          image: aisales/config-server:latest
           ports:
-            - containerPort: 8080
+            - containerPort: 8888
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: native
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8888
+            initialDelaySeconds: 20
+            periodSeconds: 10
 ---
 apiVersion: v1
 kind: Service
@@ -28,5 +37,5 @@ spec:
   selector:
     app: config-server
   ports:
-    - port: 80
-      targetPort: 8080
+    - port: 8888
+      targetPort: 8888

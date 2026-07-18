@@ -41,7 +41,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get user by ID")
-    public ApiResponse<UserDto> getUser(@PathVariable UUID id) {
+    public ApiResponse<UserDto> getUser(@PathVariable("id") UUID id) {
         return withCorrelation(ApiResponse.ok(userService.getUser(id)));
     }
 

@@ -10,8 +10,10 @@ spring:
     import: optional:configserver:http://localhost:8888
   datasource:
     url: jdbc:postgresql://localhost:5432/aisales_notification
-    username: aisales
-    password: aisales
+    username: ${DB_USERNAME:aisales}
+    # Production: Vault/Secret Manager → K8s Secret → DB_PASSWORD / SPRING_DATASOURCE_PASSWORD.
+    # Local profile sets an explicit password in application-local.yml.
+    password: ${DB_PASSWORD:${SPRING_DATASOURCE_PASSWORD:}}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -28,6 +30,9 @@ spring:
       mail:
         smtp:
           # Outbound SMTP must never block indefinitely (Rule 08/09 resilience: sensible timeouts).
+          auth: ${SMTP_AUTH:false}
+          starttls:
+            enable: ${SMTP_STARTTLS:false}
           connectiontimeout: ${SMTP_CONNECT_TIMEOUT_MS:5000}
           timeout: ${SMTP_READ_TIMEOUT_MS:5000}
           writetimeout: ${SMTP_WRITE_TIMEOUT_MS:5000}
@@ -36,8 +41,9 @@ aisales:
   security:
     use-platform-defaults: false
   notification:
-    delivery-mode: log
-    from-address: noreply@aisales.local
+    # Default remains log for safety; local profile overrides to smtp (Mailpit).
+    delivery-mode: ${NOTIFICATION_DELIVERY_MODE:log}
+    from-address: ${SMTP_FROM:noreply@aisales.local}
     app-name: AI Sales Platform
 
 resilience4j:

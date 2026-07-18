@@ -1,4 +1,4 @@
-﻿apiVersion: apps/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: marketplace-service
@@ -15,9 +15,40 @@ spec:
     spec:
       containers:
         - name: marketplace-service
-          image: aisales/.0.0-SNAPSHOT
+          image: aisales/marketplace-service:latest
           ports:
             - containerPort: 8098
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: prod
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/marketplace_db
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: aisales-secrets
+                  key: DB_USERNAME
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: aisales-secrets
+                  key: DB_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: aisales-secrets
+                  key: JWT_SECRET
+            - name: AISALES_SECURITY_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: aisales-secrets
+                  key: JWT_SECRET
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8098
+            initialDelaySeconds: 40
+            periodSeconds: 10
 ---
 apiVersion: v1
 kind: Service

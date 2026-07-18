@@ -1,7 +1,11 @@
-# Local dev — log emails to console, no Eureka/Config Server.
+# Local dev — SMTP (Mailpit by default; override via application-local-secrets.yml or env).
 # Run: mvnw spring-boot:run -pl services/notification-service -Dspring-boot.run.profiles=local
+# Optional secrets file (gitignored): application-local-secrets.yml
+# Mailpit fallback: docker compose -f deployment/docker-compose-infra.yml up -d mailpit → http://localhost:8025
 
 spring:
+  config:
+    import: optional:classpath:application-local-secrets.yml
   cloud:
     config:
       enabled: false
@@ -9,6 +13,22 @@ spring:
       enabled: false
   datasource:
     url: jdbc:postgresql://localhost:5433/aisales_notification
+    username: aisales
+    password: aisales
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:false}
+          starttls:
+            enable: ${SMTP_STARTTLS:false}
+          connectiontimeout: ${SMTP_CONNECT_TIMEOUT_MS:5000}
+          timeout: ${SMTP_READ_TIMEOUT_MS:5000}
+          writetimeout: ${SMTP_WRITE_TIMEOUT_MS:5000}
 
 eureka:
   client:
@@ -17,9 +37,13 @@ eureka:
     fetch-registry: false
 
 aisales:
+  security:
+    # Must match identity-service local JWT secret so SERVICE tokens validate.
+    jwt:
+      secret: aisales-dev-jwt-secret-key-change-in-production-min-256-bits
   notification:
-    delivery-mode: log
-    from-address: noreply@aisales.local
+    delivery-mode: smtp
+    from-address: ${SMTP_FROM:noreply@aisales.local}
     app-name: AI Sales Platform
 
 management:
