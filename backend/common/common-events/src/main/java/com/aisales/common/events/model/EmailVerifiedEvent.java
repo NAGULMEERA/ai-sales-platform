@@ -1,11 +1,11 @@
 package com.aisales.common.events.model;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@Data
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -16,7 +16,7 @@ public class EmailVerifiedEvent extends BaseEvent {
     public static EmailVerifiedEvent of(String tenantId, String userId, String email, String correlationId) {
         EmailVerifiedEvent event = new EmailVerifiedEvent();
         event.init("EmailVerified", tenantId, userId, correlationId);
-        event.setEmail(email);
+        event.email = email;
         return event;
     }
 }

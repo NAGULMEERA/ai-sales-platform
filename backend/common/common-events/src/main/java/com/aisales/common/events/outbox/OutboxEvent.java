@@ -55,6 +55,10 @@ public class OutboxEvent {
     private int retryCount;
 
     public enum OutboxStatus {
-        PENDING, PUBLISHED, FAILED
+        PENDING,
+        /** Claimed by a dispatcher; not yet published. */
+        DISPATCHING,
+        PUBLISHED,
+        FAILED
     }
 }

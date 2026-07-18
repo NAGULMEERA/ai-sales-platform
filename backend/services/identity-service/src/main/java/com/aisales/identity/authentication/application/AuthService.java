@@ -9,11 +9,14 @@ import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.NotFoundException;
 import com.aisales.common.exception.exception.UnauthorizedException;
 import com.aisales.common.exception.exception.ValidationException;
+import com.aisales.common.observability.metrics.MetricNames;
+import com.aisales.common.observability.metrics.PlatformMetrics;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,31 +59,37 @@ public class AuthService {
     private final AuditService auditService;
     private final EventPublisher eventPublisher;
     private final AuthProperties authProperties;
+    private final ObjectProvider<PlatformMetrics> platformMetrics;
 
     @Transactional
     public AuthResponse login(LoginRequest request, String ipAddress, String userAgent) {
         Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
         if (userOptional.isEmpty()) {
             auditLoginFailure(null, null, "unknown_account", ipAddress, userAgent);
+            recordLoginMetric(null, "failure", "unknown_account");
             throw new UnauthorizedException("Invalid credentials");
         }
         User user = userOptional.get();
         loginLockoutService.unlockIfExpired(user);
         if (loginLockoutService.isCurrentlyLocked(user)) {
             auditLoginFailure(user.getTenantId(), user.getId(), "account_locked", ipAddress, userAgent);
+            recordLoginMetric(user.getTenantId(), "failure", "account_locked");
             throw new UnauthorizedException("Account is temporarily locked. Try again later.");
         }
         if (user.getStatus() != User.UserStatus.ACTIVE) {
             auditLoginFailure(user.getTenantId(), user.getId(), "account_inactive", ipAddress, userAgent);
+            recordLoginMetric(user.getTenantId(), "failure", "account_inactive");
             throw new UnauthorizedException("Account is not active");
         }
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             loginLockoutService.recordFailedPasswordAttempt(user.getId(), ipAddress, userAgent);
             auditLoginFailure(user.getTenantId(), user.getId(), "invalid_credentials", ipAddress, userAgent);
+            recordLoginMetric(user.getTenantId(), "failure", "invalid_credentials");
             throw new UnauthorizedException("Invalid credentials");
         }
         if (authProperties.isRequireEmailVerificationForLogin() && !user.isEmailVerified()) {
             auditLoginFailure(user.getTenantId(), user.getId(), "email_verification_required", ipAddress, userAgent);
+            recordLoginMetric(user.getTenantId(), "failure", "email_verification_required");
             throw new UnauthorizedException("Email verification required. Check your inbox or request a new verification email.");
         }
         loginLockoutService.clearFailedAttempts(user);
@@ -88,7 +97,18 @@ public class AuthService {
         userRepository.save(user);
         auditService.logSecurityEvent(user.getTenantId(), user.getId(), AuditAction.USER_LOGIN, "user",
                 user.getId().toString(), ipAddress, userAgent, null);
+        recordLoginMetric(user.getTenantId(), "success", "ok");
         return tokenService.issueTokens(user, ipAddress, userAgent);
+    }
+
+    private void recordLoginMetric(UUID tenantId, String outcome, String reason) {
+        PlatformMetrics metrics = platformMetrics.getIfAvailable();
+        if (metrics == null) {
+            return;
+        }
+        String tenant = tenantId != null ? tenantId.toString() : "unknown";
+        metrics.incrementBusinessMetric(MetricNames.AUTH_LOGIN, tenant,
+                "outcome", outcome, "reason", reason);
     }
 
     @Transactional

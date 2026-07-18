@@ -1,11 +1,11 @@
 package com.aisales.common.events.model;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@Data
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -20,10 +20,10 @@ public class TenantCreatedEvent extends BaseEvent {
                                         String plan, String industry, String correlationId) {
         TenantCreatedEvent event = new TenantCreatedEvent();
         event.init("TenantCreated", tenantId, tenantId, correlationId);
-        event.setTenantName(tenantName);
-        event.setSlug(slug);
-        event.setPlan(plan);
-        event.setIndustry(industry);
+        event.tenantName = tenantName;
+        event.slug = slug;
+        event.plan = plan;
+        event.industry = industry;
         return event;
     }
 }

@@ -1,29 +1,31 @@
 package com.aisales.notification.application.service;
 
 import com.aisales.common.contracts.notification.EmailTemplateCode;
-import com.aisales.common.contracts.notification.SendTransactionalEmailRequest;
 import com.aisales.common.events.model.EmailVerificationRequestedEvent;
 import com.aisales.common.events.model.PasswordResetRequestedEvent;
+import com.aisales.notification.application.channel.NotificationDispatcher;
+import com.aisales.notification.domain.channel.NotificationChannelType;
+import com.aisales.notification.domain.channel.NotificationMessage;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * Maps identity integration events to transactional email delivery.
- * Channel choice (email vs future SMS/WhatsApp) stays inside notification-service.
+ * Maps identity integration events to notification delivery.
+ * Channel selection stays inside notification-service ({@link NotificationChannelType}).
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class IdentityEmailNotificationHandler {
 
-    private final EmailDeliveryService emailDeliveryService;
+    private final NotificationDispatcher notificationDispatcher;
 
     public void onEmailVerificationRequested(EmailVerificationRequestedEvent event) {
-        emailDeliveryService.sendTransactionalEmail(SendTransactionalEmailRequest.builder()
+        notificationDispatcher.dispatch(NotificationChannelType.EMAIL, NotificationMessage.builder()
                 .tenantId(event.getTenantId())
-                .recipientEmail(event.getEmail())
+                .recipient(event.getEmail())
                 .templateCode(EmailTemplateCode.EMAIL_VERIFICATION)
                 .variables(Map.of(
                         "firstName", event.getFirstName() != null ? event.getFirstName() : "there",
@@ -36,9 +38,9 @@ public class IdentityEmailNotificationHandler {
     }
 
     public void onPasswordResetRequested(PasswordResetRequestedEvent event) {
-        emailDeliveryService.sendTransactionalEmail(SendTransactionalEmailRequest.builder()
+        notificationDispatcher.dispatch(NotificationChannelType.EMAIL, NotificationMessage.builder()
                 .tenantId(event.getTenantId())
-                .recipientEmail(event.getEmail())
+                .recipient(event.getEmail())
                 .templateCode(EmailTemplateCode.PASSWORD_RESET)
                 .variables(Map.of(
                         "firstName", event.getFirstName() != null ? event.getFirstName() : "there",

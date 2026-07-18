@@ -1,13 +1,13 @@
 package com.aisales.common.events.model;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.util.Set;
 
-@Data
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -23,10 +23,10 @@ public class UserCreatedEvent extends BaseEvent {
                                       String correlationId) {
         UserCreatedEvent event = new UserCreatedEvent();
         event.init("UserCreated", tenantId, userId, correlationId);
-        event.setEmail(email);
-        event.setFirstName(firstName);
-        event.setLastName(lastName);
-        event.setRoles(roles);
+        event.email = email;
+        event.firstName = firstName;
+        event.lastName = lastName;
+        event.roles = roles;
         return event;
     }
 }

@@ -19,6 +19,16 @@ public final class MetricNames {
     public static final String EVENT_PUBLISHED = "platform_event_published_total";
     public static final String EVENT_CONSUMED = "platform_event_consumed_total";
     public static final String EVENT_DLQ = "platform_event_dlq_total";
+    public static final String KAFKA_PUBLISH_LATENCY = "platform_kafka_publish_latency";
+    public static final String OUTBOX_PENDING = "platform_outbox_pending";
+    public static final String OUTBOX_DISPATCHED = "platform_outbox_dispatched_total";
+
+    // Auth / JWT
+    public static final String AUTH_LOGIN = "platform_auth_login_total";
+    public static final String JWT_VALIDATION_FAILURE = "platform_jwt_validation_failures_total";
+
+    // Notification
+    public static final String NOTIFICATION_DELIVERY = "platform_notification_delivery_total";
 
     // HTTP
     public static final String HTTP_SLOW_REQUEST = "http_server_slow_requests_total";

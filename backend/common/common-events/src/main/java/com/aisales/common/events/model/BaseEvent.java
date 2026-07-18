@@ -1,20 +1,31 @@
 package com.aisales.common.events.model;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-import java.time.Instant;
-import java.util.UUID;
-
-@Data
+/**
+ * Immutable integration/domain event base after construction.
+ * Factories assign fields once; Jackson deserializes via fields (no setters).
+ */
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonAutoDetect(
+        fieldVisibility = JsonAutoDetect.Visibility.ANY,
+        getterVisibility = JsonAutoDetect.Visibility.PUBLIC_ONLY,
+        isGetterVisibility = JsonAutoDetect.Visibility.PUBLIC_ONLY,
+        setterVisibility = JsonAutoDetect.Visibility.NONE)
 public abstract class BaseEvent {
 
     private String eventId;
@@ -41,11 +52,5 @@ public abstract class BaseEvent {
     @JsonIgnore
     public int getVersion() {
         return eventVersion;
-    }
-
-    @Deprecated(forRemoval = true)
-    @JsonIgnore
-    public void setVersion(int version) {
-        this.eventVersion = version;
     }
 }
