@@ -3,17 +3,26 @@ package com.aisales.plugin.contract;
 import java.util.UUID;
 
 /**
- * Contract for industry-specific plugins (Real Estate, Education, Healthcare, etc.).
+ * Industry plugin contributes metadata/config (attribute schemas, suggested pipeline keys).
+ * Must not implement industry business methods (e.g. qualifyLead) or own industry microservices.
  */
-public interface IndustryPlugin {
+public interface IndustryPlugin extends PlatformPlugin {
 
-    String getPluginId();
+    default String getIndustryCode() {
+        return descriptor().getIndustryCode();
+    }
 
-    String getIndustryCode();
+    /**
+     * Metadata lifecycle hook only. Do not register business workflows or mutate aggregates here.
+     */
+    default void onEnable(UUID tenantId) {
+        // no-op — enablement is persisted by marketplace-service
+    }
 
-    String getVersion();
-
-    void onEnable(UUID tenantId);
-
-    void onDisable(UUID tenantId);
+    /**
+     * Metadata lifecycle hook only.
+     */
+    default void onDisable(UUID tenantId) {
+        // no-op — disablement is persisted by marketplace-service
+    }
 }

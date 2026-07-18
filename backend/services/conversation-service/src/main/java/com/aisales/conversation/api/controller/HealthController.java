@@ -1,14 +1,13 @@
 package com.aisales.conversation.api.controller;
 
 import com.aisales.common.core.dto.ApiResponse;
+import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
 @RestController
-@RequestMapping("/api/v1/conversation/health")
+@RequestMapping("/api/v1/conversations/health")
 public class HealthController {
 
     @GetMapping

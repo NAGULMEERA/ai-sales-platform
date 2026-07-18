@@ -32,6 +32,7 @@ public class LeadMapper {
                 .id(lead.getId())
                 .tenantId(lead.getTenantId())
                 .organizationId(lead.getOrganizationId())
+                .pipelineId(lead.getPipelineId())
                 .customerId(lead.getCustomerId())
                 .externalId(lead.getExternalId())
                 .customerName(lead.getCustomerName())

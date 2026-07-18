@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aisales.com/schemas/events/QuoteCreated.v1.json",
+  "title": "QuoteCreated v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["eventId", "eventType", "eventVersion", "tenantId", "aggregateId", "occurredAt", "correlationId", "opportunityId", "status", "currency", "totalAmount", "quoteVersion"],
+  "properties": {
+    "eventId": {"type": "string", "minLength": 1},
+    "eventType": {"const": "QuoteCreated"},
+    "eventVersion": {"const": 1},
+    "tenantId": {"type": "string", "minLength": 1},
+    "aggregateId": {"type": "string", "minLength": 1},
+    "occurredAt": {"type": "string", "format": "date-time"},
+    "correlationId": {"type": "string", "minLength": 1},
+    "opportunityId": {"type": "string", "minLength": 1},
+    "status": {"type": "string", "minLength": 1},
+    "currency": {"type": "string", "minLength": 1},
+    "totalAmount": {"type": "string", "minLength": 1},
+    "quoteVersion": {"type": "string", "minLength": 1}
+  }
+}

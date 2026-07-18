@@ -104,6 +104,36 @@ paths:
       responses:
         '200':
           description: OK
+  /api/v1/leads/{id}/schedule-visit:
+    post:
+      summary: Schedule site visit
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/complete-visit:
+    post:
+      summary: Complete site visit
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/cancel-visit:
+    post:
+      summary: Cancel scheduled visit
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/archive:
+    post:
+      summary: Archive closed lead
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/timeline:
+    get:
+      summary: Append-only journey timeline
+      responses:
+        '200':
+          description: OK
   /api/v1/leads/{id}/notes:
     get:
       summary: List notes

@@ -1,0 +1,44 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+  config:
+    import:
+      - optional:classpath:platform/application-observability.yml
+      - optional:classpath:platform/application-cache.yml
+  datasource:
+    url: jdbc:postgresql://localhost:5433/conversation_db
+    username: aisales
+    password: aisales
+  kafka:
+    bootstrap-servers: localhost:9092
+
+management:
+  tracing:
+    enabled: false
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+aisales:
+  security:
+    jwt:
+      public-key-location: classpath:jwt/local-public.pem
+      key-id: aisales-1
+  events:
+    default-topic: aisales-events
+    outbox:
+      enabled: true
+    inbox:
+      enabled: false
+  startup-validation:
+    enabled: false
+
+logging:
+  level:
+    com.aisales.conversation: INFO

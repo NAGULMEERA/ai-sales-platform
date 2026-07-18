@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aisales.com/schemas/events/OpportunityStatusChanged.v1.json",
+  "title": "OpportunityStatusChanged v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["eventId", "eventType", "eventVersion", "tenantId", "aggregateId", "occurredAt", "correlationId", "customerId", "previousStatus", "status"],
+  "properties": {
+    "eventId": {"type": "string", "minLength": 1},
+    "eventType": {"const": "OpportunityStatusChanged"},
+    "eventVersion": {"const": 1},
+    "tenantId": {"type": "string", "minLength": 1},
+    "aggregateId": {"type": "string", "minLength": 1},
+    "occurredAt": {"type": "string", "format": "date-time"},
+    "correlationId": {"type": "string", "minLength": 1},
+    "customerId": {"type": "string", "minLength": 1},
+    "previousStatus": {"type": "string", "minLength": 1},
+    "status": {"type": "string", "minLength": 1},
+    "reason": {"type": "string"}
+  }
+}

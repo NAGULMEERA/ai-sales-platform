@@ -33,6 +33,9 @@ aisales:
     jwt:
       public-key-location: classpath:jwt/local-public.pem
       key-id: aisales-1
+  clients:
+    customer-service:
+      url: http://localhost:8084
   events:
     default-topic: aisales-events
     outbox:

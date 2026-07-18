@@ -3,6 +3,7 @@ package com.aisales.common.contracts.lead;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateLeadRequest {
+
+    /** Optional tenant pipeline. When null, the tenant default sales pipeline is used. */
+    private UUID pipelineId;
 
     @NotBlank
     @Size(max = 255)

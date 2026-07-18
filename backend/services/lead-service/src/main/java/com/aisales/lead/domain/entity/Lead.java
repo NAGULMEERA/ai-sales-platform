@@ -41,6 +41,10 @@ public class Lead {
     @Column(name = "organization_id")
     private UUID organizationId;
 
+    /** Tenant sales pipeline this lead follows. Null → platform default graph at transition time. */
+    @Column(name = "pipeline_id")
+    private UUID pipelineId;
+
     @Column(name = "customer_id")
     private UUID customerId;
 
@@ -151,7 +155,7 @@ public class Lead {
         assertActive();
         LeadStatus previous = this.status;
         if (previous != LeadStatus.QUALIFIED) {
-            stateMachine.assertTransition(previous, LeadStatus.QUALIFIED);
+            stateMachine.assertTransition(pipelineId, previous, LeadStatus.QUALIFIED);
             this.status = LeadStatus.QUALIFIED;
         }
         this.qualified = true;
@@ -165,7 +169,7 @@ public class Lead {
     public void markContacted(UUID actor, LeadStateMachine stateMachine) {
         assertActive();
         if (status != LeadStatus.CONTACTED) {
-            stateMachine.assertTransition(status, LeadStatus.CONTACTED);
+            stateMachine.assertTransition(pipelineId, status, LeadStatus.CONTACTED);
             this.status = LeadStatus.CONTACTED;
         }
         touch(actor);
@@ -173,7 +177,7 @@ public class Lead {
 
     public void transitionTo(LeadStatus target, UUID actor, LeadStateMachine stateMachine) {
         assertActive();
-        stateMachine.assertTransition(status, target);
+        stateMachine.assertTransition(pipelineId, status, target);
         this.status = target;
         if (target == LeadStatus.QUALIFIED) {
             this.qualified = true;
@@ -186,8 +190,11 @@ public class Lead {
 
     public void convert(UUID customerIdValue, UUID actor, LeadStateMachine stateMachine) {
         assertActive();
+        if (customerIdValue == null) {
+            throw new ValidationException("customerId is required to convert a lead");
+        }
         if (status != LeadStatus.WON) {
-            stateMachine.assertTransition(status, LeadStatus.WON);
+            stateMachine.assertTransition(pipelineId, status, LeadStatus.WON);
             this.status = LeadStatus.WON;
         }
         this.customerId = customerIdValue;
@@ -197,8 +204,45 @@ public class Lead {
     public void lose(UUID actor, LeadStateMachine stateMachine) {
         assertActive();
         if (status != LeadStatus.LOST) {
-            stateMachine.assertTransition(status, LeadStatus.LOST);
+            stateMachine.assertTransition(pipelineId, status, LeadStatus.LOST);
             this.status = LeadStatus.LOST;
+        }
+        touch(actor);
+    }
+
+    public void scheduleVisit(UUID actor, LeadStateMachine stateMachine) {
+        assertActive();
+        if (status != LeadStatus.APPOINTMENT_BOOKED) {
+            stateMachine.assertTransition(pipelineId, status, LeadStatus.APPOINTMENT_BOOKED);
+            this.status = LeadStatus.APPOINTMENT_BOOKED;
+        }
+        touch(actor);
+    }
+
+    public void completeVisit(UUID actor, LeadStateMachine stateMachine) {
+        assertActive();
+        if (status != LeadStatus.VISITED) {
+            stateMachine.assertTransition(pipelineId, status, LeadStatus.VISITED);
+            this.status = LeadStatus.VISITED;
+        }
+        touch(actor);
+    }
+
+    public void cancelVisit(UUID actor, LeadStateMachine stateMachine) {
+        assertActive();
+        if (status != LeadStatus.APPOINTMENT_BOOKED) {
+            throw new ValidationException("Only a scheduled visit can be cancelled");
+        }
+        stateMachine.assertTransition(pipelineId, status, LeadStatus.QUALIFIED);
+        this.status = LeadStatus.QUALIFIED;
+        touch(actor);
+    }
+
+    public void archive(UUID actor, LeadStateMachine stateMachine) {
+        assertActive();
+        if (status != LeadStatus.ARCHIVED) {
+            stateMachine.assertTransition(pipelineId, status, LeadStatus.ARCHIVED);
+            this.status = LeadStatus.ARCHIVED;
         }
         touch(actor);
     }
@@ -212,6 +256,17 @@ public class Lead {
             throw new ValidationException("Score must be between 0 and 100");
         }
         this.score = newScore;
+        touch(actor);
+    }
+
+    public void applyConfidenceScore(Integer confidence, UUID actor) {
+        if (confidence == null) {
+            return;
+        }
+        if (confidence < 0 || confidence > 100) {
+            throw new ValidationException("Confidence score must be between 0 and 100");
+        }
+        this.confidenceScore = confidence;
         touch(actor);
     }
 

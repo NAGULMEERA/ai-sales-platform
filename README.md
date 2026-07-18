@@ -102,7 +102,7 @@ docker compose -f deployment/docker-compose-services.yml up -d --build
 | catalog-service | 8085 | Scaffolded |
 | conversation-service | 8086 | Scaffolded |
 | appointment-service | 8087 | Scaffolded |
-| ai-service | 8088 | Scaffolded |
+| ai-service | 8088 | Prompts + AI Gateway + KB metadata |
 | workflow-service | 8089 | Scaffolded |
 | notification-service | 8090 | Scaffolded |
 | billing-service | 8091 | Scaffolded |
@@ -111,8 +111,8 @@ docker compose -f deployment/docker-compose-services.yml up -d --build
 | search-service | 8094 | Scaffolded |
 | media-service | 8095 | Scaffolded |
 | audit-service | 8096 | Scaffolded |
-| deal-service | 8097 | Scaffolded |
-| marketplace-service | 8098 | Scaffolded |
+| deal-service | 8097 | Opportunity + Quote |
+| marketplace-service | 8098 | Plugin registry (catalog + enable/disable) |
 
 ## Development
 

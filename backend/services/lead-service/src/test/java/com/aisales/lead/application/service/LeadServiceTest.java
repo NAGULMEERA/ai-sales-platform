@@ -3,6 +3,7 @@ package com.aisales.lead.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,24 +48,29 @@ class LeadServiceTest {
     @Mock private EventPublisher eventPublisher;
     @Mock private DuplicateLeadDetectionService duplicateDetection;
     @Mock private LeadAssignmentPoolService assignmentPoolService;
+    @Mock private PipelineService pipelineService;
+    @Mock private LeadCustomerConversionGateway customerConversionGateway;
 
     private LeadService leadService;
     private UUID tenantId;
+    private UUID pipelineId;
 
     @BeforeEach
     void setUp() {
         tenantId = UUID.randomUUID();
+        pipelineId = UUID.randomUUID();
         TenantContext.setTenantId(tenantId.toString());
         TenantContext.setUserId(UUID.randomUUID().toString());
         LeadMapper mapper = new LeadMapper();
         LeadStateMachine stateMachine = new LeadStateMachine();
         LeadSideEffectRecorder sideEffects =
                 new LeadSideEffectRecorder(statusHistoryRepository, activityRepository);
+        lenient().when(pipelineService.resolvePipelineIdForCreate(any(UUID.class), any())).thenReturn(pipelineId);
         leadService = new LeadService(
                 leadRepository, assignmentRepository, noteRepository, activityRepository,
                 followupRepository, scoreRepository, statusHistoryRepository, duplicateRepository,
                 mapper, eventPublisher, stateMachine, sideEffects, duplicateDetection,
-                assignmentPoolService);
+                assignmentPoolService, pipelineService, customerConversionGateway);
     }
 
     @AfterEach
@@ -95,6 +101,7 @@ class LeadServiceTest {
         assertThat(dto.getStatus()).isEqualTo(LeadStatus.NEW);
         assertThat(dto.isValidated()).isFalse();
         assertThat(dto.getTenantId()).isEqualTo(tenantId);
+        assertThat(dto.getPipelineId()).isEqualTo(pipelineId);
 
         ArgumentCaptor<LeadCreatedEvent> captor = ArgumentCaptor.forClass(LeadCreatedEvent.class);
         verify(eventPublisher).publish(captor.capture());

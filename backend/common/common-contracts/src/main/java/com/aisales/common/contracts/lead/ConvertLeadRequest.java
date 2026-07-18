@@ -12,6 +12,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ConvertLeadRequest {
 
+    /**
+     * Optional. When omitted, lead-service creates (or reuses) a customer via customer-service
+     * with {@code sourceType=LEAD_CONVERSION} and {@code sourceLeadId}.
+     */
     private UUID customerId;
 
     private String reason;

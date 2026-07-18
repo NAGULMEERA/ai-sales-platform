@@ -16,6 +16,7 @@ public class LeadDto {
     private UUID id;
     private UUID tenantId;
     private UUID organizationId;
+    private UUID pipelineId;
     private UUID customerId;
     private String externalId;
     private String customerName;

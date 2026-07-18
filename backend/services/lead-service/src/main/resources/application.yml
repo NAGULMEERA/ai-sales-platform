@@ -28,6 +28,9 @@ spring:
 aisales:
   security:
     use-platform-defaults: true
+  clients:
+    customer-service:
+      url: ${CUSTOMER_SERVICE_URL:}
   events:
     default-topic: aisales-events
     outbox:

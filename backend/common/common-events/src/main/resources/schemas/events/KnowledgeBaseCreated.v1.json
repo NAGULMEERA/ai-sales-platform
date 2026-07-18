@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aisales.com/schemas/events/KnowledgeBaseCreated.v1.json",
+  "title": "KnowledgeBaseCreated v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["eventId", "eventType", "eventVersion", "tenantId", "aggregateId", "occurredAt", "correlationId", "code", "name", "status"],
+  "properties": {
+    "eventId": {"type": "string", "minLength": 1},
+    "eventType": {"const": "KnowledgeBaseCreated"},
+    "eventVersion": {"const": 1},
+    "tenantId": {"type": "string", "minLength": 1},
+    "aggregateId": {"type": "string", "minLength": 1},
+    "occurredAt": {"type": "string", "format": "date-time"},
+    "correlationId": {"type": "string", "minLength": 1},
+    "code": {"type": "string", "minLength": 1},
+    "name": {"type": "string", "minLength": 1},
+    "status": {"type": "string", "minLength": 1}
+  }
+}

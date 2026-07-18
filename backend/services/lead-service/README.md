@@ -16,12 +16,34 @@ cd backend
 - Swagger: http://localhost:8083/swagger-ui.html
 - DB: `lead_db` on Postgres **5433**
 
-## Status machine
+## Sales pipeline (config)
 
-`NEW → CONTACTED → QUALIFIED → APPOINTMENT_BOOKED → VISITED → NEGOTIATING → WON | LOST`
+Leads follow a tenant **sales pipeline** (`pipelineId`), not an industry type.
+
+- Default pipeline code: `DEFAULT_SALES_V1` (created on first use per tenant)
+- Stages/transitions are stored in `sales_pipeline*` tables
+- Stage codes currently align with `LeadStatus` so existing journey commands keep working
+- Create lead without `pipelineId` → tenant default pipeline is assigned
+- No `industry` field on Lead (industry/business domain lives on Tenant / later `businessDomainId`)
+
+Default stage graph:
+
+`NEW → CONTACTED → QUALIFIED → APPOINTMENT_BOOKED → VISITED → NEGOTIATING → WON | LOST → ARCHIVED`
+
+Sales language aliases: `APPOINTMENT_BOOKED` ≈ visit scheduled, `VISITED` ≈ visit completed, `WON` ≈ booked/converted.
 
 - **Validate** (`validated=true`) is required before **assign**
-- Terminal states: `WON`, `LOST`
+- Prefer journey commands over generic status PATCH
+- Terminal: `WON`, `LOST`, `ARCHIVED` (archive only from WON/LOST)
+- AI never writes lead rows — it returns qualification/score results consumed via commands
+
+## APIs (`/api/v1/pipelines`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | List active tenant pipelines |
+| GET | `/default` | Get or create `DEFAULT_SALES_V1` |
+| GET | `/{pipelineId}` | Get pipeline (stages + transitions) |
 
 ## APIs (`/api/v1/leads`)
 
@@ -38,8 +60,13 @@ cd backend
 | POST | `/{id}/contact` | Mark contacted |
 | POST | `/{id}/status` | Explicit status transition |
 | POST | `/{id}/score` | Score |
-| POST | `/{id}/convert` | Convert → WON |
+| POST | `/{id}/convert` | Convert → WON (booked) |
 | POST | `/{id}/lose` | Mark LOST |
+| POST | `/{id}/schedule-visit` | Schedule site visit |
+| POST | `/{id}/complete-visit` | Complete site visit |
+| POST | `/{id}/cancel-visit` | Cancel scheduled visit → QUALIFIED |
+| POST | `/{id}/archive` | Archive WON/LOST |
+| GET | `/{id}/timeline` | Append-only journey timeline (includes conversation projections) |
 | GET/POST | `/{id}/notes` | Notes |
 | GET | `/{id}/activities` | Activities |
 | GET/POST | `/{id}/followups` | Follow-ups |
@@ -59,6 +86,20 @@ Requires JWT with `tenantId` from identity-service.
 - `MANUAL` (default): requires `assignedTo`
 - `ROUND_ROBIN`: picks least-recently-assigned enabled member from `/assignment-pool`
 
+## Conversation timeline (Phase 2)
+
+Lead-service consumes `ConversationStarted` / `ConversationMessageAdded` / `ConversationClosed`
+and appends `LeadActivity` rows (`CONVERSATION_*`). Message bodies stay in conversation-service.
+
+## Lead → Customer conversion
+
+`POST /api/v1/leads/{id}/convert`
+
+- If `customerId` is provided → validated via customer-service Feign
+- If omitted → creates (or reuses by `sourceLeadId`) a customer with
+  `sourceType=LEAD_CONVERSION`
+- Local Feign URL: `aisales.clients.customer-service.url` (default `http://localhost:8084`)
+
 ## Workflow
 
 `workflow-service` coordinates `LEAD_LIFECYCLE_V1` from Kafka:
@@ -68,4 +109,5 @@ Business decisions stay in lead-service.
 ## Events (outbox → Kafka)
 
 `LeadCreated`, `LeadValidated`, `LeadQualified`, `LeadAssigned`, `LeadContacted`,
-`LeadScored`, `LeadConverted`, `LeadLost`, `LeadStatusChanged`
+`LeadScored`, `LeadConverted`, `LeadLost`, `LeadStatusChanged`,
+`LeadVisitScheduled`, `LeadVisitCompleted`, `LeadVisitCancelled`, `LeadArchived`
