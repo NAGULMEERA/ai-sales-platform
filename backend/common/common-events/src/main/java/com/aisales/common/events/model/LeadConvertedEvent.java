@@ -1,11 +1,11 @@
 package com.aisales.common.events.model;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@Data
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -18,8 +18,8 @@ public class LeadConvertedEvent extends BaseEvent {
                                         String customerId, String correlationId) {
         LeadConvertedEvent event = new LeadConvertedEvent();
         event.init("LeadConverted", tenantId, leadId, correlationId);
-        event.setLeadName(leadName);
-        event.setCustomerId(customerId);
+        event.leadName = leadName;
+        event.customerId = customerId;
         return event;
     }
 }

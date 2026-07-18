@@ -37,6 +37,19 @@ class EventKafkaHeaderPropagatorTest {
         assertThat(headerValue(record, EventKafkaHeaders.EVENT_VERSION)).isEqualTo("1");
     }
 
+    @Test
+    void shouldRestoreTenantContextFromKafkaHeadersOnConsume() {
+        var record = new org.apache.kafka.clients.consumer.ConsumerRecord<>(
+                "aisales-events", 0, 0L, "key", "{}");
+        record.headers().add(EventKafkaHeaders.TENANT_ID, "tenant-async-1".getBytes());
+        record.headers().add(EventKafkaHeaders.CORRELATION_ID, "corr-async-1".getBytes());
+
+        propagator.applyConsumerHeaders(record);
+
+        assertThat(TenantContext.getTenantId()).isEqualTo("tenant-async-1");
+        assertThat(CorrelationIdUtils.getCorrelationId()).isEqualTo("corr-async-1");
+    }
+
     private String headerValue(ProducerRecord<String, String> record, String name) {
         var header = record.headers().lastHeader(name);
         return header != null ? new String(header.value()) : null;

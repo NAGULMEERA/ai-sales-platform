@@ -1,11 +1,11 @@
 package com.aisales.common.events.model;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@Data
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -17,8 +17,8 @@ public class TenantSuspendedEvent extends BaseEvent {
     public static TenantSuspendedEvent of(String tenantId, String tenantName, String slug, String correlationId) {
         TenantSuspendedEvent event = new TenantSuspendedEvent();
         event.init("TenantSuspended", tenantId, tenantId, correlationId);
-        event.setTenantName(tenantName);
-        event.setSlug(slug);
+        event.tenantName = tenantName;
+        event.slug = slug;
         return event;
     }
 }

@@ -1,11 +1,11 @@
 package com.aisales.common.events.model;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@Data
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -18,8 +18,8 @@ public class LeadLostEvent extends BaseEvent {
                                    String reason, String correlationId) {
         LeadLostEvent event = new LeadLostEvent();
         event.init("LeadLost", tenantId, leadId, correlationId);
-        event.setLeadName(leadName);
-        event.setReason(reason);
+        event.leadName = leadName;
+        event.reason = reason;
         return event;
     }
 }

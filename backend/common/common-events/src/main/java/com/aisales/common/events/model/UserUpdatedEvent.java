@@ -1,11 +1,11 @@
 package com.aisales.common.events.model;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@Data
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -18,8 +18,8 @@ public class UserUpdatedEvent extends BaseEvent {
                                       String status, String correlationId) {
         UserUpdatedEvent event = new UserUpdatedEvent();
         event.init("UserUpdated", tenantId, userId, correlationId);
-        event.setEmail(email);
-        event.setStatus(status);
+        event.email = email;
+        event.status = status;
         return event;
     }
 }

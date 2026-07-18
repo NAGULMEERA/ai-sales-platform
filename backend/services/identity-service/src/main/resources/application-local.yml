@@ -42,6 +42,10 @@ aisales:
     default-topic: aisales-events
     outbox:
       enabled: true
+      batch-size: 100
+      parallelism: 4
+      dispatch-interval-ms: 5000
+      max-retries: 5
     inbox:
       enabled: false
   startup-validation:

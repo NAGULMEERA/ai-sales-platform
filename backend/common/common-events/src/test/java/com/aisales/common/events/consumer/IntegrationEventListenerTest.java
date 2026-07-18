@@ -96,7 +96,7 @@ class IntegrationEventListenerTest {
     void shouldDeadLetterEventWithoutId() throws Exception {
         TenantCreatedEvent event = TenantCreatedEvent.of(
                 "tenant-1", "Acme", "acme", "FREE", "REAL_ESTATE", "corr-1");
-        event.setEventId(null);
+        ReflectionTestUtils.setField(event, "eventId", null);
         String payload = objectMapper.writeValueAsString(event);
         ConsumerRecord<String, String> record = new ConsumerRecord<>("aisales-events", 0, 0L, "tenant-1", payload);
         Consumer<TenantCreatedEvent> handler = mock(Consumer.class);

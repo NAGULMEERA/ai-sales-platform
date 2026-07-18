@@ -1,11 +1,11 @@
 package com.aisales.common.events.model;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@Data
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -19,9 +19,9 @@ public class NotificationSentEvent extends BaseEvent {
                                            String recipient, String templateId, String correlationId) {
         NotificationSentEvent event = new NotificationSentEvent();
         event.init("NotificationSent", tenantId, notificationId, correlationId);
-        event.setChannel(channel);
-        event.setRecipient(recipient);
-        event.setTemplateId(templateId);
+        event.channel = channel;
+        event.recipient = recipient;
+        event.templateId = templateId;
         return event;
     }
 }

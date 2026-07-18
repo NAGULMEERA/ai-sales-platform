@@ -1,11 +1,11 @@
 package com.aisales.common.events.model;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@Data
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -19,9 +19,9 @@ public class LeadQualifiedEvent extends BaseEvent {
                                         Integer score, String status, String correlationId) {
         LeadQualifiedEvent event = new LeadQualifiedEvent();
         event.init("LeadQualified", tenantId, leadId, correlationId);
-        event.setLeadName(leadName);
-        event.setScore(score);
-        event.setStatus(status);
+        event.leadName = leadName;
+        event.score = score;
+        event.status = status;
         return event;
     }
 }

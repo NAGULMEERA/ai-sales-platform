@@ -5,13 +5,17 @@ import com.aisales.common.core.constant.SecurityConstants;
 import com.aisales.common.core.persistence.TenantHibernateFilterEnabler;
 import com.aisales.common.core.util.MDCUtils;
 import com.aisales.common.core.util.TenantContext;
+import com.aisales.common.observability.metrics.MetricNames;
+import com.aisales.common.observability.metrics.PlatformMetrics;
 import com.aisales.common.observability.tracing.TraceContextEnricher;
 import com.aisales.common.security.model.UserPrincipal;
 import com.aisales.common.security.util.JwtUtils;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
@@ -22,8 +26,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
-
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -31,6 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtils jwtUtils;
     private final TenantHibernateFilterEnabler tenantHibernateFilterEnabler;
     private final ObjectProvider<TraceContextEnricher> traceContextEnricher;
+    private final ObjectProvider<PlatformMetrics> platformMetrics;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -38,24 +41,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String token = resolveToken(request);
             if (StringUtils.hasText(token) && SecurityContextHolder.getContext().getAuthentication() == null) {
-                var claims = jwtUtils.parseClaims(token);
-                if (!jwtUtils.isTokenExpired(claims)) {
-                    UserPrincipal principal = jwtUtils.toUserPrincipal(claims);
-                    if (!validatePropagatedTenantHeader(request, response, principal)) {
-                        return;
+                try {
+                    var claims = jwtUtils.parseClaims(token);
+                    if (jwtUtils.isTokenExpired(claims)) {
+                        recordJwtFailure("expired");
+                    } else {
+                        UserPrincipal principal = jwtUtils.toUserPrincipal(claims);
+                        if (!validatePropagatedTenantHeader(request, response, principal)) {
+                            return;
+                        }
+                        if (principal.getRoles() != null && principal.getRoles().contains("SUPER_ADMIN")) {
+                            TenantContext.setPlatformAdmin(true);
+                        }
+                        if (principal.getTenantId() != null) {
+                            TenantContext.setTenantId(principal.getTenantId());
+                        }
+                        var authentication = new UsernamePasswordAuthenticationToken(
+                                principal, null, principal.getAuthorities());
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        TenantContext.setUserId(principal.getUserId());
+                        tenantHibernateFilterEnabler.enableTenantFilter();
                     }
-                    if (principal.getRoles() != null && principal.getRoles().contains("SUPER_ADMIN")) {
-                        TenantContext.setPlatformAdmin(true);
-                    }
-                    if (principal.getTenantId() != null) {
-                        TenantContext.setTenantId(principal.getTenantId());
-                    }
-                    var authentication = new UsernamePasswordAuthenticationToken(
-                            principal, null, principal.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                    TenantContext.setUserId(principal.getUserId());
-                    tenantHibernateFilterEnabler.enableTenantFilter();
+                } catch (JwtException | IllegalArgumentException ex) {
+                    recordJwtFailure("invalid");
                 }
             }
             MDCUtils.putContext();
@@ -64,6 +73,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } finally {
             TenantContext.clear();
             MDCUtils.clearContext();
+        }
+    }
+
+    private void recordJwtFailure(String reason) {
+        PlatformMetrics metrics = platformMetrics.getIfAvailable();
+        if (metrics != null) {
+            metrics.increment(MetricNames.JWT_VALIDATION_FAILURE, "reason", reason);
         }
     }
 
@@ -84,6 +100,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (headerTenant.equals(principal.getTenantId())) {
             return true;
         }
+        recordJwtFailure("tenant_mismatch");
         response.sendError(HttpStatus.FORBIDDEN.value(), "Tenant header does not match token");
         return false;
     }

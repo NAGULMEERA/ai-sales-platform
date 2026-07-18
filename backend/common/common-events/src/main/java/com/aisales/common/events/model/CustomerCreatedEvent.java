@@ -1,11 +1,11 @@
 package com.aisales.common.events.model;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@Data
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -18,8 +18,8 @@ public class CustomerCreatedEvent extends BaseEvent {
                                           String email, String correlationId) {
         CustomerCreatedEvent event = new CustomerCreatedEvent();
         event.init("CustomerCreated", tenantId, customerId, correlationId);
-        event.setCustomerName(customerName);
-        event.setEmail(email);
+        event.customerName = customerName;
+        event.email = email;
         return event;
     }
 }

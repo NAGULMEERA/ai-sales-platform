@@ -1,11 +1,11 @@
 package com.aisales.common.events.model;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@Data
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -18,8 +18,8 @@ public class WorkflowCompletedEvent extends BaseEvent {
                                             String businessKey, String correlationId) {
         WorkflowCompletedEvent event = new WorkflowCompletedEvent();
         event.init("WorkflowCompleted", tenantId, workflowId, correlationId);
-        event.setDefinitionKey(definitionKey);
-        event.setBusinessKey(businessKey);
+        event.definitionKey = definitionKey;
+        event.businessKey = businessKey;
         return event;
     }
 }

@@ -3,6 +3,7 @@ package com.aisales.identity.authentication.application;
 import com.aisales.common.contracts.auth.LoginRequest;
 import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.UnauthorizedException;
+import com.aisales.common.observability.metrics.PlatformMetrics;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.aisales.identity.audit.application.AuditService;
 import com.aisales.identity.authentication.infrastructure.configuration.AuthProperties;
@@ -42,6 +44,7 @@ class AuthServiceEmailVerificationTest {
     @Mock private LoginLockoutService loginLockoutService;
     @Mock private AuditService auditService;
     @Mock private EventPublisher eventPublisher;
+    @Mock private ObjectProvider<PlatformMetrics> platformMetrics;
 
     private AuthProperties authProperties;
 
@@ -65,7 +68,8 @@ class AuthServiceEmailVerificationTest {
                 loginLockoutService,
                 auditService,
                 eventPublisher,
-                authProperties);
+                authProperties,
+                platformMetrics);
     }
 
     @Test

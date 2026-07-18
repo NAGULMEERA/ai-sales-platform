@@ -1,11 +1,11 @@
 package com.aisales.common.events.model;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@Data
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -19,9 +19,9 @@ public class LeadScoredEvent extends BaseEvent {
                                      Integer score, String scoreType, String correlationId) {
         LeadScoredEvent event = new LeadScoredEvent();
         event.init("LeadScored", tenantId, leadId, correlationId);
-        event.setLeadName(leadName);
-        event.setScore(score);
-        event.setScoreType(scoreType);
+        event.leadName = leadName;
+        event.score = score;
+        event.scoreType = scoreType;
         return event;
     }
 }

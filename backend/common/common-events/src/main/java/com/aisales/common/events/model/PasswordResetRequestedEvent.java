@@ -1,11 +1,11 @@
 package com.aisales.common.events.model;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@Data
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
@@ -21,10 +21,10 @@ public class PasswordResetRequestedEvent extends BaseEvent {
                                                  String correlationId) {
         PasswordResetRequestedEvent event = new PasswordResetRequestedEvent();
         event.init("PasswordResetRequested", tenantId, userId, correlationId);
-        event.setEmail(email);
-        event.setFirstName(firstName);
-        event.setToken(token);
-        event.setResetLink(resetLink);
+        event.email = email;
+        event.firstName = firstName;
+        event.token = token;
+        event.resetLink = resetLink;
         return event;
     }
 }
