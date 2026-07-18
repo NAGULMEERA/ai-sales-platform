@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aisales.com/schemas/events/EmailVerificationRequested.v1.json",
+  "title": "EmailVerificationRequested v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["eventId", "eventType", "eventVersion", "tenantId", "aggregateId", "occurredAt", "correlationId", "email", "firstName", "token", "verificationLink"],
+  "properties": {
+    "eventId": {"type": "string", "minLength": 1},
+    "eventType": {"const": "EmailVerificationRequested"},
+    "eventVersion": {"const": 1},
+    "tenantId": {"type": "string", "minLength": 1},
+    "aggregateId": {"type": "string", "minLength": 1},
+    "occurredAt": {"type": "string", "format": "date-time"},
+    "correlationId": {"type": "string", "minLength": 1},
+    "email": {"type": "string"},
+    "firstName": {"type": "string"},
+    "token": {"type": "string", "minLength": 1},
+    "verificationLink": {"type": "string", "minLength": 1}
+  }
+}

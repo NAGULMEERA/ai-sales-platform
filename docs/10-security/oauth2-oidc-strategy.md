@@ -2,7 +2,7 @@
 
 ## Decision
 
-**Phase 1 (current):** Custom JWT issued by Identity Service (HS256) for development velocity.
+**Phase 1 (current):** Custom JWT issued by Identity Service (RS256 + JWKS) for development velocity.
 
 **Phase 2 (production):** **Keycloak** as primary IdP with Spring Authorization Server fallback for internal services.
 
@@ -81,7 +81,7 @@ User federation maps external `sub` + provider → internal `User` entity in Ide
 2. Configure `spring.security.oauth2.resourceserver.jwt.issuer-uri` in services.
 3. Gateway validates JWT via JWKS (replace header-only check).
 4. Identity Service syncs users from Keycloak events.
-5. Deprecate HS256 custom tokens after migration window.
+5. After Keycloak cutover, deprecate custom Identity-issued tokens (already RS256) after a migration window.
 
 ---
 

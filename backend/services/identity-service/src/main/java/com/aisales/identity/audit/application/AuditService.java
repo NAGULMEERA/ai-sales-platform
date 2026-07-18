@@ -1,6 +1,8 @@
 package com.aisales.identity.audit.application;
 
 import com.aisales.common.core.util.CorrelationIdUtils;
+import com.aisales.common.events.audit.AuditRecordedEvent;
+import com.aisales.common.events.publisher.EventPublisher;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -11,10 +13,9 @@ import com.aisales.identity.audit.domain.AuditAction;
 import com.aisales.identity.audit.domain.entity.AuditLogEntry;
 import com.aisales.identity.audit.infrastructure.persistence.AuditLogRepository;
 
-
-
 /**
- * Persists immutable security audit records. Callers must never pass passwords, refresh tokens,
+ * Persists immutable security audit records and publishes {@link AuditRecordedEvent}
+ * via the outbox for downstream consumers. Callers must never pass passwords, refresh tokens,
  * reset tokens, or verification tokens in {@code detailsJson}.
  */
 @Service
@@ -22,6 +23,7 @@ import com.aisales.identity.audit.infrastructure.persistence.AuditLogRepository;
 public class AuditService {
 
     private final AuditLogRepository auditLogRepository;
+    private final EventPublisher eventPublisher;
 
     @Transactional
     public void logSecurityEvent(UUID tenantId, UUID userId, AuditAction action, String resourceType,
@@ -42,6 +44,9 @@ public class AuditService {
     @Transactional
     public void log(UUID tenantId, UUID userId, String action, String resourceType, String resourceId,
                     String ipAddress, String userAgent, String detailsJson) {
+        String sanitizedDetails = sanitizeDetails(detailsJson);
+        String correlationId = CorrelationIdUtils.get()
+                .orElseGet(CorrelationIdUtils::generate);
         auditLogRepository.save(AuditLogEntry.builder()
                 .tenantId(tenantId)
                 .userId(userId)
@@ -50,10 +55,27 @@ public class AuditService {
                 .resourceId(resourceId)
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
-                .detailsJson(sanitizeDetails(detailsJson))
-                .correlationId(CorrelationIdUtils.getCorrelationId())
+                .detailsJson(sanitizedDetails)
+                .correlationId(correlationId)
                 .createdAt(Instant.now())
                 .build());
+        publishAuditEvent(tenantId, userId, action, resourceType, resourceId, correlationId, sanitizedDetails);
+    }
+
+    private void publishAuditEvent(UUID tenantId, UUID userId, String action, String resourceType,
+                                   String resourceId, String correlationId, String detailsJson) {
+        String effectiveResourceId = resourceId != null
+                ? resourceId
+                : (userId != null ? userId.toString() : "unknown");
+        String effectiveTenantId = tenantId != null ? tenantId.toString() : "platform";
+        eventPublisher.publish(AuditRecordedEvent.of(
+                effectiveTenantId,
+                userId != null ? userId.toString() : null,
+                action,
+                resourceType,
+                effectiveResourceId,
+                correlationId,
+                detailsJson));
     }
 
     private static String sanitizeDetails(String detailsJson) {

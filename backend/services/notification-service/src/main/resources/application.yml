@@ -21,6 +21,16 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: notification-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   mail:
     host: ${SMTP_HOST:localhost}
     port: ${SMTP_PORT:1025}
@@ -40,6 +50,12 @@ spring:
 aisales:
   security:
     use-platform-defaults: false
+  events:
+    default-topic: aisales-events
+    outbox:
+      enabled: false
+    inbox:
+      enabled: true
   notification:
     # Default remains log for safety; local profile overrides to smtp (Mailpit).
     delivery-mode: ${NOTIFICATION_DELIVERY_MODE:log}
@@ -63,6 +79,12 @@ resilience4j:
         enable-randomized-wait: true
         randomized-wait-factor: 0.3
         retry-exception-predicate: com.aisales.common.observability.http.TransientFailurePredicate
+  bulkhead:
+    instances:
+      # Cap concurrent SMTP sends so provider/thread pools are not saturated under Kafka bursts.
+      smtpEmail:
+        max-concurrent-calls: 10
+        max-wait-duration: 0ms
   circuitbreaker:
     instances:
       # External SMTP provider — stop hammering a down mail server (Rule 09/10). Auth/config

@@ -1,21 +1,18 @@
 # lead-service — platform adoption
 
-Platform capabilities enabled for Lead-ready development.
-
 ## Enabled
 
-- Observability (`application-observability.yml`)
-- Cache config import (`application-cache.yml`, enable with `aisales.cache.enabled=true`)
-- Outbox event publishing
-- Inbox idempotent consumption
+- Observability, cache config import
+- Outbox event publishing + inbox tables
 - PostgreSQL RLS on tenant-owned tables
+- Full Lead lifecycle API and domain state machine
 
-## Implementation checklist
+## Implemented
 
-1. Domain aggregate: `domain/entity/Lead.java` extending `TenantAwareEntity`
-2. Application service: `application/service/LeadService.java`
-3. REST API: `api/controller/LeadController.java` at `/api/v1/leads`
-4. Publish `LeadCreatedEvent` via outbox on create
-5. Consume cross-service events with `IntegrationEventListener`
+1. Aggregate `Lead` with invariants + `LeadStateMachine`
+2. Child entities: assignments, status history, activities, notes, scores, followups, duplicates
+3. REST `/api/v1/leads/**` lifecycle + notes/followups/history/duplicates
+4. Events: Created, Validated, Qualified, Assigned, Contacted, Scored, Converted, Lost, StatusChanged
+5. Duplicate detection on create (exact phone/email)
 
-See `docs/03-architecture/platform-infrastructure-epic.md`.
+See `README.md` and `docs/08-api/lead-service-openapi.yaml`.

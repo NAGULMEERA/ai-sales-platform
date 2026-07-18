@@ -6,9 +6,12 @@ aisales:
   security:
     use-platform-defaults: false
     jwt:
-      # Production: inject via Vault/Secret Manager → env JWT_SECRET (or AISALES_SECURITY_JWT_SECRET).
-      # Local profile supplies a dev default in application-local.yml.
-      secret: ${JWT_SECRET:${AISALES_SECURITY_JWT_SECRET:}}
+      # RS256: identity signs with the private key; others validate via public key or JWKS.
+      # Production private key: Vault/Secret Manager → JWT_PRIVATE_KEY_PEM (or file location).
+      signing-enabled: true
+      private-key-location: ${JWT_PRIVATE_KEY_LOCATION:${JWT_PRIVATE_KEY_PEM:classpath:jwt/local-private.pem}}
+      public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:jwt/local-public.pem}
+      key-id: ${JWT_KEY_ID:aisales-1}
       access-token-expiration-ms: 3600000
       refresh-token-expiration-ms: 86400000
   auth:
@@ -18,23 +21,14 @@ aisales:
     password-reset-expiration-hours: 1
     verification-link-base-url: http://localhost:3000/verify-email
     password-reset-link-base-url: http://localhost:3000/reset-password
-  notification:
-    enabled: true
-    base-url: http://localhost:8090
-    fallback-logging: true
+    max-failed-login-attempts: 5
+    lockout-duration-minutes: 15
   events:
     default-topic: aisales-events
     outbox:
       enabled: true
     inbox:
       enabled: true
-  http:
-    # Outbound calls to notification-service, an internal same-network dependency.
-    # Rule 08/09: every outbound HTTP client must have sensible, non-infinite
-    # connect/read timeouts; internal calls use tighter budgets than internet-facing
-    # ones (see RestClientConfiguration for the full rationale).
-    connect-timeout-ms: 2000
-    read-timeout-ms: 5000
   oauth2:
     # Google OAuth2 login: authorization-code exchange, UserInfo call, and JWK Set
     # fetch. All three are small, fast JSON/JWK exchanges over the public internet, so
@@ -47,7 +41,7 @@ aisales:
     validate-redis: true
     validate-kafka: true
     required-config-values:
-      - aisales.security.jwt.secret
+      - aisales.security.jwt.private-key-location
     required-tables:
       - users
       - tenants
@@ -56,35 +50,6 @@ aisales:
       - outbox_events
       - permissions
       - role_permissions
-
-resilience4j:
-  retry:
-    instances:
-      # Guards NotificationHttpSender's call to notification-service (internal, same network).
-      # Only network failures/timeouts and 5xx/429 are retried (see TransientFailurePredicate) -
-      # 4xx (e.g. bad recipient email) fails identically on every attempt, so it is never retried.
-      notificationService:
-        max-attempts: 3
-        wait-duration: 200ms
-        enable-exponential-backoff: true
-        exponential-backoff-multiplier: 2
-        enable-randomized-wait: true
-        randomized-wait-factor: 0.5
-        retry-exception-predicate: com.aisales.common.observability.http.TransientFailurePredicate
-  circuitbreaker:
-    instances:
-      # Fast-fail when notification-service is persistently unhealthy so identity-service
-      # threads are not consumed by retry storms (Rule 09/10). Only dependency failures count
-      # toward the breaker (see TransientFailurePredicate); 4xx validation errors do not.
-      notificationService:
-        sliding-window-type: COUNT_BASED
-        sliding-window-size: 10
-        minimum-number-of-calls: 5
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 30s
-        permitted-number-of-calls-in-half-open-state: 3
-        automatic-transition-from-open-to-half-open-enabled: true
-        record-failure-predicate: com.aisales.common.observability.http.TransientFailurePredicate
 
 spring:
   application:

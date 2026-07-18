@@ -1,6 +1,7 @@
 package com.aisales.identity.authentication.application;
 
 import com.aisales.common.contracts.auth.LoginRequest;
+import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.UnauthorizedException;
 import java.util.Optional;
 import java.util.Set;
@@ -38,7 +39,9 @@ class AuthServiceEmailVerificationTest {
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private PasswordResetTokenService passwordResetTokenService;
     @Mock private EmailVerificationService emailVerificationService;
+    @Mock private LoginLockoutService loginLockoutService;
     @Mock private AuditService auditService;
+    @Mock private EventPublisher eventPublisher;
 
     private AuthProperties authProperties;
 
@@ -59,7 +62,9 @@ class AuthServiceEmailVerificationTest {
                 passwordEncoder,
                 passwordResetTokenService,
                 emailVerificationService,
+                loginLockoutService,
                 auditService,
+                eventPublisher,
                 authProperties);
     }
 

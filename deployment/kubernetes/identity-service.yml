@@ -33,16 +33,16 @@ spec:
                 secretKeyRef:
                   name: aisales-secrets
                   key: DB_PASSWORD
-            - name: JWT_SECRET
+            - name: JWT_PRIVATE_KEY_PEM
               valueFrom:
                 secretKeyRef:
                   name: aisales-secrets
-                  key: JWT_SECRET
-            - name: AISALES_SECURITY_JWT_SECRET
+                  key: JWT_PRIVATE_KEY_PEM
+            - name: JWT_KEY_ID
               valueFrom:
                 secretKeyRef:
                   name: aisales-secrets
-                  key: JWT_SECRET
+                  key: JWT_KEY_ID
             - name: GOOGLE_CLIENT_ID
               valueFrom:
                 secretKeyRef:

@@ -1,33 +1,34 @@
 package com.aisales.common.security.util;
 
 import com.aisales.common.core.constant.SecurityConstants;
+import com.aisales.common.security.jwt.JwtRsaProperties;
+import com.aisales.common.security.jwt.PlatformRsaKeyProvider;
 import com.aisales.common.security.model.TokenInfo;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
 
+/**
+ * Mints platform access tokens using RSA (RS256). Enabled only where
+ * {@code aisales.security.jwt.signing-enabled=true} (identity-service).
+ */
 @Component
+@ConditionalOnProperty(name = "aisales.security.jwt.signing-enabled", havingValue = "true")
 public class JwtTokenProvider {
 
-    private final SecretKey secretKey;
+    private final PlatformRsaKeyProvider keyProvider;
     private final long accessTokenExpirationMs;
     private final long refreshTokenExpirationMs;
 
-    public JwtTokenProvider(
-            @Value("${aisales.security.jwt.secret:aisales-default-jwt-secret-key-change-in-production}") String secret,
-            @Value("${aisales.security.jwt.access-token-expiration-ms:3600000}") long accessTokenExpirationMs,
-            @Value("${aisales.security.jwt.refresh-token-expiration-ms:86400000}") long refreshTokenExpirationMs) {
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.accessTokenExpirationMs = accessTokenExpirationMs;
-        this.refreshTokenExpirationMs = refreshTokenExpirationMs;
+    public JwtTokenProvider(PlatformRsaKeyProvider keyProvider, JwtRsaProperties properties) {
+        keyProvider.requirePrivateKey();
+        this.keyProvider = keyProvider;
+        this.accessTokenExpirationMs = properties.getAccessTokenExpirationMs();
+        this.refreshTokenExpirationMs = properties.getRefreshTokenExpirationMs();
     }
 
     public TokenInfo generateTokens(String userId, String tenantId, String email, Set<String> roles) {
@@ -73,6 +74,7 @@ public class JwtTokenProvider {
     private String buildToken(String userId, String tenantId, String organizationId, String email,
                               Set<String> roles, Set<String> permissions, Instant expiry, String tokenType) {
         var builder = Jwts.builder()
+                .header().keyId(keyProvider.getKeyId()).and()
                 .subject(userId)
                 .claim(SecurityConstants.TENANT_ID_CLAIM, tenantId)
                 .claim(SecurityConstants.EMAIL_CLAIM, email)
@@ -80,16 +82,12 @@ public class JwtTokenProvider {
                 .claim(SecurityConstants.PERMISSIONS_CLAIM, permissions)
                 .claim(SecurityConstants.TOKEN_TYPE_CLAIM, tokenType)
                 .issuedAt(Date.from(Instant.now()))
-                .expiration(Date.from(expiry));
+                .expiration(Date.from(expiry))
+                .signWith(keyProvider.getPrivateKey(), Jwts.SIG.RS256);
         if (organizationId != null) {
             builder.claim(SecurityConstants.ORGANIZATION_ID_CLAIM, organizationId);
         }
-        return builder.signWith(secretKey).compact();
-    }
-
-    private String buildToken(String userId, String tenantId, String email, Set<String> roles,
-                              Instant expiry, String tokenType) {
-        return buildToken(userId, tenantId, null, email, roles, Set.of(), expiry, tokenType);
+        return builder.compact();
     }
 
     public long getAccessTokenExpirationMs() {

@@ -3,6 +3,9 @@ package com.aisales.identity.authentication.application;
 import com.aisales.common.contracts.auth.AuthResponse;
 import com.aisales.common.contracts.auth.LoginRequest;
 import com.aisales.common.contracts.auth.RefreshTokenRequest;
+import com.aisales.common.core.util.CorrelationIdUtils;
+import com.aisales.common.events.model.EmailVerifiedEvent;
+import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.NotFoundException;
 import com.aisales.common.exception.exception.UnauthorizedException;
 import com.aisales.common.exception.exception.ValidationException;
@@ -35,8 +38,6 @@ import com.aisales.identity.session.application.SessionService;
 import com.aisales.identity.user.domain.entity.User;
 import com.aisales.identity.user.infrastructure.persistence.UserRepository;
 
-
-
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -51,7 +52,9 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final PasswordResetTokenService passwordResetTokenService;
     private final EmailVerificationService emailVerificationService;
+    private final LoginLockoutService loginLockoutService;
     private final AuditService auditService;
+    private final EventPublisher eventPublisher;
     private final AuthProperties authProperties;
 
     @Transactional
@@ -62,11 +65,17 @@ public class AuthService {
             throw new UnauthorizedException("Invalid credentials");
         }
         User user = userOptional.get();
+        loginLockoutService.unlockIfExpired(user);
+        if (loginLockoutService.isCurrentlyLocked(user)) {
+            auditLoginFailure(user.getTenantId(), user.getId(), "account_locked", ipAddress, userAgent);
+            throw new UnauthorizedException("Account is temporarily locked. Try again later.");
+        }
         if (user.getStatus() != User.UserStatus.ACTIVE) {
             auditLoginFailure(user.getTenantId(), user.getId(), "account_inactive", ipAddress, userAgent);
             throw new UnauthorizedException("Account is not active");
         }
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            loginLockoutService.recordFailedPasswordAttempt(user.getId(), ipAddress, userAgent);
             auditLoginFailure(user.getTenantId(), user.getId(), "invalid_credentials", ipAddress, userAgent);
             throw new UnauthorizedException("Invalid credentials");
         }
@@ -74,6 +83,7 @@ public class AuthService {
             auditLoginFailure(user.getTenantId(), user.getId(), "email_verification_required", ipAddress, userAgent);
             throw new UnauthorizedException("Email verification required. Check your inbox or request a new verification email.");
         }
+        loginLockoutService.clearFailedAttempts(user);
         user.setLastLoginAt(Instant.now());
         userRepository.save(user);
         auditService.logSecurityEvent(user.getTenantId(), user.getId(), AuditAction.USER_LOGIN, "user",
@@ -87,6 +97,9 @@ public class AuthService {
                 .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
         User user = userRepository.findById(refreshToken.getUserId())
                 .orElseThrow(() -> new NotFoundException("User", refreshToken.getUserId()));
+        if (loginLockoutService.isCurrentlyLocked(user)) {
+            throw new UnauthorizedException("Account is temporarily locked. Try again later.");
+        }
         if (authProperties.isRequireEmailVerificationForLogin() && !user.isEmailVerified()) {
             throw new UnauthorizedException("Email verification required");
         }
@@ -129,6 +142,11 @@ public class AuthService {
         emailVerificationTokenRepository.save(token);
         auditService.logSecurityEvent(user.getTenantId(), user.getId(), AuditAction.EMAIL_VERIFIED, "user",
                 user.getId().toString(), null, null, null);
+        eventPublisher.publish(EmailVerifiedEvent.of(
+                user.getTenantId().toString(),
+                user.getId().toString(),
+                user.getEmail(),
+                CorrelationIdUtils.get().orElseGet(CorrelationIdUtils::generate)));
         return MessageResponse.builder().message("Email verified successfully").build();
     }
 
@@ -165,6 +183,7 @@ public class AuthService {
         User user = userRepository.findById(token.getUserId())
                 .orElseThrow(() -> new NotFoundException("User", token.getUserId()));
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        loginLockoutService.clearFailedAttempts(user);
         userRepository.save(user);
         token.setConsumedAt(Instant.now());
         passwordResetTokenRepository.save(token);

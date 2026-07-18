@@ -27,9 +27,6 @@ aisales:
   auth:
     require-email-verification-for-login: false
     auto-login-after-register: false
-  notification:
-    enabled: false
-    fallback-logging: true
   events:
     outbox:
       enabled: true
@@ -43,4 +40,7 @@ aisales:
     enabled: false
   security:
     jwt:
-      secret: test-jwt-secret-key-minimum-256-bits-for-integration-tests-only
+      signing-enabled: true
+      private-key-location: classpath:jwt/local-private.pem
+      public-key-location: classpath:jwt/local-public.pem
+      key-id: aisales-1

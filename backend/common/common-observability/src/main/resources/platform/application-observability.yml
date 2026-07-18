@@ -31,4 +31,16 @@ management:
 
 logging:
   pattern:
-    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-},%X{correlation_id:-}]"
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-},%X{correlation_id:-},%X{tenant_id:-},%X{user_id:-}]"
+
+# Shared Resilience4j defaults for platform outbound paths (services may override).
+resilience4j:
+  bulkhead:
+    instances:
+      outboxKafka:
+        max-concurrent-calls: 20
+        max-wait-duration: 0ms
+      smtpEmail:
+        max-concurrent-calls: 10
+        max-wait-duration: 0ms
+

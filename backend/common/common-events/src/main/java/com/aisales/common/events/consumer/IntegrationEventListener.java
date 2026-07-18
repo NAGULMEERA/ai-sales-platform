@@ -6,13 +6,16 @@ import com.aisales.common.core.util.TenantContext;
 import com.aisales.common.events.inbox.DeadLetterService;
 import com.aisales.common.events.inbox.InboxService;
 import com.aisales.common.events.kafka.EventKafkaHeaderPropagator;
+import com.aisales.common.events.kafka.EventKafkaHeaders;
 import com.aisales.common.events.model.BaseEvent;
 import com.aisales.common.observability.metrics.MetricNames;
 import com.aisales.common.observability.metrics.PlatformMetrics;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.tracing.Span;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.header.Header;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +24,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 /**
@@ -68,6 +72,20 @@ public class IntegrationEventListener {
         this.platformMetrics = platformMetrics.getIfAvailable();
     }
 
+    /**
+     * Processes a record only when its {@code eventType} matches {@code expectedEventType}.
+     * Shared topics can carry many event types; unmatched records are ignored (not DLQ'd).
+     */
+    public <T extends BaseEvent> void handleIfType(ConsumerRecord<String, String> record, String consumerName,
+                                                   String expectedEventType, Class<T> eventType,
+                                                   Consumer<T> handler) {
+        String actualType = resolveEventType(record);
+        if (!StringUtils.hasText(actualType) || !expectedEventType.equals(actualType)) {
+            return;
+        }
+        handle(record, consumerName, eventType, handler);
+    }
+
     public <T extends BaseEvent> void handle(ConsumerRecord<String, String> record, String consumerName,
                                              Class<T> eventType, Consumer<T> handler) {
         String eventId = null;
@@ -99,6 +117,20 @@ public class IntegrationEventListener {
             TenantContext.clear();
             CorrelationIdUtils.clear();
             MDCUtils.clearContext();
+        }
+    }
+
+    private String resolveEventType(ConsumerRecord<String, String> record) {
+        Header header = record.headers().lastHeader(EventKafkaHeaders.EVENT_TYPE);
+        if (header != null && header.value() != null) {
+            return new String(header.value(), StandardCharsets.UTF_8);
+        }
+        try {
+            JsonNode node = objectMapper.readTree(record.value());
+            return node.path("eventType").asText(null);
+        } catch (Exception ex) {
+            log.debug("Unable to resolve eventType from Kafka record on topic {}", record.topic(), ex);
+            return null;
         }
     }
 

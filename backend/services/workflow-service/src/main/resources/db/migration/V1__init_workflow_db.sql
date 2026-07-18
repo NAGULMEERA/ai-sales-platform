@@ -1,4 +1,4 @@
-﻿CREATE EXTENSION IF NOT EXISTS ""pgcrypto"";
+﻿CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE workflow_execution (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

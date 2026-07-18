@@ -30,7 +30,7 @@ class IdentityFlywayMigrationIT {
                 .load();
         flyway.migrate();
 
-        assertThat(flyway.info().applied()).hasSize(13);
+        assertThat(flyway.info().applied()).hasSize(14);
 
         try (Connection conn = postgres.createConnection("");
              Statement st = conn.createStatement()) {

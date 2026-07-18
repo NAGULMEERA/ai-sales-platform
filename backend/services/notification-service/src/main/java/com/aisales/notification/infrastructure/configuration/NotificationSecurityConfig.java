@@ -18,9 +18,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * microservices... never expose Internal APIs publicly") - it previously permitted every request
  * unauthenticated. This now requires a valid platform JWT for every request, and specifically the
  * {@code SERVICE} role for the notification-sending endpoints, so a leaked end-user access token
- * cannot be replayed to trigger arbitrary transactional email sends. See
- * {@code InternalServiceTokenProvider} in identity-service for how that token is minted for the
- * one caller that bypasses the gateway today.
+ * cannot be replayed to trigger arbitrary transactional email sends. Prefer Kafka integration
+ * events for identity-originated emails; this REST path remains for authenticated service callers.
  */
 @Configuration
 @EnableWebSecurity

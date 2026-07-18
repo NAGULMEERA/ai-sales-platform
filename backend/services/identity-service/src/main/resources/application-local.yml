@@ -1,5 +1,8 @@
-# Local Postman / dev profile — no Eureka, Config Server, or Kafka required.
-# Run: mvnw spring-boot:run -pl services/identity-service -Dspring-boot.run.profiles=local
+# Local Postman / IntelliJ profile.
+# Email delivery is event-driven: Identity writes EmailVerificationRequested /
+# PasswordResetRequested to the outbox; Notification consumes from Kafka.
+# Requires: Postgres (5433), Kafka (9092), and notification-service for SMTP/Mailpit.
+# Infra: docker compose -f deployment/docker-compose-infra.yml up -d
 
 spring:
   cloud:
@@ -11,13 +14,12 @@ spring:
     import:
       - optional:classpath:platform/application-observability.yml
       - optional:classpath:platform/application-cache.yml
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
   datasource:
     url: jdbc:postgresql://localhost:5433/aisales_identity
     username: aisales
     password: aisales
+  kafka:
+    bootstrap-servers: localhost:9092
 
 management:
   tracing:
@@ -32,19 +34,18 @@ eureka:
 aisales:
   security:
     jwt:
-      secret: aisales-dev-jwt-secret-key-change-in-production-min-256-bits
+      signing-enabled: true
+      private-key-location: classpath:jwt/local-private.pem
+      public-key-location: classpath:jwt/local-public.pem
+      key-id: aisales-1
   events:
-    publisher: logging
+    default-topic: aisales-events
     outbox:
-      enabled: false
+      enabled: true
     inbox:
       enabled: false
   startup-validation:
     enabled: false
-  notification:
-    enabled: true
-    base-url: http://localhost:8090
-    fallback-logging: true
   auth:
     verification-link-base-url: http://localhost:8081/api/v1/auth/verify-email
 

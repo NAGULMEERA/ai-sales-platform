@@ -2,34 +2,28 @@ package com.aisales.common.security.util;
 
 import com.aisales.common.core.constant.SecurityConstants;
 import com.aisales.common.core.util.TenantContext;
+import com.aisales.common.security.jwt.PlatformRsaKeyProvider;
 import com.aisales.common.security.model.UserPrincipal;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class JwtUtils {
 
-    private final SecretKey secretKey;
-
-    public JwtUtils(@Value("${aisales.security.jwt.secret:aisales-default-jwt-secret-key-change-in-production}") String secret) {
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-    }
+    private final PlatformRsaKeyProvider keyProvider;
 
     public Claims parseClaims(String token) {
         return Jwts.parser()
-                .verifyWith(secretKey)
+                .verifyWith(keyProvider.getPublicKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();

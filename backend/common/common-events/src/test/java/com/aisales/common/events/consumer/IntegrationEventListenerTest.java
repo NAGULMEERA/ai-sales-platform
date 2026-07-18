@@ -49,6 +49,21 @@ class IntegrationEventListenerTest {
     }
 
     @Test
+    void shouldIgnoreUnmatchedEventType() throws Exception {
+        TenantCreatedEvent event = TenantCreatedEvent.of(
+                "tenant-1", "Acme", "acme", "FREE", "REAL_ESTATE", "corr-1");
+        String payload = objectMapper.writeValueAsString(event);
+        ConsumerRecord<String, String> record = new ConsumerRecord<>("aisales-events", 0, 0L, "tenant-1", payload);
+        Consumer<TenantCreatedEvent> handler = mock(Consumer.class);
+
+        integrationEventListener.handleIfType(record, "notification-service", "EmailVerificationRequested",
+                TenantCreatedEvent.class, handler);
+
+        verify(handler, never()).accept(any());
+        verify(inboxService, never()).isProcessed(any(), any());
+    }
+
+    @Test
     void shouldSkipDuplicateEvents() throws Exception {
         TenantCreatedEvent event = TenantCreatedEvent.of(
                 "tenant-1", "Acme", "acme", "FREE", "REAL_ESTATE", "corr-1");

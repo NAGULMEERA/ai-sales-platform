@@ -2,8 +2,20 @@ package com.aisales.common.events.schema;
 
 import com.aisales.common.events.model.BaseEvent;
 import com.aisales.common.events.model.CustomerCreatedEvent;
+import com.aisales.common.events.model.EmailVerificationRequestedEvent;
+import com.aisales.common.events.model.EmailVerifiedEvent;
+import com.aisales.common.events.model.LeadAssignedEvent;
+import com.aisales.common.events.model.LeadContactedEvent;
+import com.aisales.common.events.model.LeadConvertedEvent;
 import com.aisales.common.events.model.LeadCreatedEvent;
+import com.aisales.common.events.model.LeadLostEvent;
+import com.aisales.common.events.model.LeadQualifiedEvent;
+import com.aisales.common.events.model.LeadScoredEvent;
+import com.aisales.common.events.model.LeadStatusChangedEvent;
+import com.aisales.common.events.model.LeadValidatedEvent;
 import com.aisales.common.events.model.NotificationSentEvent;
+import com.aisales.common.events.model.PasswordResetRequestedEvent;
+import com.aisales.common.events.model.WorkflowCompletedEvent;
 import com.aisales.common.events.model.TenantActivatedEvent;
 import com.aisales.common.events.model.TenantCreatedEvent;
 import com.aisales.common.events.model.TenantDeletedEvent;
@@ -74,10 +86,25 @@ class EventSchemaRegistryTest {
                 UserUpdatedEvent.of("tenant-1", "user-1", "user@example.com", "ACTIVE", "corr-1"),
                 UserDeletedEvent.of("tenant-1", "user-1", "corr-1"),
                 LeadCreatedEvent.of("tenant-1", "lead-1", "Jane Lead", "WEB", "NEW", "corr-1"),
+                LeadValidatedEvent.of("tenant-1", "lead-1", "Jane Lead", "corr-1"),
+                LeadQualifiedEvent.of("tenant-1", "lead-1", "Jane Lead", 80, "QUALIFIED", "corr-1"),
+                LeadAssignedEvent.of("tenant-1", "lead-1", "Jane Lead", "user-2", "round-robin", "corr-1"),
+                LeadContactedEvent.of("tenant-1", "lead-1", "Jane Lead", "WHATSAPP", "corr-1"),
+                LeadScoredEvent.of("tenant-1", "lead-1", "Jane Lead", 80, "AI", "corr-1"),
+                LeadConvertedEvent.of("tenant-1", "lead-1", "Jane Lead", "customer-1", "corr-1"),
+                LeadLostEvent.of("tenant-1", "lead-1", "Jane Lead", "no budget", "corr-1"),
+                LeadStatusChangedEvent.of("tenant-1", "lead-1", "Jane Lead",
+                        "NEW", "CONTACTED", "first touch", "corr-1"),
                 CustomerCreatedEvent.of("tenant-1", "customer-1", "Jane Customer",
                         "customer@example.com", "corr-1"),
                 NotificationSentEvent.of("tenant-1", "notification-1", "EMAIL",
-                        "customer@example.com", "welcome", "corr-1")
+                        "customer@example.com", "welcome", "corr-1"),
+                EmailVerificationRequestedEvent.of("tenant-1", "user-1", "user@example.com", "Ada",
+                        "token-1", "https://app.example/verify?token=token-1", "corr-1"),
+                PasswordResetRequestedEvent.of("tenant-1", "user-1", "user@example.com", "Ada",
+                        "token-2", "https://app.example/reset?token=token-2", "corr-1"),
+                EmailVerifiedEvent.of("tenant-1", "user-1", "user@example.com", "corr-1"),
+                WorkflowCompletedEvent.of("tenant-1", "wf-1", "ONBOARDING_V1", "user-1", "corr-1")
         );
     }
 

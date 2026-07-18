@@ -2,10 +2,30 @@ openapi: 3.0.3
 info:
   title: Lead Service API
   version: 1.0.0
+  description: Complete Lead lifecycle API (tenant-scoped)
 paths:
   /api/v1/leads:
     get:
-      summary: List leads
+      summary: Search / list leads
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: assignedTo
+          schema: { type: string, format: uuid }
+        - in: query
+          name: sourceType
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string }
       responses:
         '200':
           description: OK
@@ -14,3 +34,168 @@ paths:
       responses:
         '201':
           description: Created
+  /api/v1/leads/duplicates:
+    get:
+      summary: List duplicate detections
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}:
+    get:
+      summary: Get lead
+      responses:
+        '200':
+          description: OK
+    patch:
+      summary: Update lead
+      responses:
+        '200':
+          description: OK
+    delete:
+      summary: Soft-delete lead
+      responses:
+        '204':
+          description: No Content
+  /api/v1/leads/{id}/validate:
+    post:
+      summary: Validate lead
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/assign:
+    post:
+      summary: Assign lead (MANUAL or ROUND_ROBIN)
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/qualify:
+    post:
+      summary: Qualify lead
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/contact:
+    post:
+      summary: Mark contacted
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/status:
+    post:
+      summary: Change status
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/score:
+    post:
+      summary: Score lead
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/convert:
+    post:
+      summary: Convert lead (WON)
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/lose:
+    post:
+      summary: Mark lost
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/notes:
+    get:
+      summary: List notes
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Add note
+      responses:
+        '201':
+          description: Created
+  /api/v1/leads/{id}/activities:
+    get:
+      summary: List activities
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/followups:
+    get:
+      summary: List follow-ups
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Schedule follow-up
+      responses:
+        '201':
+          description: Created
+  /api/v1/leads/{id}/history:
+    get:
+      summary: Status history
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/duplicates/{duplicateId}/resolve:
+    post:
+      summary: Resolve duplicate
+      responses:
+        '200':
+          description: OK
+  /api/v1/leads/{id}/attachments:
+    get:
+      summary: List attachment metadata
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Add attachment metadata
+      responses:
+        '201':
+          description: Created
+  /api/v1/leads/custom-fields:
+    get:
+      summary: List tenant custom fields
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create custom field definition
+      responses:
+        '201':
+          description: Created
+  /api/v1/leads/{id}/attributions:
+    get:
+      summary: List attributions
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Record attribution
+      responses:
+        '201':
+          description: Created
+  /api/v1/leads/{id}/quality-scores:
+    get:
+      summary: List AI quality scores
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Record AI quality score
+      responses:
+        '201':
+          description: Created
+  /api/v1/leads/assignment-pool:
+    get:
+      summary: List round-robin pool members
+      responses:
+        '200':
+          description: OK
+    put:
+      summary: Upsert pool member
+      responses:
+        '200':
+          description: OK

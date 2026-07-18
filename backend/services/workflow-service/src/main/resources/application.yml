@@ -4,11 +4,13 @@
 spring:
   application:
     name: workflow-service
+  profiles:
+    default: local
   config:
     import: optional:configserver:http://localhost:8888
   datasource:
     url: jdbc:postgresql://localhost:5432/workflow_db
-    username: aisales
+    username: ${DB_USERNAME:aisales}
     password: ${DB_PASSWORD:${SPRING_DATASOURCE_PASSWORD:aisales}}
   jpa:
     hibernate:
@@ -17,6 +19,28 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: workflow-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+aisales:
+  security:
+    use-platform-defaults: true
+    jwt:
+      public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:jwt/local-public.pem}
+  events:
+    default-topic: aisales-events
+    outbox:
+      enabled: true
+    inbox:
+      enabled: true
 
 eureka:
   client:

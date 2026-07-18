@@ -4,6 +4,8 @@
 spring:
   application:
     name: lead-service
+  profiles:
+    default: local
   config:
     import:
       - optional:configserver:http://localhost:8888
