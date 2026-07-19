@@ -56,7 +56,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 @Service
@@ -79,9 +81,23 @@ public class LeadService {
     private final LeadAssignmentPoolService assignmentPoolService;
     private final PipelineService pipelineService;
     private final LeadCustomerConversionGateway customerConversionGateway;
+    private final PlatformTransactionManager transactionManager;
+    private final LeadIdempotencyService leadIdempotencyService;
 
     @Transactional
     public LeadDto createLead(CreateLeadRequest request) {
+        return createLead(request, null);
+    }
+
+    @Transactional
+    public LeadDto createLead(CreateLeadRequest request, String idempotencyKey) {
+        if (StringUtils.hasText(idempotencyKey)) {
+            var cached = leadIdempotencyService.beginCreate(idempotencyKey);
+            if (cached.isPresent()) {
+                return cached.get();
+            }
+        }
+
         UUID tenantId = requireTenantId();
         UUID actor = actorId();
         Instant now = Instant.now();
@@ -122,7 +138,11 @@ public class LeadService {
         eventPublisher.publish(LeadCreatedEvent.of(
                 tenantId.toString(), saved.getId().toString(), saved.getCustomerName(),
                 saved.getSourceType(), saved.getStatus().name(), correlationId()));
-        return leadMapper.toDto(saved);
+        LeadDto response = leadMapper.toDto(saved);
+        if (StringUtils.hasText(idempotencyKey)) {
+            leadIdempotencyService.storeCreateResponse(idempotencyKey, saved.getId(), response);
+        }
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -336,15 +356,23 @@ public class LeadService {
         return (int) Math.round(components.stream().mapToInt(Integer::intValue).average().orElseThrow());
     }
 
-    @Transactional
+    /**
+     * Resolves customer via Feign outside a DB transaction, then persists conversion in a short TX.
+     */
     public LeadDto convertLead(UUID leadId, ConvertLeadRequest request) {
+        Lead lead = requireLead(leadId);
+        UUID customerId = customerConversionGateway.resolveCustomerId(lead, request.getCustomerId());
+        return new TransactionTemplate(transactionManager).execute(status ->
+                persistLeadConversion(leadId, customerId, request.getReason()));
+    }
+
+    private LeadDto persistLeadConversion(UUID leadId, UUID customerId, String reason) {
         Lead lead = requireLead(leadId);
         UUID actor = actorId();
         LeadStatus old = lead.getStatus();
-        UUID customerId = customerConversionGateway.resolveCustomerId(lead, request.getCustomerId());
         lead.convert(customerId, actor, stateMachine);
         leadRepository.save(lead);
-        sideEffects.recordStatusChange(leadId, old, lead.getStatus(), request.getReason(), actor);
+        sideEffects.recordStatusChange(leadId, old, lead.getStatus(), reason, actor);
         eventPublisher.publish(LeadConvertedEvent.of(
                 lead.getTenantId().toString(), leadId.toString(), lead.getCustomerName(),
                 customerId.toString(),

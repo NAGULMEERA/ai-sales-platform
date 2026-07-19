@@ -23,6 +23,40 @@ eureka:
     service-url:
       defaultZone: http://localhost:8761/eureka/
 
+aisales:
+  clients:
+    lead-service:
+      url: http://localhost:8083
+  integration:
+    service-auth:
+      # Access JWT used for Feign → lead-service from public Meta webhooks
+      bearer-token: ${INTEGRATION_SERVICE_BEARER_TOKEN:}
+    meta:
+      lead-ads:
+        enabled: true
+        # STUB = full form JSON locally; LIVE = Meta envelope + Graph lead fetch
+        mode: STUB
+        verify-token: ${META_LEAD_ADS_VERIFY_TOKEN:dev-verify-token}
+        app-secret: ${META_APP_SECRET:}
+        graph:
+          base-url: https://graph.facebook.com
+          api-version: v21.0
+          access-token: ${META_PAGE_ACCESS_TOKEN:}
+    voice:
+      # STUB = local simulate; TWILIO = Programmable Voice outbound
+      provider: ${VOICE_PROVIDER:STUB}
+      stub:
+        enabled: true
+        simulate-answers: true
+      twilio:
+        enabled: ${TWILIO_VOICE_ENABLED:false}
+        account-sid: ${TWILIO_ACCOUNT_SID:}
+        auth-token: ${TWILIO_AUTH_TOKEN:}
+        from-number: ${TWILIO_FROM_NUMBER:}
+        base-url: https://api.twilio.com
+        twiml-url: ${TWILIO_TWIML_URL:}
+        status-callback-url: ${TWILIO_STATUS_CALLBACK_URL:}
+
 management:
   endpoints:
     web:

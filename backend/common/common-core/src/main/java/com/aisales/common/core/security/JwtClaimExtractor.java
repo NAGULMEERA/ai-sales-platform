@@ -55,6 +55,10 @@ public final class JwtClaimExtractor {
         return claims.get(SecurityConstants.ORGANIZATION_ID_CLAIM, String.class);
     }
 
+    public static String extractSubscriptionPlan(Claims claims) {
+        return claims.get(SecurityConstants.SUBSCRIPTION_PLAN_CLAIM, String.class);
+    }
+
     @SuppressWarnings("unchecked")
     public static boolean hasRole(Claims claims, String role) {
         List<String> roles = claims.get(SecurityConstants.ROLES_CLAIM, List.class);

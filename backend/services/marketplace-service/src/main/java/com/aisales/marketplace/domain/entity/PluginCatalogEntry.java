@@ -46,6 +46,11 @@ public class PluginCatalogEntry {
     @Column(nullable = false, length = 50)
     private String version;
 
+    /** Minimum platform semver required to enable this plugin. */
+    @Builder.Default
+    @Column(name = "min_platform_version", nullable = false, length = 50)
+    private String minPlatformVersion = "1.0.0";
+
     @Column(name = "display_name", nullable = false)
     private String displayName;
 

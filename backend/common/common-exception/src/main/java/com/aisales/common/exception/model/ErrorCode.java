@@ -22,6 +22,7 @@ public enum ErrorCode {
     EVENT_PUBLISH_ERROR("ERR_008", "Failed to publish event", HttpStatus.INTERNAL_SERVER_ERROR),
     CONFLICT("ERR_009", "Resource conflict", HttpStatus.CONFLICT),
     SERVICE_UNAVAILABLE("ERR_010", "Service unavailable", HttpStatus.SERVICE_UNAVAILABLE),
+    RATE_LIMIT_EXCEEDED("ERR_011", "Rate limit exceeded", HttpStatus.TOO_MANY_REQUESTS),
 
     // Authentication & authorization
     AUTH_INVALID_TOKEN("AUTH_001", "Invalid or expired token", HttpStatus.UNAUTHORIZED),
@@ -41,6 +42,7 @@ public enum ErrorCode {
     // AI domain
     AI_RATE_LIMIT("AI_001", "AI rate limit exceeded", HttpStatus.TOO_MANY_REQUESTS),
     AI_UNAVAILABLE("AI_002", "AI service unavailable", HttpStatus.SERVICE_UNAVAILABLE),
+    AI_BUDGET_EXCEEDED("AI_003", "AI token budget exceeded", HttpStatus.TOO_MANY_REQUESTS),
 
     // Billing
     BILLING_PAYMENT_REQUIRED("BILLING_001", "Payment required to continue", HttpStatus.PAYMENT_REQUIRED);

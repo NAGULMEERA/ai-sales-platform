@@ -15,11 +15,11 @@ import com.aisales.lead.domain.entity.SalesPipeline;
 import com.aisales.lead.domain.entity.SalesPipelineTransition;
 import com.aisales.common.contracts.lead.EnsurePipelineRequest;
 import com.aisales.lead.domain.entity.SalesPipelineStage;
-import com.aisales.lead.domain.service.AutomobileSalesPipelineDefinition;
 import com.aisales.lead.domain.service.DefaultSalesPipelineDefinition;
+import com.aisales.lead.domain.service.PipelineTemplateDefinition;
 import com.aisales.lead.domain.service.PipelineTemplateRegistry;
+import com.aisales.lead.domain.service.PipelineTemplateTestSupport;
 import com.aisales.lead.domain.service.PipelineTransitionSource;
-import com.aisales.lead.domain.service.RealEstateSalesPipelineDefinition;
 import com.aisales.lead.infrastructure.persistence.SalesPipelineRepository;
 import com.aisales.lead.infrastructure.persistence.SalesPipelineStageRepository;
 import com.aisales.lead.infrastructure.persistence.SalesPipelineTransitionRepository;
@@ -44,7 +44,11 @@ class PipelineServiceTest {
     @Mock private SalesPipelineTransitionRepository transitionRepository;
     @Mock private PipelineTransitionSource transitionSource;
 
+    private static final String RE_CODE = "REAL_ESTATE_SALES_V1";
+    private static final String AUTO_CODE = "AUTOMOBILE_SALES_V1";
+
     private PipelineService pipelineService;
+    private PipelineTemplateRegistry templateRegistry;
     private UUID tenantId;
 
     @BeforeEach
@@ -52,9 +56,10 @@ class PipelineServiceTest {
         tenantId = UUID.randomUUID();
         TenantContext.setTenantId(tenantId.toString());
         TenantContext.setUserId(UUID.randomUUID().toString());
+        templateRegistry = PipelineTemplateTestSupport.registry();
         pipelineService = new PipelineService(
                 pipelineRepository, stageRepository, transitionRepository, transitionSource,
-                new PipelineTemplateRegistry());
+                templateRegistry);
     }
 
     @AfterEach
@@ -131,12 +136,13 @@ class PipelineServiceTest {
 
     @Test
     void shouldEnsureRealEstatePipelineWithVisitNegotiationBookedLabels() {
+        PipelineTemplateDefinition re = templateRegistry.require(RE_CODE);
         stubCreatePipeline();
-        when(pipelineRepository.findByTenantIdAndCode(tenantId, RealEstateSalesPipelineDefinition.CODE))
+        when(pipelineRepository.findByTenantIdAndCode(tenantId, RE_CODE))
                 .thenReturn(Optional.empty());
         when(stageRepository.findByPipelineIdOrderByStageOrderAsc(any())).thenAnswer(inv -> {
             UUID pipelineId = inv.getArgument(0);
-            return RealEstateSalesPipelineDefinition.INSTANCE.stages().stream()
+            return re.stages().stream()
                     .map(s -> SalesPipelineStage.builder()
                             .id(UUID.randomUUID())
                             .pipelineId(pipelineId)
@@ -149,10 +155,10 @@ class PipelineServiceTest {
         });
 
         PipelineDto dto = pipelineService.ensurePipeline(EnsurePipelineRequest.builder()
-                .code(RealEstateSalesPipelineDefinition.CODE)
+                .code(RE_CODE)
                 .build());
 
-        assertThat(dto.getCode()).isEqualTo(RealEstateSalesPipelineDefinition.CODE);
+        assertThat(dto.getCode()).isEqualTo(RE_CODE);
         assertThat(dto.getStages()).anySatisfy(s -> {
             assertThat(s.getStageCode()).isEqualTo("VISITED");
             assertThat(s.getDisplayName()).isEqualTo("Visit");
@@ -165,22 +171,21 @@ class PipelineServiceTest {
             assertThat(s.getStageCode()).isEqualTo("WON");
             assertThat(s.getDisplayName()).isEqualTo("Booked");
         });
-        assertThat(RealEstateSalesPipelineDefinition.allowedTargets(LeadStatus.QUALIFIED))
+        assertThat(re.transitions().get(LeadStatus.QUALIFIED))
                 .containsExactlyInAnyOrder(LeadStatus.VISITED, LeadStatus.LOST);
-        assertThat(RealEstateSalesPipelineDefinition.allowedTargets(LeadStatus.VISITED))
-                .contains(LeadStatus.NEGOTIATING);
-        assertThat(RealEstateSalesPipelineDefinition.allowedTargets(LeadStatus.NEGOTIATING))
-                .contains(LeadStatus.WON);
+        assertThat(re.transitions().get(LeadStatus.VISITED)).contains(LeadStatus.NEGOTIATING);
+        assertThat(re.transitions().get(LeadStatus.NEGOTIATING)).contains(LeadStatus.WON);
     }
 
     @Test
     void shouldEnsureAutomobilePipelineWithTestDriveQuotationFinanceBookedLabels() {
+        PipelineTemplateDefinition auto = templateRegistry.require(AUTO_CODE);
         stubCreatePipeline();
-        when(pipelineRepository.findByTenantIdAndCode(tenantId, AutomobileSalesPipelineDefinition.CODE))
+        when(pipelineRepository.findByTenantIdAndCode(tenantId, AUTO_CODE))
                 .thenReturn(Optional.empty());
         when(stageRepository.findByPipelineIdOrderByStageOrderAsc(any())).thenAnswer(inv -> {
             UUID pipelineId = inv.getArgument(0);
-            return AutomobileSalesPipelineDefinition.INSTANCE.stages().stream()
+            return auto.stages().stream()
                     .map(s -> SalesPipelineStage.builder()
                             .id(UUID.randomUUID())
                             .pipelineId(pipelineId)
@@ -193,10 +198,10 @@ class PipelineServiceTest {
         });
 
         PipelineDto dto = pipelineService.ensurePipeline(EnsurePipelineRequest.builder()
-                .code(AutomobileSalesPipelineDefinition.CODE)
+                .code(AUTO_CODE)
                 .build());
 
-        assertThat(dto.getCode()).isEqualTo(AutomobileSalesPipelineDefinition.CODE);
+        assertThat(dto.getCode()).isEqualTo(AUTO_CODE);
         assertThat(dto.getStages()).anySatisfy(s -> {
             assertThat(s.getStageCode()).isEqualTo("APPOINTMENT_BOOKED");
             assertThat(s.getDisplayName()).isEqualTo("Test Drive");
@@ -213,14 +218,11 @@ class PipelineServiceTest {
             assertThat(s.getStageCode()).isEqualTo("WON");
             assertThat(s.getDisplayName()).isEqualTo("Booked");
         });
-        assertThat(AutomobileSalesPipelineDefinition.allowedTargets(LeadStatus.QUALIFIED))
+        assertThat(auto.transitions().get(LeadStatus.QUALIFIED))
                 .containsExactlyInAnyOrder(LeadStatus.APPOINTMENT_BOOKED, LeadStatus.LOST);
-        assertThat(AutomobileSalesPipelineDefinition.allowedTargets(LeadStatus.APPOINTMENT_BOOKED))
-                .contains(LeadStatus.VISITED);
-        assertThat(AutomobileSalesPipelineDefinition.allowedTargets(LeadStatus.VISITED))
-                .contains(LeadStatus.NEGOTIATING);
-        assertThat(AutomobileSalesPipelineDefinition.allowedTargets(LeadStatus.NEGOTIATING))
-                .contains(LeadStatus.WON);
+        assertThat(auto.transitions().get(LeadStatus.APPOINTMENT_BOOKED)).contains(LeadStatus.VISITED);
+        assertThat(auto.transitions().get(LeadStatus.VISITED)).contains(LeadStatus.NEGOTIATING);
+        assertThat(auto.transitions().get(LeadStatus.NEGOTIATING)).contains(LeadStatus.WON);
     }
 
     private void stubCreatePipeline() {

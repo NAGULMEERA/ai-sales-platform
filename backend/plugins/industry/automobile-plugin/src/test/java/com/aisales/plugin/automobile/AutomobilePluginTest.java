@@ -12,6 +12,7 @@ class AutomobilePluginTest {
         var plugin = new AutomobilePlugin();
         assertThat(plugin.descriptor().getPluginKey()).isEqualTo("automobile");
         assertThat(plugin.descriptor().getType()).isEqualTo(PluginType.INDUSTRY);
+        assertThat(plugin.descriptor().getMinPlatformVersion()).isEqualTo("1.0.0");
         assertThat(plugin.getIndustryCode()).isEqualTo("AUTOMOBILE");
         assertThat(plugin.descriptor().getMetadata()).containsEntry("ownsMicroservice", false);
         assertThat(plugin.descriptor().getDefaultConfig())
@@ -31,6 +32,11 @@ class AutomobilePluginTest {
                 .containsEntry("defaultFollowupType", "TEST_DRIVE_FOLLOWUP")
                 .containsEntry("conversationSubjectTemplate", "Test-drive follow-up")
                 .containsEntry("inPersonEngagementLabel", "Test drive");
+        @SuppressWarnings("unchecked")
+        var template = (java.util.Map<String, Object>) plugin.descriptor().getDefaultConfig().get("pipelineTemplate");
+        assertThat(template).containsEntry("code", "AUTOMOBILE_SALES_V1");
+        assertThat(template.get("stages")).asList().isNotEmpty();
+        assertThat(template.get("transitions")).asList().isNotEmpty();
         assertThat(plugin.descriptor().getMetadata())
                 .containsEntry("industryQuoteType", false)
                 .containsEntry("industryConversationType", false);

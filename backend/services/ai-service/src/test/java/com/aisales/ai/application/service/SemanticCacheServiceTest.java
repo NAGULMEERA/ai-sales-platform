@@ -2,8 +2,6 @@ package com.aisales.ai.application.service;
 
 import com.aisales.ai.domain.cache.CachedLlmResponse;
 import com.aisales.ai.domain.embedding.EmbeddingProvider;
-import com.aisales.ai.domain.embedding.EmbeddingProviderKind;
-import com.aisales.ai.infrastructure.configuration.EmbeddingProperties;
 import com.aisales.ai.infrastructure.configuration.SemanticCacheProperties;
 import com.aisales.ai.infrastructure.embedding.EmbeddingProviderRegistry;
 import com.aisales.ai.infrastructure.persistence.SemanticCacheEntry;
@@ -53,12 +51,10 @@ class SemanticCacheServiceTest {
     @BeforeEach
     void setUp() {
         SemanticCacheProperties cacheProperties = new SemanticCacheProperties();
-        EmbeddingProperties embeddingProperties = new EmbeddingProperties();
         semanticCacheService = new SemanticCacheService(
                 cacheRepository,
                 vectorRepository,
                 providerRegistry,
-                embeddingProperties,
                 cacheProperties,
                 platformCacheService);
     }
@@ -75,7 +71,8 @@ class SemanticCacheServiceTest {
                 .hitCount(0)
                 .build();
 
-        when(cacheRepository.findByTenantIdAndQueryHashAndModelUsed(eq(tenantId), any(), eq("BAAI/bge-m3")))
+        when(cacheRepository.findByTenantIdAndPromptScopeAndQueryHashAndModelUsed(
+                        eq(tenantId), eq(""), any(), eq("BAAI/bge-m3")))
                 .thenReturn(Optional.of(entry));
         when(cacheRepository.save(entry)).thenReturn(entry);
 
@@ -88,9 +85,10 @@ class SemanticCacheServiceTest {
 
     @Test
     void shouldStoreResponseWithEmbedding() {
-        when(providerRegistry.resolve(EmbeddingProviderKind.OPEN_SOURCE, "BAAI/bge-m3")).thenReturn(embeddingProvider);
+        when(providerRegistry.resolveDefault()).thenReturn(embeddingProvider);
         when(embeddingProvider.embed(List.of("query"))).thenReturn(List.of(new float[] {0.1f, 0.2f}));
-        when(cacheRepository.findByTenantIdAndQueryHashAndModelUsed(eq(tenantId), any(), eq("BAAI/bge-m3")))
+        when(cacheRepository.findByTenantIdAndPromptScopeAndQueryHashAndModelUsed(
+                        eq(tenantId), eq("LEAD_QUALIFY|v1"), any(), eq("BAAI/bge-m3")))
                 .thenReturn(Optional.empty());
         when(cacheRepository.save(any())).thenAnswer(invocation -> {
             SemanticCacheEntry saved = invocation.getArgument(0);
@@ -100,6 +98,7 @@ class SemanticCacheServiceTest {
 
         semanticCacheService.put(
                 tenantId,
+                "LEAD_QUALIFY|v1",
                 "query",
                 CachedLlmResponse.builder().content("answer").model("BAAI/bge-m3").build(),
                 "BAAI/bge-m3");

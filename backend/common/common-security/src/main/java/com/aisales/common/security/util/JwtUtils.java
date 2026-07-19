@@ -37,6 +37,10 @@ public class JwtUtils {
         return claims.get(SecurityConstants.TENANT_ID_CLAIM, String.class);
     }
 
+    public String extractOrganizationId(Claims claims) {
+        return claims.get(SecurityConstants.ORGANIZATION_ID_CLAIM, String.class);
+    }
+
     @SuppressWarnings("unchecked")
     public Set<String> extractRoles(Claims claims) {
         List<String> roles = claims.get(SecurityConstants.ROLES_CLAIM, List.class);

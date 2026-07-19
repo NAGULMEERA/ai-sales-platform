@@ -23,10 +23,12 @@ public class SemanticCacheVectorRepository {
     }
 
     @SuppressWarnings("unchecked")
-    public Optional<UUID> findMostSimilarId(UUID tenantId, String model, float[] embedding, double maxCosineDistance) {
+    public Optional<UUID> findMostSimilarId(
+            UUID tenantId, String promptScope, String model, float[] embedding, double maxCosineDistance) {
         List<Object> rows = entityManager.createNativeQuery("""
                         SELECT id FROM semantic_cache
                         WHERE tenant_id = :tenantId
+                          AND prompt_scope = :promptScope
                           AND model_used = :model
                           AND query_embedding IS NOT NULL
                           AND (expires_at IS NULL OR expires_at > NOW())
@@ -35,6 +37,7 @@ public class SemanticCacheVectorRepository {
                         LIMIT 1
                         """)
                 .setParameter("tenantId", tenantId)
+                .setParameter("promptScope", promptScope != null ? promptScope : "")
                 .setParameter("model", model)
                 .setParameter("embedding", toVectorLiteral(embedding))
                 .setParameter("maxDistance", maxCosineDistance)

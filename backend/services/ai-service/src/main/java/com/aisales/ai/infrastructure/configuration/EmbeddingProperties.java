@@ -8,16 +8,35 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "aisales.ai.embedding")
 public class EmbeddingProperties {
 
-    /** Default when tenant has no override: OPEN_SOURCE (BGE-M3). */
+    /**
+     * Active provider key resolved by {@code EmbeddingProviderRegistry}.
+     * Plug/flag switch: {@code STUB} | {@code TEI} | {@code OPENAI}.
+     * Matching bean must be enabled ({@code stub.enabled} / {@code open-source.enabled} /
+     * {@code commercial.enabled}).
+     */
+    private String provider = "STUB";
+
+    /**
+     * Legacy kind hint for request overrides that omit an explicit provider key.
+     * Prefer {@link #provider} for the platform default.
+     */
     private EmbeddingProviderKind defaultProviderKind = EmbeddingProviderKind.OPEN_SOURCE;
 
-    private String defaultModel = "BAAI/bge-m3";
+    private String defaultModel = "stub-embedding-1024";
 
     private int defaultDimension = 1024;
+
+    private Stub stub = new Stub();
 
     private OpenSource openSource = new OpenSource();
 
     private Commercial commercial = new Commercial();
+
+    @Data
+    public static class Stub {
+        /** When false, stub bean is not registered. */
+        private boolean enabled = false;
+    }
 
     @Data
     public static class OpenSource {

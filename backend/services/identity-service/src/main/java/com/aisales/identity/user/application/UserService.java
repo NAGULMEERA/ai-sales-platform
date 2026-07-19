@@ -3,6 +3,7 @@ package com.aisales.identity.user.application;
 import com.aisales.common.contracts.user.CreateUserRequest;
 import com.aisales.common.contracts.user.UserDto;
 import com.aisales.common.core.util.CorrelationIdUtils;
+import com.aisales.common.core.util.EmailNormalizer;
 import com.aisales.common.events.model.UserCreatedEvent;
 import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.NotFoundException;
@@ -33,13 +34,14 @@ public class UserService {
 
     @Transactional
     public UserDto createUser(UUID tenantId, CreateUserRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String email = EmailNormalizer.normalize(request.getEmail());
+        if (userRepository.existsByEmail(email)) {
             throw new ValidationException("Email already registered");
         }
         Set<String> roles = request.getRoles() != null ? request.getRoles() : Set.of("USER");
         User user = User.builder()
                 .tenantId(tenantId)
-                .email(request.getEmail())
+                .email(email)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())

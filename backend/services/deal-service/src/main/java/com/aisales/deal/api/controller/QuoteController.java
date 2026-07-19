@@ -2,6 +2,7 @@ package com.aisales.deal.api.controller;
 
 import com.aisales.common.contracts.deal.CreateQuoteRequest;
 import com.aisales.common.contracts.deal.QuoteDto;
+import com.aisales.common.core.constant.ApiConstants;
 import com.aisales.common.core.dto.ApiResponse;
 import com.aisales.deal.application.service.QuoteService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,8 +30,10 @@ public class QuoteController {
     @PostMapping("/api/v1/quotes")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create a quote (snapshots catalog offer prices)")
-    public ApiResponse<QuoteDto> create(@Valid @RequestBody CreateQuoteRequest request) {
-        return ApiResponse.ok(quoteService.create(request));
+    public ApiResponse<QuoteDto> create(
+            @Valid @RequestBody CreateQuoteRequest request,
+            @RequestHeader(value = ApiConstants.IDEMPOTENCY_KEY_HEADER, required = false) String idempotencyKey) {
+        return ApiResponse.ok(quoteService.create(request, idempotencyKey));
     }
 
     @GetMapping("/api/v1/quotes/{id}")

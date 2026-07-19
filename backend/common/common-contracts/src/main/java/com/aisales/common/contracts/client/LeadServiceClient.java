@@ -1,5 +1,6 @@
 package com.aisales.common.contracts.client;
 
+import com.aisales.common.contracts.lead.AiLeadQualificationResultDto;
 import com.aisales.common.contracts.lead.AssignLeadRequest;
 import com.aisales.common.contracts.lead.ChangeLeadStatusRequest;
 import com.aisales.common.contracts.lead.ConvertLeadRequest;
@@ -8,6 +9,7 @@ import com.aisales.common.contracts.lead.LeadDto;
 import com.aisales.common.contracts.lead.LeadStatus;
 import com.aisales.common.contracts.lead.LoseLeadRequest;
 import com.aisales.common.contracts.lead.QualifyLeadRequest;
+import com.aisales.common.contracts.lead.QualifyLeadWithAiRequest;
 import com.aisales.common.contracts.lead.ScoreLeadRequest;
 import com.aisales.common.contracts.lead.UpdateLeadRequest;
 import com.aisales.common.core.dto.ApiResponse;
@@ -22,7 +24,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "lead-service", path = "/api/v1/leads")
+@FeignClient(
+        name = "lead-service",
+        path = "/api/v1/leads",
+        url = "${aisales.clients.lead-service.url:}")
 public interface LeadServiceClient {
 
     @PostMapping
@@ -54,6 +59,10 @@ public interface LeadServiceClient {
 
     @PostMapping("/{id}/qualify")
     ApiResponse<LeadDto> qualifyLead(@PathVariable UUID id, @RequestBody QualifyLeadRequest request);
+
+    @PostMapping("/{id}/ai-qualification")
+    ApiResponse<AiLeadQualificationResultDto> qualifyWithAi(
+            @PathVariable UUID id, @RequestBody QualifyLeadWithAiRequest request);
 
     @PostMapping("/{id}/contact")
     ApiResponse<LeadDto> contactLead(@PathVariable UUID id, @RequestParam(required = false) String channel);

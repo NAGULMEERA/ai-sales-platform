@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.aisales.ai.application.mapper.AiMapper;
 import com.aisales.ai.domain.entity.PromptTemplate;
 import com.aisales.ai.domain.entity.PromptVersionEntity;
+import com.aisales.ai.domain.prompt.PlatformPromptConstants;
 import com.aisales.ai.infrastructure.persistence.PromptTemplateRepository;
 import com.aisales.ai.infrastructure.persistence.PromptVersionRepository;
 import com.aisales.common.contracts.ai.CreatePromptRequest;
@@ -138,5 +139,47 @@ class PromptServiceTest {
         assertThat(version.getVersionNumber()).isEqualTo(2);
         assertThat(version.getStatus()).isEqualTo(PromptStatus.ACTIVE);
         assertThat(template.getActiveVersion()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldResolvePlatformSeedWhenTenantHasNoOverride() {
+        UUID platformPromptId = UUID.randomUUID();
+        PromptTemplate platformTemplate = PromptTemplate.builder()
+                .id(platformPromptId)
+                .tenantId(PlatformPromptConstants.PLATFORM_TENANT_ID)
+                .code("LEAD_QUALIFY_REAL_ESTATE")
+                .name("RE Qualify")
+                .purpose("LEAD_QUALIFICATION")
+                .status(PromptStatus.ACTIVE)
+                .activeVersion(1)
+                .createdAt(java.time.Instant.now())
+                .updatedAt(java.time.Instant.now())
+                .build();
+        PromptVersionEntity platformVersion = PromptVersionEntity.builder()
+                .id(UUID.randomUUID())
+                .tenantId(PlatformPromptConstants.PLATFORM_TENANT_ID)
+                .promptId(platformPromptId)
+                .versionNumber(1)
+                .userTemplate("Qualify RE lead {{budget}}")
+                .variables(List.of("budget"))
+                .status(PromptStatus.ACTIVE)
+                .createdAt(java.time.Instant.now())
+                .build();
+
+        when(promptTemplateRepository.findByTenantIdAndCodeAndDeletedAtIsNull(
+                        tenantId, "LEAD_QUALIFY_REAL_ESTATE"))
+                .thenReturn(Optional.empty());
+        when(promptTemplateRepository.findByTenantIdAndCodeAndDeletedAtIsNull(
+                        PlatformPromptConstants.PLATFORM_TENANT_ID, "LEAD_QUALIFY_REAL_ESTATE"))
+                .thenReturn(Optional.of(platformTemplate));
+        when(promptVersionRepository.findByTenantIdAndPromptIdAndVersionNumber(
+                        PlatformPromptConstants.PLATFORM_TENANT_ID, platformPromptId, 1))
+                .thenReturn(Optional.of(platformVersion));
+
+        PromptService.ResolvedPrompt resolved =
+                promptService.resolveForExecution("LEAD_QUALIFY_REAL_ESTATE", null, null);
+
+        assertThat(resolved.template().getTenantId()).isEqualTo(PlatformPromptConstants.PLATFORM_TENANT_ID);
+        assertThat(resolved.version().getUserTemplate()).contains("{{budget}}");
     }
 }

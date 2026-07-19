@@ -1,0 +1,13 @@
+aisales:
+  media:
+    # Plug/flag — change only `storage` (LOCAL | S3).
+    # Dev default: LOCAL (free). Prod: storage=S3 + s3.enabled=true.
+    storage: LOCAL
+    local:
+      base-path: ./data/media-local
+    s3:
+      enabled: false
+
+logging:
+  level:
+    com.aisales.media: INFO

@@ -53,8 +53,10 @@ public class EmailDeliveryService {
                         StructuredArguments.kv("error", ex.getMessage()));
                 throw ex;
             }
-            log.info("Email sent via SMTP to {} template={} tenantId={} {} {}",
-                    request.getRecipientEmail(), request.getTemplateCode(), request.getTenantId(),
+            log.info("Email sent via SMTP template={} tenantId={} recipient={} {} {}",
+                    request.getTemplateCode(),
+                    request.getTenantId(),
+                    redactEmail(request.getRecipientEmail()),
                     StructuredArguments.kv("target_service", targetService),
                     StructuredArguments.kv("elapsed_ms", OutboundCallDiagnostics.elapsedMillisSince(startedAtMs)));
             return;
@@ -71,10 +73,22 @@ public class EmailDeliveryService {
                 ====================================================
                 """,
                 notificationProperties.getDeliveryMode(),
-                request.getRecipientEmail(),
+                redactEmail(request.getRecipientEmail()),
                 request.getTenantId(),
                 request.getTemplateCode(),
                 rendered.subject(),
                 rendered.body());
+    }
+
+    /** Redacts local-part for structured logs (keeps domain for ops diagnosis). */
+    static String redactEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return "(none)";
+        }
+        int at = email.indexOf('@');
+        if (at <= 0 || at == email.length() - 1) {
+            return "***";
+        }
+        return "***@" + email.substring(at + 1);
     }
 }

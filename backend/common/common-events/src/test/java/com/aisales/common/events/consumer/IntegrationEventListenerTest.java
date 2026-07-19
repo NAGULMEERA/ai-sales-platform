@@ -18,6 +18,7 @@ import org.springframework.transaction.support.DefaultTransactionStatus;
 
 import java.util.function.Consumer;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -75,21 +76,37 @@ class IntegrationEventListenerTest {
             throw new IllegalStateException("should not process");
         });
 
-        verify(inboxService, never()).markProcessed(any(), any());
+        verify(inboxService, never()).tryClaim(any(), any());
     }
 
     @Test
-    void shouldProcessAndMarkEvent() throws Exception {
+    void shouldProcessAndClaimEvent() throws Exception {
         TenantCreatedEvent event = TenantCreatedEvent.of(
                 "tenant-1", "Acme", "acme", "FREE", "REAL_ESTATE", "corr-1");
         String payload = objectMapper.writeValueAsString(event);
         ConsumerRecord<String, String> record = new ConsumerRecord<>("aisales-events", 0, 0L, "tenant-1", payload);
         when(inboxService.isProcessed(event.getEventId(), "tenant-service")).thenReturn(false);
+        when(inboxService.tryClaim(event.getEventId(), "tenant-service")).thenReturn(true);
 
         integrationEventListener.handle(record, "tenant-service", TenantCreatedEvent.class, e -> {
         });
 
-        verify(inboxService).markProcessed(eq(event.getEventId()), eq("tenant-service"));
+        verify(inboxService).tryClaim(eq(event.getEventId()), eq("tenant-service"));
+    }
+
+    @Test
+    void shouldSkipWhenConcurrentClaimLoses() throws Exception {
+        TenantCreatedEvent event = TenantCreatedEvent.of(
+                "tenant-1", "Acme", "acme", "FREE", "REAL_ESTATE", "corr-1");
+        String payload = objectMapper.writeValueAsString(event);
+        ConsumerRecord<String, String> record = new ConsumerRecord<>("aisales-events", 0, 0L, "tenant-1", payload);
+        when(inboxService.isProcessed(event.getEventId(), "tenant-service")).thenReturn(false);
+        when(inboxService.tryClaim(event.getEventId(), "tenant-service")).thenReturn(false);
+        Consumer<TenantCreatedEvent> handler = mock(Consumer.class);
+
+        integrationEventListener.handle(record, "tenant-service", TenantCreatedEvent.class, handler);
+
+        verify(handler, never()).accept(any());
     }
 
     @Test
@@ -101,7 +118,9 @@ class IntegrationEventListenerTest {
         ConsumerRecord<String, String> record = new ConsumerRecord<>("aisales-events", 0, 0L, "tenant-1", payload);
         Consumer<TenantCreatedEvent> handler = mock(Consumer.class);
 
-        integrationEventListener.handle(record, "tenant-service", TenantCreatedEvent.class, handler);
+        assertThatThrownBy(() ->
+                integrationEventListener.handle(record, "tenant-service", TenantCreatedEvent.class, handler))
+                .isInstanceOf(IntegrationEventProcessingException.class);
 
         verify(handler, never()).accept(any());
         verify(inboxService, never()).isProcessed(any(), any());
@@ -119,11 +138,14 @@ class IntegrationEventListenerTest {
         Consumer<TenantCreatedEvent> handler = mock(Consumer.class);
         doThrow(new IllegalStateException("poison message")).when(handler).accept(any());
         when(inboxService.isProcessed(event.getEventId(), "tenant-service")).thenReturn(false);
+        when(inboxService.tryClaim(event.getEventId(), "tenant-service")).thenReturn(true);
 
-        integrationEventListener.handle(record, "tenant-service", TenantCreatedEvent.class, handler);
+        assertThatThrownBy(() ->
+                integrationEventListener.handle(record, "tenant-service", TenantCreatedEvent.class, handler))
+                .isInstanceOf(IntegrationEventProcessingException.class);
 
         verify(handler, times(3)).accept(any());
-        verify(inboxService, never()).markProcessed(any(), any());
+        verify(inboxService, times(3)).tryClaim(eq(event.getEventId()), eq("tenant-service"));
         verify(deadLetterService).recordFailure(eq(record), eq("tenant-service"), eq(event.getEventId()),
                 eq("TenantCreated"), eq(3), any());
     }

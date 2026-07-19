@@ -55,7 +55,20 @@ class IndustryOpportunityQuoteFlowTest {
         DealMapper mapper = new DealMapper();
         opportunityService = new OpportunityService(opportunityRepository, mapper, eventPublisher);
         quoteService = new QuoteService(
-                quoteRepository, opportunityService, catalogQuoteGateway, mapper, eventPublisher);
+                quoteRepository, opportunityService, catalogQuoteGateway, mapper, eventPublisher,
+                noopTxManager(), org.mockito.Mockito.mock(QuoteIdempotencyService.class));
+    }
+
+    private static org.springframework.transaction.PlatformTransactionManager noopTxManager() {
+        return new org.springframework.transaction.support.AbstractPlatformTransactionManager() {
+            @Override protected Object doGetTransaction() { return new Object(); }
+            @Override protected void doBegin(Object transaction,
+                    org.springframework.transaction.TransactionDefinition definition) {}
+            @Override protected void doCommit(
+                    org.springframework.transaction.support.DefaultTransactionStatus status) {}
+            @Override protected void doRollback(
+                    org.springframework.transaction.support.DefaultTransactionStatus status) {}
+        };
     }
 
     @AfterEach

@@ -13,11 +13,9 @@ import com.aisales.identity.authentication.domain.entity.RefreshToken;
 import com.aisales.identity.authentication.infrastructure.persistence.RefreshTokenRepository;
 import com.aisales.identity.session.application.SessionService;
 
-
-
 /**
  * Opaque refresh tokens with rotation and family-based reuse detection.
- * Each login starts a new token family; rotation keeps the same family id.
+ * Only SHA-256 digests of token values are persisted.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,7 +32,7 @@ public class RefreshTokenService {
         UUID familyId = UUID.randomUUID();
         RefreshToken refreshToken = RefreshToken.builder()
                 .userId(userId)
-                .token(token)
+                .token(RefreshTokenHasher.sha256Hex(token))
                 .tokenFamilyId(familyId)
                 .expiresAt(Instant.now().plusMillis(refreshTokenExpirationMs))
                 .revoked(false)
@@ -49,8 +47,9 @@ public class RefreshTokenService {
      */
     @Transactional
     public RefreshToken rotate(String presentedToken, String newTokenValue) {
-        RefreshToken active = refreshTokenRepository.findActiveForUpdate(presentedToken)
-                .orElseThrow(() -> handleInvalidOrReuse(presentedToken));
+        String presentedHash = RefreshTokenHasher.sha256Hex(presentedToken);
+        RefreshToken active = refreshTokenRepository.findActiveForUpdate(presentedHash)
+                .orElseThrow(() -> handleInvalidOrReuse(presentedHash));
         if (active.getExpiresAt().isBefore(Instant.now())) {
             throw new UnauthorizedException("Refresh token expired");
         }
@@ -60,7 +59,7 @@ public class RefreshTokenService {
 
         RefreshToken rotated = RefreshToken.builder()
                 .userId(active.getUserId())
-                .token(newTokenValue)
+                .token(RefreshTokenHasher.sha256Hex(newTokenValue))
                 .tokenFamilyId(active.getTokenFamilyId())
                 .expiresAt(Instant.now().plusMillis(refreshTokenExpirationMs))
                 .revoked(false)
@@ -70,7 +69,8 @@ public class RefreshTokenService {
 
     @Transactional
     public void revokeToken(String token) {
-        refreshTokenRepository.findByTokenAndRevokedFalse(token).ifPresent(rt -> {
+        String hash = RefreshTokenHasher.sha256Hex(token);
+        refreshTokenRepository.findByTokenAndRevokedFalse(hash).ifPresent(rt -> {
             rt.setRevoked(true);
             refreshTokenRepository.save(rt);
             sessionService.revokeSessionByRefreshTokenId(rt.getId());
@@ -94,8 +94,8 @@ public class RefreshTokenService {
         });
     }
 
-    private RuntimeException handleInvalidOrReuse(String token) {
-        return refreshTokenRepository.findByToken(token)
+    private RuntimeException handleInvalidOrReuse(String tokenHash) {
+        return refreshTokenRepository.findByToken(tokenHash)
                 .filter(RefreshToken::isRevoked)
                 .map(revoked -> {
                     revokeTokenFamily(revoked.getTokenFamilyId());

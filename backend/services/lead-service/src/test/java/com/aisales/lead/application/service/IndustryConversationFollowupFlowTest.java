@@ -34,6 +34,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
 
 /**
  * Sprint 6: same follow-up + timeline APIs; visit vs test-drive differ only by followupType metadata.
@@ -73,7 +77,7 @@ class IndustryConversationFollowupFlowTest {
                 leadRepository, assignmentRepository, noteRepository, activityRepository,
                 followupRepository, scoreRepository, statusHistoryRepository, duplicateRepository,
                 mapper, eventPublisher, new LeadStateMachine(), sideEffects, duplicateDetection,
-                assignmentPoolService, pipelineService, customerConversionGateway);
+                assignmentPoolService, pipelineService, customerConversionGateway, noopTxManager(), org.mockito.Mockito.mock(LeadIdempotencyService.class));
         timelineService = new LeadConversationTimelineService(sideEffects);
     }
 
@@ -160,5 +164,14 @@ class IndustryConversationFollowupFlowTest {
                         .createdAt(Instant.now())
                         .updatedAt(Instant.now())
                         .build()));
+    }
+
+    private static PlatformTransactionManager noopTxManager() {
+        return new AbstractPlatformTransactionManager() {
+            @Override protected Object doGetTransaction() { return new Object(); }
+            @Override protected void doBegin(Object transaction, TransactionDefinition definition) {}
+            @Override protected void doCommit(DefaultTransactionStatus status) {}
+            @Override protected void doRollback(DefaultTransactionStatus status) {}
+        };
     }
 }

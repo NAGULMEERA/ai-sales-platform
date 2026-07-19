@@ -34,6 +34,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
 
 @ExtendWith(MockitoExtension.class)
 class LeadServiceTest {
@@ -71,7 +75,7 @@ class LeadServiceTest {
                 leadRepository, assignmentRepository, noteRepository, activityRepository,
                 followupRepository, scoreRepository, statusHistoryRepository, duplicateRepository,
                 mapper, eventPublisher, stateMachine, sideEffects, duplicateDetection,
-                assignmentPoolService, pipelineService, customerConversionGateway);
+                assignmentPoolService, pipelineService, customerConversionGateway, noopTxManager(), org.mockito.Mockito.mock(LeadIdempotencyService.class));
     }
 
     @AfterEach
@@ -182,5 +186,14 @@ class LeadServiceTest {
         ArgumentCaptor<Lead> leadCaptor = ArgumentCaptor.forClass(Lead.class);
         verify(leadRepository).saveAndFlush(leadCaptor.capture());
         assertThat(leadCaptor.getValue().getAttributes()).containsEntry("financeRequired", true);
+    }
+
+    private static PlatformTransactionManager noopTxManager() {
+        return new AbstractPlatformTransactionManager() {
+            @Override protected Object doGetTransaction() { return new Object(); }
+            @Override protected void doBegin(Object transaction, TransactionDefinition definition) {}
+            @Override protected void doCommit(DefaultTransactionStatus status) {}
+            @Override protected void doRollback(DefaultTransactionStatus status) {}
+        };
     }
 }

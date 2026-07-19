@@ -21,6 +21,8 @@ public final class MetricNames {
     public static final String EVENT_DLQ = "platform_event_dlq_total";
     public static final String KAFKA_PUBLISH_LATENCY = "platform_kafka_publish_latency";
     public static final String OUTBOX_PENDING = "platform_outbox_pending";
+    public static final String OUTBOX_DISPATCHING = "platform_outbox_dispatching";
+    public static final String OUTBOX_FAILED = "platform_outbox_failed";
     public static final String OUTBOX_DISPATCHED = "platform_outbox_dispatched_total";
 
     // Auth / JWT
@@ -39,6 +41,12 @@ public final class MetricNames {
     public static final String AI_REQUEST = "ai_request_total";
     public static final String AI_TOKENS = "ai_tokens_total";
     public static final String AI_SLOW_REQUEST = "ai_slow_request_total";
+
+    // Billing
+    public static final String BILLING_INVOICE_CREATED = "billing_invoice_created_total";
+    public static final String BILLING_INVOICE_ISSUED = "billing_invoice_issued_total";
+    public static final String BILLING_PAYMENT_CREATED = "billing_payment_created_total";
+    public static final String BILLING_STRIPE_WEBHOOK = "billing_stripe_webhook_total";
 
     private MetricNames() {
     }

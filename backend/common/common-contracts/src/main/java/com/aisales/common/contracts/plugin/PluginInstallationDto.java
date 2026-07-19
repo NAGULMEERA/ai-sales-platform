@@ -18,6 +18,8 @@ public class PluginInstallationDto {
     private UUID id;
     private UUID tenantId;
     private String pluginKey;
+    /** Catalog type when known (INDUSTRY / CAPABILITY). */
+    private PluginTypeDto pluginType;
     private String version;
     private PluginInstallationStatus status;
     @Builder.Default

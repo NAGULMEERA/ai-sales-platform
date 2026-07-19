@@ -73,7 +73,20 @@ class LeadAssignmentPoolServiceTest {
                 followupRepository, scoreRepository, statusHistoryRepository, duplicateRepository,
                 mapper, eventPublisher, new LeadStateMachine(), sideEffects, duplicateDetection,
                 poolService, org.mockito.Mockito.mock(PipelineService.class),
-                org.mockito.Mockito.mock(LeadCustomerConversionGateway.class));
+                org.mockito.Mockito.mock(LeadCustomerConversionGateway.class),
+                noopTxManager(), org.mockito.Mockito.mock(LeadIdempotencyService.class));
+    }
+
+    private static org.springframework.transaction.PlatformTransactionManager noopTxManager() {
+        return new org.springframework.transaction.support.AbstractPlatformTransactionManager() {
+            @Override protected Object doGetTransaction() { return new Object(); }
+            @Override protected void doBegin(Object transaction,
+                    org.springframework.transaction.TransactionDefinition definition) {}
+            @Override protected void doCommit(
+                    org.springframework.transaction.support.DefaultTransactionStatus status) {}
+            @Override protected void doRollback(
+                    org.springframework.transaction.support.DefaultTransactionStatus status) {}
+        };
     }
 
     @AfterEach

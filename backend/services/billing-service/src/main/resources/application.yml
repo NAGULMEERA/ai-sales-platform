@@ -23,6 +23,24 @@ eureka:
     service-url:
       defaultZone: http://localhost:8761/eureka/
 
+aisales:
+  clients:
+    ai-service:
+      url: http://localhost:8088
+  billing:
+    payment:
+      # Plug/flag: STUB | STRIPE
+      provider: STUB
+      stub:
+        enabled: true
+      stripe:
+        enabled: false
+        api-key: ${STRIPE_API_KEY:}
+        auto-confirm: false
+        default-payment-method: pm_card_visa
+        webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+        webhook-tolerance-seconds: 300
+
 management:
   endpoints:
     web:

@@ -18,6 +18,7 @@ public class EmailChannelPlugin implements CapabilityPlugin {
             .pluginKey(PLUGIN_KEY)
             .type(PluginType.CAPABILITY)
             .version("1.0.0")
+            .minPlatformVersion("1.0.0")
             .displayName("Email Channel")
             .description("Capability metadata for email notification delivery. SMTP remains in notification-service.")
             .capabilities(List.of("notification.email"))

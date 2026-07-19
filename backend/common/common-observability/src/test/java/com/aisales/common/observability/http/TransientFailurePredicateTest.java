@@ -69,4 +69,30 @@ class TransientFailurePredicateTest {
     void shouldHandleNullSafely() {
         assertThat(predicate.test(null)).isFalse();
     }
+
+    @Test
+    void shouldTreatSmtp421AsTransient() {
+        assertThat(predicate.test(new FakeMailSendException("421 Service not available"))).isTrue();
+    }
+
+    @Test
+    void shouldNotRetrySmtpAuthenticationFailure() {
+        assertThat(predicate.test(new FakeMailAuthenticationException("535 Authentication failed")))
+                .isFalse();
+    }
+
+    /** Class name must end with MailSendException for predicate matching. */
+    @SuppressWarnings("serial")
+    static final class FakeMailSendException extends RuntimeException {
+        FakeMailSendException(String message) {
+            super(message);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    static final class FakeMailAuthenticationException extends RuntimeException {
+        FakeMailAuthenticationException(String message) {
+            super(message);
+        }
+    }
 }

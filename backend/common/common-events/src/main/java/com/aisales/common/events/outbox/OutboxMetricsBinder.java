@@ -24,5 +24,13 @@ public class OutboxMetricsBinder {
                         repo -> repo.countByStatus(OutboxEvent.OutboxStatus.PENDING))
                 .description("Pending outbox events awaiting dispatch")
                 .register(meterRegistry);
+        Gauge.builder(MetricNames.OUTBOX_DISPATCHING, outboxRepository,
+                        repo -> repo.countByStatus(OutboxEvent.OutboxStatus.DISPATCHING))
+                .description("Outbox events claimed for dispatch (includes stale until reclaimed)")
+                .register(meterRegistry);
+        Gauge.builder(MetricNames.OUTBOX_FAILED, outboxRepository,
+                        repo -> repo.countByStatus(OutboxEvent.OutboxStatus.FAILED))
+                .description("Outbox events permanently failed after max retries")
+                .register(meterRegistry);
     }
 }

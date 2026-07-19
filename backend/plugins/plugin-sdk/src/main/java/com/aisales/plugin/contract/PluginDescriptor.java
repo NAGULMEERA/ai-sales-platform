@@ -15,6 +15,8 @@ public final class PluginDescriptor {
     private final String pluginKey;
     private final PluginType type;
     private final String version;
+    /** Minimum platform semver required to enable this plugin. */
+    private final String minPlatformVersion;
     private final String displayName;
     private final String description;
     private final List<String> capabilities;
@@ -27,6 +29,9 @@ public final class PluginDescriptor {
         this.pluginKey = Objects.requireNonNull(builder.pluginKey, "pluginKey");
         this.type = Objects.requireNonNull(builder.type, "type");
         this.version = Objects.requireNonNull(builder.version, "version");
+        this.minPlatformVersion = builder.minPlatformVersion != null && !builder.minPlatformVersion.isBlank()
+                ? builder.minPlatformVersion.trim()
+                : "1.0.0";
         this.displayName = Objects.requireNonNull(builder.displayName, "displayName");
         this.description = builder.description;
         this.capabilities = List.copyOf(builder.capabilities);
@@ -49,6 +54,10 @@ public final class PluginDescriptor {
 
     public String getVersion() {
         return version;
+    }
+
+    public String getMinPlatformVersion() {
+        return minPlatformVersion;
     }
 
     public String getDisplayName() {
@@ -87,6 +96,7 @@ public final class PluginDescriptor {
         private String pluginKey;
         private PluginType type;
         private String version;
+        private String minPlatformVersion = "1.0.0";
         private String displayName;
         private String description;
         private List<String> capabilities = List.of();
@@ -107,6 +117,11 @@ public final class PluginDescriptor {
 
         public Builder version(String version) {
             this.version = version;
+            return this;
+        }
+
+        public Builder minPlatformVersion(String minPlatformVersion) {
+            this.minPlatformVersion = minPlatformVersion;
             return this;
         }
 

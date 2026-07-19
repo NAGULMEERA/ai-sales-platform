@@ -20,11 +20,14 @@ import com.aisales.deal.domain.entity.Quote;
 import com.aisales.deal.domain.entity.QuoteLineItem;
 import com.aisales.deal.infrastructure.persistence.QuoteRepository;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 @Service
@@ -36,19 +39,68 @@ public class QuoteService {
     private final CatalogQuoteGateway catalogQuoteGateway;
     private final DealMapper mapper;
     private final EventPublisher eventPublisher;
+    private final PlatformTransactionManager transactionManager;
+    private final QuoteIdempotencyService quoteIdempotencyService;
 
-    @Transactional
+    /**
+     * Catalog Feign lookups run outside the DB transaction; quote persist is a short local TX.
+     */
     public QuoteDto create(CreateQuoteRequest request) {
-        UUID tenantId = requireTenantId();
-        UUID actor = actorId();
-        Instant now = Instant.now();
+        return create(request, null);
+    }
 
+    public QuoteDto create(CreateQuoteRequest request, String idempotencyKey) {
+        if (StringUtils.hasText(idempotencyKey)) {
+            var cached = quoteIdempotencyService.findCachedCreateResponse(idempotencyKey);
+            if (cached.isPresent()) {
+                return cached.get();
+            }
+        }
+
+        UUID tenantId = requireTenantId();
         Opportunity opportunity = opportunityService.requireOpportunity(request.getOpportunityId());
         if (opportunity.isTerminal()) {
             throw new ValidationException("Cannot quote a terminal opportunity");
         }
 
-        // Supersede prior DRAFT/SENT quotes when creating a new version.
+        String currency = StringUtils.hasText(request.getCurrency())
+                ? request.getCurrency().trim().toUpperCase()
+                : opportunity.getCurrency();
+
+        List<QuoteLineItem> lineItems = new ArrayList<>();
+        for (QuoteLineItemRequest lineRequest : request.getLineItems()) {
+            lineItems.add(resolveLineItem(lineRequest, currency));
+        }
+
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            if (StringUtils.hasText(idempotencyKey)) {
+                var cached = quoteIdempotencyService.beginCreate(idempotencyKey);
+                if (cached.isPresent()) {
+                    return cached.get();
+                }
+            }
+            QuoteDto created = persistNewQuote(tenantId, opportunity.getId(), currency, request, lineItems);
+            if (StringUtils.hasText(idempotencyKey)) {
+                quoteIdempotencyService.storeCreateResponse(idempotencyKey, created.getId(), created);
+            }
+            return created;
+        });
+    }
+
+    private QuoteDto persistNewQuote(
+            UUID tenantId,
+            UUID opportunityId,
+            String currency,
+            CreateQuoteRequest request,
+            List<QuoteLineItem> lineItems) {
+        UUID actor = actorId();
+        Instant now = Instant.now();
+
+        Opportunity opportunity = opportunityService.requireOpportunity(opportunityId);
+        if (opportunity.isTerminal()) {
+            throw new ValidationException("Cannot quote a terminal opportunity");
+        }
+
         List<Quote> existing = quoteRepository
                 .findByTenantIdAndOpportunityIdAndDeletedAtIsNullOrderByQuoteVersionDesc(
                         tenantId, opportunity.getId());
@@ -60,9 +112,6 @@ public class QuoteService {
         }
 
         int nextVersion = quoteRepository.findMaxVersion(tenantId, opportunity.getId()) + 1;
-        String currency = StringUtils.hasText(request.getCurrency())
-                ? request.getCurrency().trim().toUpperCase()
-                : opportunity.getCurrency();
 
         Quote quote = Quote.builder()
                 .tenantId(tenantId)
@@ -78,8 +127,8 @@ public class QuoteService {
                 .updatedBy(actor)
                 .build();
 
-        for (QuoteLineItemRequest lineRequest : request.getLineItems()) {
-            quote.addLineItem(resolveLineItem(lineRequest, currency));
+        for (QuoteLineItem lineItem : lineItems) {
+            quote.addLineItem(lineItem);
         }
 
         Quote saved = quoteRepository.saveAndFlush(quote);
@@ -97,14 +146,16 @@ public class QuoteService {
 
     @Transactional(readOnly = true)
     public QuoteDto get(UUID id) {
-        return mapper.toDto(requireQuote(id));
+        return mapper.toDto(quoteRepository
+                .findWithLineItemsByTenantIdAndId(requireTenantId(), id)
+                .orElseThrow(() -> new NotFoundException("Quote not found: " + id)));
     }
 
     @Transactional(readOnly = true)
     public List<QuoteDto> listByOpportunity(UUID opportunityId) {
         opportunityService.requireOpportunity(opportunityId);
         return mapper.toQuoteDtos(
-                quoteRepository.findByTenantIdAndOpportunityIdAndDeletedAtIsNullOrderByQuoteVersionDesc(
+                quoteRepository.findWithLineItemsByTenantIdAndOpportunityId(
                         requireTenantId(), opportunityId));
     }
 
@@ -165,7 +216,7 @@ public class QuoteService {
     }
 
     private Quote requireQuote(UUID id) {
-        return quoteRepository.findByTenantIdAndIdAndDeletedAtIsNull(requireTenantId(), id)
+        return quoteRepository.findWithLineItemsByTenantIdAndId(requireTenantId(), id)
                 .orElseThrow(() -> new NotFoundException("Quote not found: " + id));
     }
 

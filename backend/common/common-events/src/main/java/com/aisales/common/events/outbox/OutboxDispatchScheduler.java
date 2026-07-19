@@ -6,11 +6,14 @@ import com.aisales.common.observability.metrics.PlatformMetrics;
 import jakarta.annotation.PreDestroy;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.ObjectProvider;
@@ -60,14 +63,36 @@ public class OutboxDispatchScheduler {
         if (claimed.isEmpty()) {
             return;
         }
-        List<CompletableFuture<Void>> futures = new ArrayList<>(claimed.size());
-        for (OutboxEvent event : claimed) {
-            futures.add(CompletableFuture.runAsync(() -> dispatchOne(event), dispatcherExecutor));
+        // Parallel across aggregate keys; sequential within each aggregate (preserves order).
+        Map<String, List<OutboxEvent>> byAggregate = claimed.stream()
+                .collect(Collectors.groupingBy(
+                        this::aggregateKey,
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>(byAggregate.size());
+        for (List<OutboxEvent> group : byAggregate.values()) {
+            futures.add(CompletableFuture.runAsync(() -> {
+                for (OutboxEvent event : group) {
+                    if (!dispatchOne(event)) {
+                        // Stop this aggregate chain; later events stay PENDING until predecessors clear.
+                        break;
+                    }
+                }
+            }, dispatcherExecutor));
         }
         CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
     }
 
-    private void dispatchOne(OutboxEvent outboxEvent) {
+    private String aggregateKey(OutboxEvent event) {
+        if (event.getAggregateId() != null && !event.getAggregateId().isBlank()) {
+            return event.getAggregateType() + ":" + event.getAggregateId();
+        }
+        return event.getId() != null ? event.getId().toString() : "unknown";
+    }
+
+    /** @return true when published; false when retrying or permanently failed */
+    private boolean dispatchOne(OutboxEvent outboxEvent) {
         io.micrometer.core.instrument.Timer.Sample sample =
                 platformMetrics != null ? platformMetrics.startTimer() : null;
         try {
@@ -77,14 +102,17 @@ public class OutboxDispatchScheduler {
             outboxKafkaSender.send(record);
             outboxEvent.setStatus(OutboxEvent.OutboxStatus.PUBLISHED);
             outboxEvent.setPublishedAt(Instant.now());
+            outboxEvent.setClaimedAt(null);
             claimService.save(outboxEvent);
             if (platformMetrics != null) {
                 platformMetrics.increment(MetricNames.OUTBOX_DISPATCHED, "status", "published");
             }
+            return true;
         } catch (Exception ex) {
             outboxEvent.setRetryCount(outboxEvent.getRetryCount() + 1);
             if (outboxEvent.getRetryCount() >= maxRetries) {
                 outboxEvent.setStatus(OutboxEvent.OutboxStatus.FAILED);
+                outboxEvent.setClaimedAt(null);
                 log.error("Outbox event {} permanently failed after {} retries",
                         outboxEvent.getId(), outboxEvent.getRetryCount(), ex);
                 if (platformMetrics != null) {
@@ -92,13 +120,20 @@ public class OutboxDispatchScheduler {
                 }
             } else {
                 outboxEvent.setStatus(OutboxEvent.OutboxStatus.PENDING);
-                log.warn("Outbox event {} dispatch failed (retry {}): {}",
-                        outboxEvent.getId(), outboxEvent.getRetryCount(), ex.getMessage());
+                // Exponential backoff via claimed_at gate (claim skips until this instant).
+                long backoffMs = Math.min(60_000L, (1L << Math.min(outboxEvent.getRetryCount(), 6)) * 1_000L);
+                outboxEvent.setClaimedAt(Instant.now().plusMillis(backoffMs));
+                log.warn("Outbox event {} dispatch failed (retry {}, backoff {}ms): {}",
+                        outboxEvent.getId(),
+                        outboxEvent.getRetryCount(),
+                        backoffMs,
+                        ex.getMessage());
                 if (platformMetrics != null) {
                     platformMetrics.increment(MetricNames.OUTBOX_DISPATCHED, "status", "retry");
                 }
             }
             claimService.save(outboxEvent);
+            return false;
         } finally {
             if (sample != null && platformMetrics != null) {
                 platformMetrics.recordTimer(sample, MetricNames.KAFKA_PUBLISH_LATENCY,

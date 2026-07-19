@@ -21,11 +21,11 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
  * Coordinates AI Gateway qualification. AI recommends; Lead aggregate decides.
+ * AI Feign execute runs outside any DB transaction; persistence uses short local TXs.
  */
 @Slf4j
 @Service
@@ -37,21 +37,23 @@ public class LeadAiQualificationService {
 
     private final LeadRepository leadRepository;
     private final LeadQualificationVariableMapper variableMapper;
+    private final IndustryQualificationConfigResolver qualificationConfigResolver;
     private final AiServiceClient aiServiceClient;
     private final LeadService leadService;
     private final LeadExtensionService extensionService;
     private final LeadMapper leadMapper;
 
-    @Transactional
     public AiLeadQualificationResultDto qualifyWithAi(UUID leadId, QualifyLeadWithAiRequest request) {
         Lead lead = leadRepository.findByTenantIdAndIdAndDeletedAtIsNull(requireTenantId(), leadId)
                 .orElseThrow(() -> new NotFoundException("Lead not found: " + leadId));
 
-        Map<String, String> variables = variableMapper.toVariables(
-                lead.getCustomerName(), lead.getAttributes(), request.getVariableKeys());
+        IndustryQualificationConfigResolver.Resolved config = qualificationConfigResolver.resolve(request);
 
-        AiExecuteResponse ai = executeAi(request.getPromptCode().trim().toUpperCase(Locale.ROOT),
-                variables, leadId.toString());
+        Map<String, String> variables = variableMapper.toVariables(
+                lead.getCustomerName(), lead.getAttributes(), config.variableKeys());
+
+        // Remote AI call — must not hold a DB connection / transaction.
+        AiExecuteResponse ai = executeAi(config.promptCode(), variables, leadId.toString());
 
         String recommendation = extractRecommendation(ai);
         Integer suggestedScore = extractSuggestedScore(ai);
@@ -68,6 +70,7 @@ public class LeadAiQualificationService {
         raw.put("confidence", ai.getConfidence());
 
         int scoreForRecord = suggestedScore != null ? suggestedScore : confidenceToScore(ai.getConfidence());
+        // Each of these opens its own short @Transactional boundary.
         extensionService.recordQualityScore(leadId, RecordLeadQualityScoreRequest.builder()
                 .overallScore(scoreForRecord)
                 .nextAction(recommendation)
@@ -102,7 +105,8 @@ public class LeadAiQualificationService {
                 .suggestedScore(scoreForRecord)
                 .qualified(qualified)
                 .variablesUsed(variables)
-                .renderedUserPrompt(ai.getRenderedUserPrompt())
+                // Prompt text is omitted from public qualification results (AI_003 privacy).
+                .renderedUserPrompt(null)
                 .notes(request.getNotes())
                 .build();
     }

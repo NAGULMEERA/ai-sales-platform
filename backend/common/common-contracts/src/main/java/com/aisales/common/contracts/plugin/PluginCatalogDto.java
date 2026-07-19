@@ -21,6 +21,8 @@ public class PluginCatalogDto {
     private String pluginKey;
     private PluginTypeDto type;
     private String version;
+    /** Minimum platform semver required to enable this plugin. */
+    private String minPlatformVersion;
     private String displayName;
     private String description;
     @Builder.Default

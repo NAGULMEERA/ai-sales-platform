@@ -13,7 +13,10 @@ public class EmbeddingRequest {
     /** Business collection: knowledge_base, property_search, etc. */
     private String collectionKey;
 
-    /** Override platform default; null uses {@code aisales.ai.embedding.default-provider-kind}. */
+    /**
+     * Optional override of {@code aisales.ai.embedding.provider}.
+     * Null uses the configured plug/flag default (STUB | TEI | OPENAI).
+     */
     private EmbeddingProviderKind providerKind;
 
     /** Override model; null uses provider default for the kind. */

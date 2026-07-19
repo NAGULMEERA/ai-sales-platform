@@ -1,8 +1,8 @@
 package com.aisales.common.contracts.user;
 
+import com.aisales.common.core.validation.PasswordPolicy;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,8 +20,7 @@ public class CreateUserRequest {
     @Email
     private String email;
 
-    @NotBlank
-    @Size(min = 8, max = 100)
+    @PasswordPolicy
     private String password;
 
     @NotBlank

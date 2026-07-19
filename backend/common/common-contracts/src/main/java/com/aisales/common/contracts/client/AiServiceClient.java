@@ -2,6 +2,7 @@ package com.aisales.common.contracts.client;
 
 import com.aisales.common.contracts.ai.AiExecuteRequest;
 import com.aisales.common.contracts.ai.AiExecuteResponse;
+import com.aisales.common.contracts.ai.AiUsageSummaryDto;
 import com.aisales.common.contracts.ai.CreateKnowledgeBaseRequest;
 import com.aisales.common.contracts.ai.CreatePromptRequest;
 import com.aisales.common.contracts.ai.CreatePromptVersionRequest;
@@ -12,9 +13,11 @@ import com.aisales.common.contracts.ai.PromptVersionDto;
 import com.aisales.common.contracts.ai.RegisterKnowledgeDocumentRequest;
 import com.aisales.common.core.dto.ApiResponse;
 import com.aisales.common.core.dto.PageResponse;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -60,4 +63,9 @@ public interface AiServiceClient {
 
     @GetMapping("/knowledge-bases/{id}/documents")
     ApiResponse<List<KnowledgeDocumentDto>> listDocuments(@PathVariable UUID id);
+
+    @GetMapping("/token-usage/summary")
+    ApiResponse<AiUsageSummaryDto> getTokenUsageSummary(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to);
 }

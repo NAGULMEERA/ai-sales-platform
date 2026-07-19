@@ -25,14 +25,38 @@ aisales:
   gateway:
     rate-limit:
       enabled: true
+      retry-after-seconds: 1
+      # Empty = never trust X-Forwarded-For (clients cannot spoof rate-limit keys).
+      # Cluster ingress peers, e.g. 10.0.0.0/8, 172.16.0.0/12
+      trusted-proxy-cidrs: []
       auth:
-        # Steady-state login/register/refresh budget per client IP (token bucket via Redis).
+        # Steady-state login/register/refresh budget per client IP.
         replenish-rate: 5
         burst-capacity: 10
       password-reset:
-        # Stricter budget for forgot/reset/resend flows to reduce enumeration and email abuse.
         replenish-rate: 2
         burst-capacity: 5
+      webhook:
+        replenish-rate: 50
+        burst-capacity: 100
+      write:
+        # Leads and similar write APIs — keyed by tenant + plan.
+        replenish-rate: 30
+        burst-capacity: 60
+      media-upload:
+        replenish-rate: 10
+        burst-capacity: 20
+      search:
+        replenish-rate: 40
+        burst-capacity: 80
+      ai-execute:
+        # FREE tier AI execute budget per tenant.
+        replenish-rate: 10
+        burst-capacity: 20
+      ai-execute-paid:
+        # PREMIUM tier AI execute budget per tenant.
+        replenish-rate: 50
+        burst-capacity: 100
 
 eureka:
   client:

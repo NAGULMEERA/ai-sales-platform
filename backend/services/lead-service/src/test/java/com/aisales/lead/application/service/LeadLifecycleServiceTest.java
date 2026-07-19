@@ -37,6 +37,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -91,7 +95,7 @@ class LeadLifecycleServiceTest {
                 followupRepository, scoreRepository, statusHistoryRepository, duplicateRepository,
                 mapper, eventPublisher, stateMachine, sideEffects, duplicateDetection,
                 assignmentPoolService, org.mockito.Mockito.mock(PipelineService.class),
-                customerConversionGateway);
+                customerConversionGateway, noopTxManager(), org.mockito.Mockito.mock(LeadIdempotencyService.class));
 
         when(leadRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, leadId))
                 .thenReturn(Optional.of(lead));
@@ -165,5 +169,14 @@ class LeadLifecycleServiceTest {
     void shouldSoftDelete() {
         leadService.deleteLead(leadId);
         assertThat(lead.getDeletedAt()).isNotNull();
+    }
+
+    private static PlatformTransactionManager noopTxManager() {
+        return new AbstractPlatformTransactionManager() {
+            @Override protected Object doGetTransaction() { return new Object(); }
+            @Override protected void doBegin(Object transaction, TransactionDefinition definition) {}
+            @Override protected void doCommit(DefaultTransactionStatus status) {}
+            @Override protected void doRollback(DefaultTransactionStatus status) {}
+        };
     }
 }

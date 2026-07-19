@@ -67,6 +67,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         if (StringUtils.hasText(organizationId)) {
             builder.header(ApiConstants.ORGANIZATION_ID_HEADER, organizationId);
         }
+        String subscriptionPlan = JwtClaimExtractor.extractSubscriptionPlan(claims);
+        if (StringUtils.hasText(subscriptionPlan)) {
+            builder.header(ApiConstants.SUBSCRIPTION_PLAN_HEADER, subscriptionPlan);
+        }
     }
 
     @Override

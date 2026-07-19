@@ -101,17 +101,25 @@ public class IntegrationEventListener {
             eventTypeName = event.getEventType() != null ? event.getEventType() : eventTypeName;
             validateEventEnvelope(event);
 
+            // Fast path — authoritative duplicate guard is tryClaim inside the handler TX.
             if (inboxService.isProcessed(eventId, consumerName)) {
                 log.debug("Skipping already processed event {} for consumer {}", eventId, consumerName);
                 return;
             }
 
-            processWithBoundedRetries(record, consumerName, event, handler);
-            recordConsumed(event, consumerName, record.topic());
+            boolean processed = processWithBoundedRetries(record, consumerName, event, handler);
+            if (processed) {
+                recordConsumed(event, consumerName, record.topic());
+            }
+        } catch (IntegrationEventProcessingException ex) {
+            throw ex;
         } catch (Exception ex) {
             log.error("Failed to process Kafka event for consumer {} on topic {}", consumerName, record.topic(), ex);
             deadLetterService.recordFailure(record, consumerName, eventId, eventTypeName, 0, ex);
             recordDlq(eventTypeName, null, consumerName, record.topic());
+            // Re-throw so RECORD ack does not advance; Kafka DLT recoverer handles the record.
+            throw new IntegrationEventProcessingException(
+                    "Failed to process Kafka event for consumer " + consumerName, ex);
         } finally {
             headerPropagator.endSpan(consumerSpan);
             TenantContext.clear();
@@ -134,22 +142,35 @@ public class IntegrationEventListener {
         }
     }
 
-    private <T extends BaseEvent> void processWithBoundedRetries(ConsumerRecord<String, String> record,
-                                                                 String consumerName,
-                                                                 T event,
-                                                                 Consumer<T> handler) {
+    /**
+     * @return true when the handler ran successfully; false when a concurrent consumer already claimed the event
+     */
+    private <T extends BaseEvent> boolean processWithBoundedRetries(ConsumerRecord<String, String> record,
+                                                                    String consumerName,
+                                                                    T event,
+                                                                    Consumer<T> handler) {
         int attempts = Math.max(1, maxAttempts);
         Exception lastFailure = null;
         for (int attempt = 1; attempt <= attempts; attempt++) {
             try {
+                boolean[] claimed = {false};
                 transactionTemplate.executeWithoutResult(status -> {
+                    // Claim first — unique constraint serializes concurrent redelivery.
+                    if (!inboxService.tryClaim(event.getEventId(), consumerName)) {
+                        log.debug("Skipping event {} for consumer {} — already claimed",
+                                event.getEventId(), consumerName);
+                        return;
+                    }
+                    claimed[0] = true;
                     handler.accept(event);
-                    inboxService.markProcessed(event.getEventId(), consumerName);
                 });
+                if (!claimed[0]) {
+                    return false;
+                }
                 if (attempt > 1) {
                     log.info("Kafka event {} processed after {} attempts", event.getEventId(), attempt);
                 }
-                return;
+                return true;
             } catch (Exception ex) {
                 lastFailure = ex;
                 if (attempt < attempts) {
@@ -163,6 +184,9 @@ public class IntegrationEventListener {
         deadLetterService.recordFailure(record, consumerName, event.getEventId(), event.getEventType(), attempts,
                 lastFailure);
         recordDlq(event.getEventType(), event.getTenantId(), consumerName, record.topic());
+        throw new IntegrationEventProcessingException(
+                "Kafka event " + event.getEventId() + " exhausted " + attempts + " attempts for " + consumerName,
+                lastFailure);
     }
 
     private static void validateEventEnvelope(BaseEvent event) {
