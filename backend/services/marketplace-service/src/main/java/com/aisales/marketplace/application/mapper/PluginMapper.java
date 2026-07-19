@@ -2,6 +2,7 @@ package com.aisales.marketplace.application.mapper;
 
 import com.aisales.common.contracts.plugin.PluginCatalogDto;
 import com.aisales.common.contracts.plugin.PluginInstallationDto;
+import com.aisales.common.contracts.plugin.PluginTypeDto;
 import com.aisales.marketplace.domain.entity.PluginCatalogEntry;
 import com.aisales.marketplace.domain.entity.PluginInstallation;
 import java.util.HashMap;
@@ -38,10 +39,15 @@ public class PluginMapper {
     }
 
     public PluginInstallationDto toDto(PluginInstallation installation) {
+        return toDto(installation, null);
+    }
+
+    public PluginInstallationDto toDto(PluginInstallation installation, PluginTypeDto pluginType) {
         return PluginInstallationDto.builder()
                 .id(installation.getId())
                 .tenantId(installation.getTenantId())
                 .pluginKey(installation.getPluginKey())
+                .pluginType(pluginType)
                 .version(installation.getVersion())
                 .status(installation.getStatus())
                 .config(installation.getConfig() != null

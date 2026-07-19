@@ -23,19 +23,24 @@ public class KnowledgeChunkVectorRepository {
 
     /**
      * Top-k cosine nearest chunks for a knowledge base (tenant isolated).
+     * Only chunks belonging to READY documents are searchable.
      */
     @SuppressWarnings("unchecked")
     public List<RetrievedRow> findSimilar(
             UUID tenantId, UUID knowledgeBaseId, float[] embedding, int topK, double maxCosineDistance) {
         List<Object[]> rows = entityManager.createNativeQuery("""
-                        SELECT id, document_id, chunk_index, content,
-                               (embedding <=> cast(:embedding as vector)) AS distance
-                        FROM knowledge_chunk
-                        WHERE tenant_id = :tenantId
-                          AND knowledge_base_id = :knowledgeBaseId
-                          AND embedding IS NOT NULL
-                          AND (embedding <=> cast(:embedding as vector)) <= :maxDistance
-                        ORDER BY embedding <=> cast(:embedding as vector)
+                        SELECT c.id, c.document_id, c.chunk_index, c.content,
+                               (c.embedding <=> cast(:embedding as vector)) AS distance
+                        FROM knowledge_chunk c
+                        INNER JOIN knowledge_document d ON d.id = c.document_id
+                        WHERE c.tenant_id = :tenantId
+                          AND c.knowledge_base_id = :knowledgeBaseId
+                          AND d.tenant_id = :tenantId
+                          AND d.status = 'READY'
+                          AND d.deleted_at IS NULL
+                          AND c.embedding IS NOT NULL
+                          AND (c.embedding <=> cast(:embedding as vector)) <= :maxDistance
+                        ORDER BY c.embedding <=> cast(:embedding as vector)
                         LIMIT :topK
                         """)
                 .setParameter("tenantId", tenantId)

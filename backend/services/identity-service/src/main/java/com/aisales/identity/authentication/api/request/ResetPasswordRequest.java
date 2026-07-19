@@ -1,9 +1,8 @@
 package com.aisales.identity.authentication.api.request;
 
+import com.aisales.common.core.validation.PasswordPolicy;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
-
 
 @Data
 public class ResetPasswordRequest {
@@ -11,7 +10,6 @@ public class ResetPasswordRequest {
     @NotBlank
     private String token;
 
-    @NotBlank
-    @Size(min = 8, max = 128)
+    @PasswordPolicy
     private String newPassword;
 }

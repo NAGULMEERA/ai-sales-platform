@@ -22,4 +22,11 @@ public interface EmbeddingProvider {
     boolean supports(String modelName);
 
     List<float[]> embed(List<String> texts);
+
+    /**
+     * Embed with optional provider token usage. Default wraps {@link #embed(List)} with null usage.
+     */
+    default EmbeddingBatchResult embedWithUsage(List<String> texts) {
+        return new EmbeddingBatchResult(embed(texts), null);
+    }
 }

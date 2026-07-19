@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.aisales.ai.application.rag.NoneReranker;
 import com.aisales.ai.application.rag.RerankerRegistry;
 import com.aisales.ai.application.rag.StubReranker;
+import com.aisales.ai.domain.embedding.EmbeddingBatchResult;
 import com.aisales.ai.domain.embedding.EmbeddingProvider;
 import com.aisales.ai.domain.entity.KnowledgeBase;
 import com.aisales.ai.infrastructure.configuration.RagProperties;
@@ -42,6 +43,7 @@ class KnowledgeRetrievalServiceTest {
     @Mock private EmbeddingProvider embeddingProvider;
     @Mock private PlatformTransactionManager transactionManager;
     @Mock private TokenUsageService tokenUsageService;
+    @Mock private AiQuotaService aiQuotaService;
 
     private KnowledgeRetrievalService service;
     private UUID tenantId;
@@ -53,6 +55,7 @@ class KnowledgeRetrievalServiceTest {
         knowledgeBaseId = UUID.randomUUID();
         TenantContext.setTenantId(tenantId.toString());
         lenient().when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+        lenient().when(aiQuotaService.reserveEmbed(any())).thenReturn(8192L);
         RagProperties ragProperties = new RagProperties();
         ragProperties.setReranker("STUB");
         ragProperties.getRerank().setCandidateMultiplier(3);
@@ -64,6 +67,7 @@ class KnowledgeRetrievalServiceTest {
                 embeddingProviderRegistry,
                 transactionManager,
                 tokenUsageService,
+                aiQuotaService,
                 rerankerRegistry,
                 ragProperties);
     }
@@ -97,7 +101,8 @@ class KnowledgeRetrievalServiceTest {
         when(embeddingProvider.name()).thenReturn("STUB");
         when(embeddingProvider.modelName()).thenReturn("stub-embedding-1024");
         float[] vector = new float[1024];
-        when(embeddingProvider.embed(List.of("warranty"))).thenReturn(List.of(vector));
+        when(embeddingProvider.embedWithUsage(List.of("warranty")))
+                .thenReturn(new EmbeddingBatchResult(List.of(vector), null));
         UUID chunkId = UUID.randomUUID();
         UUID documentId = UUID.randomUUID();
         when(knowledgeChunkVectorRepository.findSimilar(

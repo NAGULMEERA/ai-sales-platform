@@ -49,11 +49,24 @@ aisales:
     outbox:
       enabled: true
     inbox:
-      enabled: false
+      enabled: true
   ai:
     quota:
       enabled: true
       daily-token-limit: 500000
+      daily-execute-token-limit: 400000
+      daily-embed-token-limit: 100000
+      reserve-execute-tokens: 4096
+      reserve-embed-tokens: 8192
+      plans:
+        FREE:
+          daily-token-limit: 100000
+          daily-execute-token-limit: 80000
+          daily-embed-token-limit: 20000
+        PREMIUM:
+          daily-token-limit: 2000000
+          daily-execute-token-limit: 1600000
+          daily-embed-token-limit: 400000
     cost:
       # Ledger estimates only — not billing invoices
       enabled: true

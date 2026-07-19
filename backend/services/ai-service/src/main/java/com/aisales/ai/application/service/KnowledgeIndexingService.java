@@ -2,6 +2,7 @@ package com.aisales.ai.application.service;
 
 import com.aisales.ai.application.mapper.AiMapper;
 import com.aisales.ai.application.rag.TextChunker;
+import com.aisales.ai.domain.embedding.EmbeddingBatchResult;
 import com.aisales.ai.domain.embedding.EmbeddingProvider;
 import com.aisales.ai.domain.entity.KnowledgeChunk;
 import com.aisales.ai.domain.entity.KnowledgeDocument;
@@ -48,8 +49,6 @@ public class KnowledgeIndexingService {
         if (!StringUtils.hasText(request.getText())) {
             throw new ValidationException("text is required for indexing");
         }
-        aiQuotaService.assertWithinDailyBudget(tenantId);
-
         KnowledgeDocument document = knowledgeDocumentRepository
                 .findByTenantIdAndIdAndDeletedAtIsNull(tenantId, documentId)
                 .orElseThrow(() -> new NotFoundException("Knowledge document not found: " + documentId));
@@ -62,62 +61,73 @@ public class KnowledgeIndexingService {
 
         EmbeddingProvider embeddingProvider = embeddingProviderRegistry.resolveDefault();
         List<float[]> vectors;
+        Integer providerTokens;
+        long reserved = aiQuotaService.reserveEmbed(tenantId);
         try {
-            vectors = embeddingProvider.embed(chunks);
-        } catch (RuntimeException ex) {
-            markFailed(tenantId, documentId);
-            throw ex;
-        }
-        if (vectors.size() != chunks.size()) {
-            markFailed(tenantId, documentId);
-            throw new ValidationException("Embedding provider returned unexpected vector count");
-        }
-
-        tokenUsageService.recordEmbeddingUsage(
-                tenantId,
-                embeddingProvider.name().toLowerCase(),
-                embeddingProvider.modelName(),
-                chunks,
-                documentId.toString(),
-                "RAG_INDEX");
-
-        UUID knowledgeBaseId = document.getKnowledgeBaseId();
-        String modelName = embeddingProvider.modelName();
-        UUID updatedBy = parseUuidOrNull(TenantContext.getUserId());
-
-        return new TransactionTemplate(transactionManager).execute(status -> {
-            KnowledgeDocument managed = knowledgeDocumentRepository
-                    .findByTenantIdAndIdAndDeletedAtIsNull(tenantId, documentId)
-                    .orElseThrow(() -> new NotFoundException("Knowledge document not found: " + documentId));
-
-            knowledgeChunkRepository.deleteByTenantIdAndDocumentId(tenantId, documentId);
-            knowledgeChunkRepository.flush();
-
-            Instant now = Instant.now();
-            List<KnowledgeChunk> savedChunks = new ArrayList<>(chunks.size());
-            for (int i = 0; i < chunks.size(); i++) {
-                savedChunks.add(knowledgeChunkRepository.save(KnowledgeChunk.builder()
-                        .tenantId(tenantId)
-                        .knowledgeBaseId(knowledgeBaseId)
-                        .documentId(managed.getId())
-                        .chunkIndex(i)
-                        .content(chunks.get(i))
-                        .tokenEstimate(Math.max(1, chunks.get(i).length() / 4))
-                        .embeddingModel(modelName)
-                        .createdAt(now)
-                        .build()));
+            try {
+                EmbeddingBatchResult batch = embeddingProvider.embedWithUsage(chunks);
+                vectors = batch.vectors();
+                providerTokens = batch.promptTokens();
+            } catch (RuntimeException ex) {
+                markFailed(tenantId, documentId);
+                throw ex;
             }
-            knowledgeChunkRepository.flush();
-
-            for (int i = 0; i < savedChunks.size(); i++) {
-                knowledgeChunkVectorRepository.updateEmbedding(savedChunks.get(i).getId(), vectors.get(i));
+            if (vectors.size() != chunks.size()) {
+                markFailed(tenantId, documentId);
+                throw new ValidationException("Embedding provider returned unexpected vector count");
             }
 
-            managed.setStatus(KnowledgeDocumentStatus.READY);
-            managed.setUpdatedAt(now);
-            managed.setUpdatedBy(updatedBy);
-            return mapper.toDto(knowledgeDocumentRepository.save(managed));
-        });
+            UUID knowledgeBaseId = document.getKnowledgeBaseId();
+            String modelName = embeddingProvider.modelName();
+            UUID updatedBy = parseUuidOrNull(TenantContext.getUserId());
+            Integer tokensForLedger = providerTokens;
+
+            return new TransactionTemplate(transactionManager).execute(status -> {
+                KnowledgeDocument managed = knowledgeDocumentRepository
+                        .findByTenantIdAndIdAndDeletedAtIsNull(tenantId, documentId)
+                        .orElseThrow(() -> new NotFoundException("Knowledge document not found: " + documentId));
+
+                knowledgeChunkRepository.deleteByTenantIdAndDocumentId(tenantId, documentId);
+                knowledgeChunkRepository.flush();
+
+                Instant now = Instant.now();
+                List<KnowledgeChunk> savedChunks = new ArrayList<>(chunks.size());
+                for (int i = 0; i < chunks.size(); i++) {
+                    savedChunks.add(knowledgeChunkRepository.save(KnowledgeChunk.builder()
+                            .tenantId(tenantId)
+                            .knowledgeBaseId(knowledgeBaseId)
+                            .documentId(managed.getId())
+                            .chunkIndex(i)
+                            .content(chunks.get(i))
+                            .tokenEstimate(Math.max(1, chunks.get(i).length() / 4))
+                            .embeddingModel(modelName)
+                            .createdAt(now)
+                            .build()));
+                }
+                knowledgeChunkRepository.flush();
+
+                for (int i = 0; i < savedChunks.size(); i++) {
+                    knowledgeChunkVectorRepository.updateEmbedding(savedChunks.get(i).getId(), vectors.get(i));
+                }
+
+                // Charge tokens only when READY persistence succeeds (same TX).
+                tokenUsageService.recordEmbeddingUsage(
+                        tenantId,
+                        embeddingProvider.name().toLowerCase(),
+                        modelName,
+                        chunks,
+                        documentId.toString(),
+                        "RAG_INDEX",
+                        tokensForLedger);
+
+                managed.setStatus(KnowledgeDocumentStatus.READY);
+                managed.setUpdatedAt(now);
+                managed.setUpdatedBy(updatedBy);
+                return mapper.toDto(knowledgeDocumentRepository.save(managed));
+            });
+        } finally {
+            aiQuotaService.release(tenantId, AiQuotaService.OPERATION_EMBED, reserved);
+        }
     }
 
     private void markFailed(UUID tenantId, UUID documentId) {
@@ -125,6 +135,9 @@ public class KnowledgeIndexingService {
             knowledgeDocumentRepository
                     .findByTenantIdAndIdAndDeletedAtIsNull(tenantId, documentId)
                     .ifPresent(doc -> {
+                        // Quarantine prior chunks so FAILED docs are never searchable.
+                        knowledgeChunkRepository.deleteByTenantIdAndDocumentId(tenantId, documentId);
+                        knowledgeChunkRepository.flush();
                         doc.setStatus(KnowledgeDocumentStatus.FAILED);
                         doc.setUpdatedAt(Instant.now());
                         knowledgeDocumentRepository.save(doc);

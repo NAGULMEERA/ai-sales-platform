@@ -7,6 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Per-endpoint Redis token-bucket limits at the gateway edge (Rule 06).
+ * Authenticated routes use tenant+plan keys; public auth/webhook routes use client IP.
  */
 @Data
 @ConfigurationProperties(prefix = "aisales.gateway.rate-limit")
@@ -16,6 +17,11 @@ public class GatewayRateLimitProperties {
     private boolean enabled = true;
 
     /**
+     * Seconds advertised in {@code Retry-After} when a request is rejected with HTTP 429.
+     */
+    private int retryAfterSeconds = 1;
+
+    /**
      * CIDRs of trusted reverse proxies / load balancers. {@code X-Forwarded-For} is ignored unless
      * the direct peer matches one of these. Empty (default) = never trust XFF.
      */
@@ -23,7 +29,15 @@ public class GatewayRateLimitProperties {
 
     private Limit auth = new Limit(5, 10);
     private Limit passwordReset = new Limit(2, 5);
-    private Limit aiExecute = new Limit(20, 40);
+    private Limit webhook = new Limit(50, 100);
+    private Limit write = new Limit(30, 60);
+    private Limit mediaUpload = new Limit(10, 20);
+    private Limit search = new Limit(40, 80);
+
+    /** AI execute limits for FREE-tier tenants. */
+    private Limit aiExecute = new Limit(10, 20);
+    /** AI execute limits for PREMIUM / paid tenants. */
+    private Limit aiExecutePaid = new Limit(50, 100);
 
     @Data
     public static class Limit {

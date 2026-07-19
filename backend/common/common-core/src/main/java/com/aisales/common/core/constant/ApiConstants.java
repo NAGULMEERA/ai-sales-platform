@@ -8,6 +8,8 @@ public final class ApiConstants {
     public static final String TENANT_ID_HEADER = "X-Tenant-Id";
     public static final String USER_ID_HEADER = "X-User-Id";
     public static final String ORGANIZATION_ID_HEADER = "X-Organization-Id";
+    /** Propagated from JWT {@code subscriptionPlan} for plan-tier rate limiting. */
+    public static final String SUBSCRIPTION_PLAN_HEADER = "X-Subscription-Plan";
     public static final String IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
     public static final String API_VERSION = "v1";
     public static final String DEPRECATION_HEADER = "Deprecation";

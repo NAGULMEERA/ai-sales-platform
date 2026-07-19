@@ -1,5 +1,6 @@
 package com.aisales.ai.infrastructure.embedding;
 
+import com.aisales.ai.domain.embedding.EmbeddingBatchResult;
 import com.aisales.ai.domain.embedding.EmbeddingProvider;
 import com.aisales.ai.domain.embedding.EmbeddingProviderKind;
 import com.aisales.ai.infrastructure.configuration.EmbeddingConfiguration;
@@ -69,6 +70,13 @@ public class OpenAiCommercialEmbeddingProvider implements EmbeddingProvider {
     @CircuitBreaker(name = "openAiEmbedding")
     @Retry(name = "openAiEmbedding")
     public List<float[]> embed(List<String> texts) {
+        return embedWithUsage(texts).vectors();
+    }
+
+    @Override
+    @CircuitBreaker(name = "openAiEmbedding")
+    @Retry(name = "openAiEmbedding")
+    public EmbeddingBatchResult embedWithUsage(List<String> texts) {
         EmbeddingProperties.Commercial.OpenAi config = properties.getCommercial().getOpenai();
         if (!StringUtils.hasText(config.getApiKey())) {
             throw new IllegalStateException("OpenAI API key not configured for commercial embeddings");
@@ -110,7 +118,13 @@ public class OpenAiCommercialEmbeddingProvider implements EmbeddingProvider {
         for (JsonNode item : response.get("data")) {
             vectors.add(toFloatArray(item.get("embedding")));
         }
-        return vectors;
+        Integer promptTokens = null;
+        if (response.has("usage") && response.get("usage").has("prompt_tokens")) {
+            promptTokens = response.get("usage").get("prompt_tokens").asInt();
+        } else if (response.has("usage") && response.get("usage").has("total_tokens")) {
+            promptTokens = response.get("usage").get("total_tokens").asInt();
+        }
+        return new EmbeddingBatchResult(vectors, promptTokens);
     }
 
     private static float[] toFloatArray(JsonNode node) {

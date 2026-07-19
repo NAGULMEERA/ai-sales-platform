@@ -10,11 +10,13 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EnableDiscoveryClient
 @EntityScan(basePackages = {
         "com.aisales.ai",
-        "com.aisales.common.events.outbox"
+        "com.aisales.common.events.outbox",
+        "com.aisales.common.events.inbox"
 })
 @EnableJpaRepositories(basePackages = {
         "com.aisales.ai",
-        "com.aisales.common.events.outbox"
+        "com.aisales.common.events.outbox",
+        "com.aisales.common.events.inbox"
 })
 public class AiServiceApplication {
 

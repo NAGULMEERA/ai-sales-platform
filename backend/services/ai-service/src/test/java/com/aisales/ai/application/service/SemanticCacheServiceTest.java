@@ -71,7 +71,8 @@ class SemanticCacheServiceTest {
                 .hitCount(0)
                 .build();
 
-        when(cacheRepository.findByTenantIdAndQueryHashAndModelUsed(eq(tenantId), any(), eq("BAAI/bge-m3")))
+        when(cacheRepository.findByTenantIdAndPromptScopeAndQueryHashAndModelUsed(
+                        eq(tenantId), eq(""), any(), eq("BAAI/bge-m3")))
                 .thenReturn(Optional.of(entry));
         when(cacheRepository.save(entry)).thenReturn(entry);
 
@@ -86,7 +87,8 @@ class SemanticCacheServiceTest {
     void shouldStoreResponseWithEmbedding() {
         when(providerRegistry.resolveDefault()).thenReturn(embeddingProvider);
         when(embeddingProvider.embed(List.of("query"))).thenReturn(List.of(new float[] {0.1f, 0.2f}));
-        when(cacheRepository.findByTenantIdAndQueryHashAndModelUsed(eq(tenantId), any(), eq("BAAI/bge-m3")))
+        when(cacheRepository.findByTenantIdAndPromptScopeAndQueryHashAndModelUsed(
+                        eq(tenantId), eq("LEAD_QUALIFY|v1"), any(), eq("BAAI/bge-m3")))
                 .thenReturn(Optional.empty());
         when(cacheRepository.save(any())).thenAnswer(invocation -> {
             SemanticCacheEntry saved = invocation.getArgument(0);
@@ -96,6 +98,7 @@ class SemanticCacheServiceTest {
 
         semanticCacheService.put(
                 tenantId,
+                "LEAD_QUALIFY|v1",
                 "query",
                 CachedLlmResponse.builder().content("answer").model("BAAI/bge-m3").build(),
                 "BAAI/bge-m3");

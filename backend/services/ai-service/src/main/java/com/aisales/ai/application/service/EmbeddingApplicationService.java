@@ -3,6 +3,7 @@ package com.aisales.ai.application.service;
 import com.aisales.ai.api.request.EmbeddingRequest;
 import com.aisales.ai.api.response.EmbeddingResponse;
 import com.aisales.ai.api.response.EmbeddingVectorResponse;
+import com.aisales.ai.domain.embedding.EmbeddingBatchResult;
 import com.aisales.ai.domain.embedding.EmbeddingProvider;
 import com.aisales.ai.domain.embedding.EmbeddingProviderKind;
 import com.aisales.ai.infrastructure.configuration.EmbeddingProperties;
@@ -36,10 +37,11 @@ public class EmbeddingApplicationService {
         }
 
         UUID tenantId = requireTenantId();
-        aiQuotaService.assertWithinDailyBudget(tenantId);
+        aiQuotaService.assertWithinDailyBudget(tenantId, AiQuotaService.OPERATION_EMBED);
 
         EmbeddingProvider provider = resolveProvider(request);
-        List<float[]> vectors = provider.embed(request.getTexts());
+        EmbeddingBatchResult batch = provider.embedWithUsage(request.getTexts());
+        List<float[]> vectors = batch.vectors();
         List<EmbeddingVectorResponse> results = new ArrayList<>(vectors.size());
 
         for (int i = 0; i < vectors.size(); i++) {
@@ -58,7 +60,8 @@ public class EmbeddingApplicationService {
                 provider.modelName(),
                 request.getTexts(),
                 request.getCollectionKey(),
-                request.getCollectionKey() != null ? request.getCollectionKey() : "EMBED");
+                request.getCollectionKey() != null ? request.getCollectionKey() : "EMBED",
+                batch.promptTokens());
 
         return EmbeddingResponse.builder()
                 .tenantId(TenantContext.getTenantId())

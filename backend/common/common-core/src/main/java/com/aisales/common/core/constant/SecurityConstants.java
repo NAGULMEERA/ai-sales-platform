@@ -13,6 +13,8 @@ public final class SecurityConstants {
     public static final String PERMISSIONS_CLAIM = JWT_CLAIM_PERMISSIONS;
     public static final String ORGANIZATION_ID_CLAIM = "organizationId";
     public static final String EMAIL_CLAIM = "email";
+    /** Tenant subscription plan (e.g. FREE, PREMIUM) for gateway rate-limit tiers. */
+    public static final String SUBSCRIPTION_PLAN_CLAIM = "subscriptionPlan";
     public static final String TOKEN_TYPE_CLAIM = "tokenType";
     public static final String ACCESS_TOKEN = "access";
     public static final String REFRESH_TOKEN = "refresh";

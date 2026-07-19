@@ -8,12 +8,6 @@ import com.aisales.ai.infrastructure.persistence.SemanticCacheEntry;
 import com.aisales.ai.infrastructure.persistence.SemanticCacheJpaRepository;
 import com.aisales.ai.infrastructure.persistence.SemanticCacheVectorRepository;
 import com.aisales.common.cache.PlatformCacheService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -23,6 +17,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -39,18 +39,24 @@ public class SemanticCacheService {
 
     @Transactional(readOnly = true)
     public Optional<CachedLlmResponse> get(UUID tenantId, String queryText, String model) {
+        return get(tenantId, "", queryText, model);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<CachedLlmResponse> get(UUID tenantId, String promptScope, String queryText, String model) {
         if (!cacheProperties.isEnabled()) {
             return Optional.empty();
         }
-
-        String cacheKey = cacheKey(tenantId, queryText, model);
+        String scope = normalizeScope(promptScope);
+        String cacheKey = cacheKey(tenantId, scope, queryText, model);
         Optional<CachedLlmResponse> redisHit = getFromRedis(cacheKey);
         if (redisHit.isPresent()) {
             return redisHit;
         }
 
-        Optional<SemanticCacheEntry> exact = cacheRepository.findByTenantIdAndQueryHashAndModelUsed(
-                tenantId, queryHash(tenantId, queryText), model);
+        Optional<SemanticCacheEntry> exact =
+                cacheRepository.findByTenantIdAndPromptScopeAndQueryHashAndModelUsed(
+                        tenantId, scope, queryHash(tenantId, scope, queryText), model);
         if (exact.isPresent() && isValid(exact.get())) {
             return recordHit(exact.get(), cacheKey);
         }
@@ -58,7 +64,7 @@ public class SemanticCacheService {
         EmbeddingProvider provider = resolveProvider();
         float[] embedding = provider.embed(List.of(queryText)).getFirst();
         Optional<UUID> similarId = vectorRepository.findMostSimilarId(
-                tenantId, model, embedding, cacheProperties.getMaxCosineDistance());
+                tenantId, scope, model, embedding, cacheProperties.getMaxCosineDistance());
         if (similarId.isEmpty()) {
             return Optional.empty();
         }
@@ -70,24 +76,34 @@ public class SemanticCacheService {
 
     @Transactional
     public void put(UUID tenantId, String queryText, CachedLlmResponse response, String model) {
+        put(tenantId, "", queryText, response, model);
+    }
+
+    @Transactional
+    public void put(
+            UUID tenantId, String promptScope, String queryText, CachedLlmResponse response, String model) {
         if (!cacheProperties.isEnabled()) {
             return;
         }
-
+        String scope = normalizeScope(promptScope);
         EmbeddingProvider provider = resolveProvider();
         float[] embedding = provider.embed(List.of(queryText)).getFirst();
-        String hash = queryHash(tenantId, queryText);
+        String hash = queryHash(tenantId, scope, queryText);
         Instant expiresAt = Instant.now().plus(cacheProperties.getDefaultTtl());
 
-        SemanticCacheEntry entry = cacheRepository.findByTenantIdAndQueryHashAndModelUsed(tenantId, hash, model)
-                .orElseGet(() -> SemanticCacheEntry.builder()
-                        .tenantId(tenantId)
-                        .queryHash(hash)
-                        .queryText(queryText)
-                        .modelUsed(model)
-                        .hitCount(0)
-                        .build());
+        SemanticCacheEntry entry =
+                cacheRepository
+                        .findByTenantIdAndPromptScopeAndQueryHashAndModelUsed(tenantId, scope, hash, model)
+                        .orElseGet(() -> SemanticCacheEntry.builder()
+                                .tenantId(tenantId)
+                                .promptScope(scope)
+                                .queryHash(hash)
+                                .queryText(queryText)
+                                .modelUsed(model)
+                                .hitCount(0)
+                                .build());
 
+        entry.setPromptScope(scope);
         entry.setQueryText(queryText);
         entry.setResponse(Map.of(
                 "content", response.getContent(),
@@ -98,8 +114,8 @@ public class SemanticCacheService {
 
         SemanticCacheEntry saved = cacheRepository.save(entry);
         vectorRepository.updateEmbedding(saved.getId(), embedding);
-        putInRedis(cacheKey(tenantId, queryText, model), response);
-        log.debug("semantic_cache_stored tenant_id={} model={}", tenantId, model);
+        putInRedis(cacheKey(tenantId, scope, queryText, model), response);
+        log.debug("semantic_cache_stored tenant_id={} scope={} model={}", tenantId, scope, model);
     }
 
     @Transactional
@@ -151,18 +167,22 @@ public class SemanticCacheService {
     }
 
     private EmbeddingProvider resolveProvider() {
-        // Cache key uses the LLM model; vectors always come from the configured embedding provider.
         return providerRegistry.resolveDefault();
     }
 
-    private String cacheKey(UUID tenantId, String queryText, String model) {
-        return tenantId + ":" + queryHash(tenantId, queryText) + ":" + model;
+    private String cacheKey(UUID tenantId, String promptScope, String queryText, String model) {
+        return tenantId + ":" + promptScope + ":" + queryHash(tenantId, promptScope, queryText) + ":" + model;
     }
 
-    private static String queryHash(UUID tenantId, String queryText) {
+    private static String normalizeScope(String promptScope) {
+        return StringUtils.hasText(promptScope) ? promptScope.trim() : "";
+    }
+
+    private static String queryHash(UUID tenantId, String promptScope, String queryText) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             digest.update(tenantId.toString().getBytes(StandardCharsets.UTF_8));
+            digest.update(promptScope.getBytes(StandardCharsets.UTF_8));
             digest.update(queryText.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest.digest());
         } catch (NoSuchAlgorithmException ex) {

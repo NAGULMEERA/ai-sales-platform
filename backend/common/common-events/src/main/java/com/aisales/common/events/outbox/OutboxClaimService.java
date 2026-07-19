@@ -28,7 +28,8 @@ public class OutboxClaimService {
     public List<OutboxEvent> claimBatch(int batchSize) {
         Instant now = Instant.now();
         Instant staleBefore = now.minus(Duration.ofMillis(Math.max(1_000L, claimLeaseMs)));
-        List<OutboxEvent> claimed = outboxRepository.claimPendingEvents(Math.max(1, batchSize), staleBefore);
+        List<OutboxEvent> claimed =
+                outboxRepository.claimPendingEvents(Math.max(1, batchSize), staleBefore, now);
         for (OutboxEvent event : claimed) {
             event.setStatus(OutboxEvent.OutboxStatus.DISPATCHING);
             event.setClaimedAt(now);

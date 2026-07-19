@@ -19,6 +19,18 @@ public interface TokenUsageRepository extends JpaRepository<TokenUsage, UUID> {
     long sumTotalTokensSince(
             @Param("tenantId") UUID tenantId, @Param("fromInclusive") Instant fromInclusive);
 
+    @Query("""
+            SELECT COALESCE(SUM(t.totalTokens), 0)
+            FROM TokenUsage t
+            WHERE t.tenantId = :tenantId
+              AND t.operation = :operation
+              AND t.createdAt >= :fromInclusive
+            """)
+    long sumTotalTokensSinceByOperation(
+            @Param("tenantId") UUID tenantId,
+            @Param("operation") String operation,
+            @Param("fromInclusive") Instant fromInclusive);
+
     /**
      * Rows: operation, provider, model, promptTokens, completionTokens, totalTokens,
      * estimatedCostUsd, requestCount.

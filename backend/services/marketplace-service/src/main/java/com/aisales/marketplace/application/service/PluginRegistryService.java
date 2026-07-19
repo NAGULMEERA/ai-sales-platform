@@ -74,7 +74,13 @@ public class PluginRegistryService {
     @Transactional(readOnly = true)
     public List<PluginInstallationDto> listInstallations() {
         return installationRepository.findByTenantIdOrderByUpdatedAtDesc(requireTenantId()).stream()
-                .map(mapper::toDto)
+                .map(installation -> {
+                    PluginTypeDto type = catalogRepository
+                            .findByPluginKey(installation.getPluginKey())
+                            .map(PluginCatalogEntry::getType)
+                            .orElse(null);
+                    return mapper.toDto(installation, type);
+                })
                 .toList();
     }
 

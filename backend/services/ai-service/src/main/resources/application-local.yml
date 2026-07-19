@@ -38,7 +38,8 @@ aisales:
     outbox:
       enabled: true
     inbox:
-      enabled: false
+      # Enable with Kafka for plan-linked AI quota packages (SubscriptionPlanChanged / TenantCreated).
+      enabled: true
   startup-validation:
     enabled: false
   clients:

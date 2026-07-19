@@ -1,5 +1,7 @@
 package com.aisales.gateway.config;
 
+import com.aisales.gateway.ratelimit.PlanTierRateLimiter;
+import com.aisales.gateway.ratelimit.TenantPlanKeyResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -16,23 +18,41 @@ public class GatewayConfig {
 
     private final GatewayRateLimitProperties rateLimitProperties;
     private final KeyResolver clientIpKeyResolver;
+    private final TenantPlanKeyResolver tenantPlanKeyResolver;
+
     private RedisRateLimiter authRedisRateLimiter;
     private RedisRateLimiter passwordResetRedisRateLimiter;
-    private RedisRateLimiter aiExecuteRedisRateLimiter;
+    private PlanTierRateLimiter aiExecuteRedisRateLimiter;
+    private RedisRateLimiter writeRedisRateLimiter;
+    private RedisRateLimiter mediaUploadRedisRateLimiter;
+    private RedisRateLimiter searchRedisRateLimiter;
+    private RedisRateLimiter webhookRedisRateLimiter;
 
-    public GatewayConfig(GatewayRateLimitProperties rateLimitProperties, KeyResolver clientIpKeyResolver) {
+    public GatewayConfig(
+            GatewayRateLimitProperties rateLimitProperties,
+            KeyResolver clientIpKeyResolver,
+            TenantPlanKeyResolver tenantPlanKeyResolver) {
         this.rateLimitProperties = rateLimitProperties;
         this.clientIpKeyResolver = clientIpKeyResolver;
+        this.tenantPlanKeyResolver = tenantPlanKeyResolver;
     }
 
     @Autowired(required = false)
     public void setRateLimiters(
             @Qualifier("authRedisRateLimiter") RedisRateLimiter authRedisRateLimiter,
             @Qualifier("passwordResetRedisRateLimiter") RedisRateLimiter passwordResetRedisRateLimiter,
-            @Qualifier("aiExecuteRedisRateLimiter") RedisRateLimiter aiExecuteRedisRateLimiter) {
+            @Qualifier("aiExecuteRedisRateLimiter") PlanTierRateLimiter aiExecuteRedisRateLimiter,
+            @Qualifier("writeRedisRateLimiter") RedisRateLimiter writeRedisRateLimiter,
+            @Qualifier("mediaUploadRedisRateLimiter") RedisRateLimiter mediaUploadRedisRateLimiter,
+            @Qualifier("searchRedisRateLimiter") RedisRateLimiter searchRedisRateLimiter,
+            @Qualifier("webhookRedisRateLimiter") RedisRateLimiter webhookRedisRateLimiter) {
         this.authRedisRateLimiter = authRedisRateLimiter;
         this.passwordResetRedisRateLimiter = passwordResetRedisRateLimiter;
         this.aiExecuteRedisRateLimiter = aiExecuteRedisRateLimiter;
+        this.writeRedisRateLimiter = writeRedisRateLimiter;
+        this.mediaUploadRedisRateLimiter = mediaUploadRedisRateLimiter;
+        this.searchRedisRateLimiter = searchRedisRateLimiter;
+        this.webhookRedisRateLimiter = webhookRedisRateLimiter;
     }
 
     @Bean
@@ -62,15 +82,62 @@ public class GatewayConfig {
                             .uri("lb://identity-service"));
         }
 
+        if (rateLimitProperties.isEnabled() && webhookRedisRateLimiter != null) {
+            routes = routes
+                    .route("billing-webhooks-rate-limited", r -> r
+                            .path("/api/v1/payments/webhooks/**")
+                            .filters(f -> f.requestRateLimiter(config -> config
+                                    .setRateLimiter(webhookRedisRateLimiter)
+                                    .setKeyResolver(clientIpKeyResolver)
+                                    .setDenyEmptyKey(false)))
+                            .uri("lb://billing-service"))
+                    .route("integration-webhooks-rate-limited", r -> r
+                            .path("/api/v1/integrations/webhooks/**")
+                            .filters(f -> f.requestRateLimiter(config -> config
+                                    .setRateLimiter(webhookRedisRateLimiter)
+                                    .setKeyResolver(clientIpKeyResolver)
+                                    .setDenyEmptyKey(false)))
+                            .uri("lb://integration-service"));
+        }
+
         if (rateLimitProperties.isEnabled() && aiExecuteRedisRateLimiter != null) {
-            // More specific than the catch-all ai-service route below.
             routes = routes.route("ai-execute-rate-limited", r -> r
                     .path("/api/v1/ai/execute")
                     .filters(f -> f.requestRateLimiter(config -> config
                             .setRateLimiter(aiExecuteRedisRateLimiter)
-                            .setKeyResolver(clientIpKeyResolver)
+                            .setKeyResolver(tenantPlanKeyResolver)
                             .setDenyEmptyKey(false)))
                     .uri("lb://ai-service"));
+        }
+
+        if (rateLimitProperties.isEnabled() && writeRedisRateLimiter != null) {
+            routes = routes.route("leads-write-rate-limited", r -> r
+                    .path("/api/v1/leads/**", "/api/v1/lead/**")
+                    .filters(f -> f.requestRateLimiter(config -> config
+                            .setRateLimiter(writeRedisRateLimiter)
+                            .setKeyResolver(tenantPlanKeyResolver)
+                            .setDenyEmptyKey(false)))
+                    .uri("lb://lead-service"));
+        }
+
+        if (rateLimitProperties.isEnabled() && mediaUploadRedisRateLimiter != null) {
+            routes = routes.route("media-upload-rate-limited", r -> r
+                    .path("/api/v1/media/objects", "/api/v1/media/objects/**")
+                    .filters(f -> f.requestRateLimiter(config -> config
+                            .setRateLimiter(mediaUploadRedisRateLimiter)
+                            .setKeyResolver(tenantPlanKeyResolver)
+                            .setDenyEmptyKey(false)))
+                    .uri("lb://media-service"));
+        }
+
+        if (rateLimitProperties.isEnabled() && searchRedisRateLimiter != null) {
+            routes = routes.route("search-rate-limited", r -> r
+                    .path("/api/v1/search/**")
+                    .filters(f -> f.requestRateLimiter(config -> config
+                            .setRateLimiter(searchRedisRateLimiter)
+                            .setKeyResolver(tenantPlanKeyResolver)
+                            .setDenyEmptyKey(false)))
+                    .uri("lb://search-service"));
         }
 
         return routes
@@ -90,6 +157,7 @@ public class GatewayConfig {
                         .uri("lb://appointment-service"))
                 .route("ai-service", r -> r.path(
                                 "/api/v1/ai/**",
+                                "/api/v1/ai-quota/**",
                                 "/api/v1/prompts/**",
                                 "/api/v1/embeddings/**",
                                 "/api/v1/token-usage/**",

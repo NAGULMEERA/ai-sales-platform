@@ -3,6 +3,7 @@ package com.aisales.ai.api.controller;
 import com.aisales.ai.application.service.TokenUsageQueryService;
 import com.aisales.common.contracts.ai.AiUsageSummaryDto;
 import com.aisales.common.core.dto.ApiResponse;
+import com.aisales.common.security.annotation.PreAuthorizeTenant;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
@@ -20,6 +21,7 @@ public class TokenUsageController {
     private final TokenUsageQueryService tokenUsageQueryService;
 
     @GetMapping("/api/v1/token-usage/summary")
+    @PreAuthorizeTenant
     @Operation(summary = "Tenant AI usage summary for a period (ledger estimates, not invoices)")
     public ApiResponse<AiUsageSummaryDto> summarize(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,

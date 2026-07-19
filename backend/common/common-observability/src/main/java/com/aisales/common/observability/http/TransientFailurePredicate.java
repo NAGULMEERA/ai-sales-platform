@@ -64,7 +64,51 @@ public final class TransientFailurePredicate implements Predicate<Throwable> {
         if (t instanceof HttpClientErrorException httpClientErrorException) {
             return httpClientErrorException.getStatusCode().value() == 429;
         }
-        return t instanceof HttpStatusCodeException httpStatusCodeException
-                && httpStatusCodeException.getStatusCode().value() == 429;
+        if (t instanceof HttpStatusCodeException httpStatusCodeException
+                && httpStatusCodeException.getStatusCode().value() == 429) {
+            return true;
+        }
+        return isTransientSmtp(t);
+    }
+
+    /**
+     * SMTP classification without a hard dependency on spring-mail types (Resilience4j
+     * instantiates this predicate by FQCN outside the Spring context).
+     */
+    private static boolean isTransientSmtp(Throwable t) {
+        String className = t.getClass().getName();
+        if (className.endsWith("MailAuthenticationException")) {
+            return false;
+        }
+        if (className.endsWith("MailSendException")
+                || className.endsWith("MessagingException")
+                || className.contains("MailException")) {
+            return looksLikeTransientSmtpMessage(t.getMessage());
+        }
+        return false;
+    }
+
+    private static boolean looksLikeTransientSmtpMessage(String message) {
+        if (message == null || message.isBlank()) {
+            // Unknown SMTP send failure — safer to retry than drop.
+            return true;
+        }
+        String m = message.toLowerCase();
+        if (m.contains("authentication")
+                || m.contains("invalid addresses")
+                || m.contains("unknown user")
+                || m.contains("550")) {
+            return false;
+        }
+        return m.contains("421")
+                || m.contains("450")
+                || m.contains("451")
+                || m.contains("452")
+                || m.contains("timeout")
+                || m.contains("timed out")
+                || m.contains("connection")
+                || m.contains("temporarily")
+                || m.contains("try again")
+                || m.contains("service not available");
     }
 }

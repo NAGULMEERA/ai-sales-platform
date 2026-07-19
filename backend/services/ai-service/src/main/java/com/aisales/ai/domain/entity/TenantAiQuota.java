@@ -37,6 +37,21 @@ public class TenantAiQuota {
     @Column(name = "daily_token_limit", nullable = false)
     private long dailyTokenLimit;
 
+    /**
+     * Separate EXECUTE budget. Null = use platform default for execute; 0 = no separate execute cap.
+     */
+    @Column(name = "daily_execute_token_limit")
+    private Long dailyExecuteTokenLimit;
+
+    /**
+     * Separate EMBED budget. Null = use platform default for embed; 0 = no separate embed cap.
+     */
+    @Column(name = "daily_embed_token_limit")
+    private Long dailyEmbedTokenLimit;
+
+    @Column(name = "plan_code", length = 50)
+    private String planCode;
+
     @Builder.Default
     @Column(nullable = false)
     private boolean enabled = true;

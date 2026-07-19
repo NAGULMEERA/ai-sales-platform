@@ -75,14 +75,15 @@ class AuthServiceLogoutTest {
     void shouldRejectLogoutWithRefreshTokenOwnedByAnotherUser() {
         UUID authenticatedUser = UUID.randomUUID();
         UUID tokenOwner = UUID.randomUUID();
+        String hash = RefreshTokenHasher.sha256Hex("refresh");
         RefreshToken token = RefreshToken.builder()
                 .id(UUID.randomUUID())
                 .userId(tokenOwner)
-                .token("refresh")
+                .token(hash)
                 .tokenFamilyId(UUID.randomUUID())
                 .revoked(false)
                 .build();
-        when(refreshTokenRepository.findByTokenAndRevokedFalse("refresh")).thenReturn(Optional.of(token));
+        when(refreshTokenRepository.findByTokenAndRevokedFalse(hash)).thenReturn(Optional.of(token));
 
         LogoutRequest request = new LogoutRequest();
         request.setRefreshToken("refresh");

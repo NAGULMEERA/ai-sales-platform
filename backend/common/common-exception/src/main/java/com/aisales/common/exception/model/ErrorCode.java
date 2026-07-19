@@ -22,6 +22,7 @@ public enum ErrorCode {
     EVENT_PUBLISH_ERROR("ERR_008", "Failed to publish event", HttpStatus.INTERNAL_SERVER_ERROR),
     CONFLICT("ERR_009", "Resource conflict", HttpStatus.CONFLICT),
     SERVICE_UNAVAILABLE("ERR_010", "Service unavailable", HttpStatus.SERVICE_UNAVAILABLE),
+    RATE_LIMIT_EXCEEDED("ERR_011", "Rate limit exceeded", HttpStatus.TOO_MANY_REQUESTS),
 
     // Authentication & authorization
     AUTH_INVALID_TOKEN("AUTH_001", "Invalid or expired token", HttpStatus.UNAUTHORIZED),

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 /**
  * Mints platform access tokens using RSA (RS256). Enabled only where
@@ -32,19 +33,24 @@ public class JwtTokenProvider {
     }
 
     public TokenInfo generateTokens(String userId, String tenantId, String email, Set<String> roles) {
-        return generateTokens(userId, tenantId, null, email, roles, Set.of());
+        return generateTokens(userId, tenantId, null, email, roles, Set.of(), null);
     }
 
     public TokenInfo generateTokens(String userId, String tenantId, String organizationId, String email,
                                     Set<String> roles, Set<String> permissions) {
+        return generateTokens(userId, tenantId, organizationId, email, roles, permissions, null);
+    }
+
+    public TokenInfo generateTokens(String userId, String tenantId, String organizationId, String email,
+                                    Set<String> roles, Set<String> permissions, String subscriptionPlan) {
         Instant now = Instant.now();
         Instant accessExpiry = now.plusMillis(accessTokenExpirationMs);
         Instant refreshExpiry = now.plusMillis(refreshTokenExpirationMs);
 
         String accessToken = buildToken(userId, tenantId, organizationId, email, roles, permissions,
-                accessExpiry, SecurityConstants.ACCESS_TOKEN);
+                subscriptionPlan, accessExpiry, SecurityConstants.ACCESS_TOKEN);
         String refreshToken = buildToken(userId, tenantId, organizationId, email, roles, permissions,
-                refreshExpiry, SecurityConstants.REFRESH_TOKEN);
+                subscriptionPlan, refreshExpiry, SecurityConstants.REFRESH_TOKEN);
 
         return TokenInfo.builder()
                 .accessToken(accessToken)
@@ -60,9 +66,14 @@ public class JwtTokenProvider {
      */
     public TokenInfo generateAccessToken(String userId, String tenantId, String organizationId, String email,
                                          Set<String> roles, Set<String> permissions) {
+        return generateAccessToken(userId, tenantId, organizationId, email, roles, permissions, null);
+    }
+
+    public TokenInfo generateAccessToken(String userId, String tenantId, String organizationId, String email,
+                                         Set<String> roles, Set<String> permissions, String subscriptionPlan) {
         Instant accessExpiry = Instant.now().plusMillis(accessTokenExpirationMs);
         String accessToken = buildToken(userId, tenantId, organizationId, email, roles, permissions,
-                accessExpiry, SecurityConstants.ACCESS_TOKEN);
+                subscriptionPlan, accessExpiry, SecurityConstants.ACCESS_TOKEN);
         return TokenInfo.builder()
                 .accessToken(accessToken)
                 .tokenType("Bearer")
@@ -72,7 +83,8 @@ public class JwtTokenProvider {
     }
 
     private String buildToken(String userId, String tenantId, String organizationId, String email,
-                              Set<String> roles, Set<String> permissions, Instant expiry, String tokenType) {
+                              Set<String> roles, Set<String> permissions, String subscriptionPlan,
+                              Instant expiry, String tokenType) {
         var builder = Jwts.builder()
                 .header().keyId(keyProvider.getKeyId()).and()
                 .subject(userId)
@@ -86,6 +98,9 @@ public class JwtTokenProvider {
                 .signWith(keyProvider.getPrivateKey(), Jwts.SIG.RS256);
         if (organizationId != null) {
             builder.claim(SecurityConstants.ORGANIZATION_ID_CLAIM, organizationId);
+        }
+        if (StringUtils.hasText(subscriptionPlan)) {
+            builder.claim(SecurityConstants.SUBSCRIPTION_PLAN_CLAIM, subscriptionPlan.trim().toUpperCase());
         }
         return builder.compact();
     }

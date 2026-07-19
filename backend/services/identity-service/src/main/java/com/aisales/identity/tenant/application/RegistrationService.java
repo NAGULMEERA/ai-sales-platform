@@ -1,6 +1,7 @@
 package com.aisales.identity.tenant.application;
 
 import com.aisales.common.core.util.CorrelationIdUtils;
+import com.aisales.common.core.util.EmailNormalizer;
 import com.aisales.common.events.model.TenantCreatedEvent;
 import com.aisales.common.events.model.UserCreatedEvent;
 import com.aisales.common.events.publisher.EventPublisher;
@@ -55,7 +56,8 @@ public class RegistrationService {
 
     @Transactional
     public RegistrationResponse register(RegisterRequest request, String ipAddress, String userAgent) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String email = EmailNormalizer.normalize(request.getEmail());
+        if (userRepository.existsByEmail(email)) {
             throw new ValidationException("Email already registered");
         }
 
@@ -83,7 +85,7 @@ public class RegistrationService {
         User user = userRepository.save(User.builder()
                 .tenantId(tenant.getId())
                 .organizationId(organizationId)
-                .email(request.getEmail())
+                .email(email)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())

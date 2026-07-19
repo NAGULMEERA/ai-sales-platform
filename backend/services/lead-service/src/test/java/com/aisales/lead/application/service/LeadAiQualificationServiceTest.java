@@ -3,6 +3,7 @@ package com.aisales.lead.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class LeadAiQualificationServiceTest {
 
     @Mock private LeadRepository leadRepository;
+    @Mock private IndustryQualificationConfigResolver qualificationConfigResolver;
     @Mock private AiServiceClient aiServiceClient;
     @Mock private LeadService leadService;
     @Mock private LeadExtensionService extensionService;
@@ -55,10 +57,18 @@ class LeadAiQualificationServiceTest {
         service = new LeadAiQualificationService(
                 leadRepository,
                 new LeadQualificationVariableMapper(),
+                qualificationConfigResolver,
                 aiServiceClient,
                 leadService,
                 extensionService,
                 new LeadMapper());
+        lenient()
+                .when(qualificationConfigResolver.resolve(any()))
+                .thenAnswer(invocation -> {
+                    QualifyLeadWithAiRequest req = invocation.getArgument(0);
+                    return new IndustryQualificationConfigResolver.Resolved(
+                            req.getPromptCode(), req.getVariableKeys());
+                });
     }
 
     @AfterEach

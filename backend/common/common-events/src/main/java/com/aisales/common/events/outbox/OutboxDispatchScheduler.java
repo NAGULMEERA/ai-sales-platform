@@ -74,7 +74,10 @@ public class OutboxDispatchScheduler {
         for (List<OutboxEvent> group : byAggregate.values()) {
             futures.add(CompletableFuture.runAsync(() -> {
                 for (OutboxEvent event : group) {
-                    dispatchOne(event);
+                    if (!dispatchOne(event)) {
+                        // Stop this aggregate chain; later events stay PENDING until predecessors clear.
+                        break;
+                    }
                 }
             }, dispatcherExecutor));
         }
@@ -88,7 +91,8 @@ public class OutboxDispatchScheduler {
         return event.getId() != null ? event.getId().toString() : "unknown";
     }
 
-    private void dispatchOne(OutboxEvent outboxEvent) {
+    /** @return true when published; false when retrying or permanently failed */
+    private boolean dispatchOne(OutboxEvent outboxEvent) {
         io.micrometer.core.instrument.Timer.Sample sample =
                 platformMetrics != null ? platformMetrics.startTimer() : null;
         try {
@@ -103,6 +107,7 @@ public class OutboxDispatchScheduler {
             if (platformMetrics != null) {
                 platformMetrics.increment(MetricNames.OUTBOX_DISPATCHED, "status", "published");
             }
+            return true;
         } catch (Exception ex) {
             outboxEvent.setRetryCount(outboxEvent.getRetryCount() + 1);
             if (outboxEvent.getRetryCount() >= maxRetries) {
@@ -115,14 +120,20 @@ public class OutboxDispatchScheduler {
                 }
             } else {
                 outboxEvent.setStatus(OutboxEvent.OutboxStatus.PENDING);
-                outboxEvent.setClaimedAt(null);
-                log.warn("Outbox event {} dispatch failed (retry {}): {}",
-                        outboxEvent.getId(), outboxEvent.getRetryCount(), ex.getMessage());
+                // Exponential backoff via claimed_at gate (claim skips until this instant).
+                long backoffMs = Math.min(60_000L, (1L << Math.min(outboxEvent.getRetryCount(), 6)) * 1_000L);
+                outboxEvent.setClaimedAt(Instant.now().plusMillis(backoffMs));
+                log.warn("Outbox event {} dispatch failed (retry {}, backoff {}ms): {}",
+                        outboxEvent.getId(),
+                        outboxEvent.getRetryCount(),
+                        backoffMs,
+                        ex.getMessage());
                 if (platformMetrics != null) {
                     platformMetrics.increment(MetricNames.OUTBOX_DISPATCHED, "status", "retry");
                 }
             }
             claimService.save(outboxEvent);
+            return false;
         } finally {
             if (sample != null && platformMetrics != null) {
                 platformMetrics.recordTimer(sample, MetricNames.KAFKA_PUBLISH_LATENCY,

@@ -33,6 +33,8 @@ aisales:
       url: ${CUSTOMER_SERVICE_URL:}
     ai-service:
       url: ${AI_SERVICE_URL:}
+    marketplace-service:
+      url: ${MARKETPLACE_SERVICE_URL:}
   events:
     default-topic: aisales-events
     outbox:

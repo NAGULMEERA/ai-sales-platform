@@ -1,6 +1,7 @@
 package com.aisales.ai.application.service;
 
 import com.aisales.ai.application.rag.RerankerRegistry;
+import com.aisales.ai.domain.embedding.EmbeddingBatchResult;
 import com.aisales.ai.domain.embedding.EmbeddingProvider;
 import com.aisales.ai.infrastructure.configuration.RagProperties;
 import com.aisales.ai.infrastructure.embedding.EmbeddingProviderRegistry;
@@ -31,6 +32,7 @@ public class KnowledgeRetrievalService {
     private final EmbeddingProviderRegistry embeddingProviderRegistry;
     private final PlatformTransactionManager transactionManager;
     private final TokenUsageService tokenUsageService;
+    private final AiQuotaService aiQuotaService;
     private final RerankerRegistry rerankerRegistry;
     private final RagProperties ragProperties;
 
@@ -51,18 +53,25 @@ public class KnowledgeRetrievalService {
 
         EmbeddingProvider provider = embeddingProviderRegistry.resolveDefault();
         String trimmedQuery = query.trim();
-        List<float[]> vectors = provider.embed(List.of(trimmedQuery));
+        long reserved = aiQuotaService.reserveEmbed(tenantId);
+        EmbeddingBatchResult batch;
+        try {
+            batch = provider.embedWithUsage(List.of(trimmedQuery));
+            tokenUsageService.recordEmbeddingUsage(
+                    tenantId,
+                    provider.name().toLowerCase(),
+                    provider.modelName(),
+                    List.of(trimmedQuery),
+                    knowledgeBaseId.toString(),
+                    "RAG_RETRIEVE",
+                    batch.promptTokens());
+        } finally {
+            aiQuotaService.release(tenantId, AiQuotaService.OPERATION_EMBED, reserved);
+        }
+        List<float[]> vectors = batch.vectors();
         if (vectors.isEmpty()) {
             return List.of();
         }
-
-        tokenUsageService.recordEmbeddingUsage(
-                tenantId,
-                provider.name().toLowerCase(),
-                provider.modelName(),
-                List.of(trimmedQuery),
-                knowledgeBaseId.toString(),
-                "RAG_RETRIEVE");
 
         float[] queryVector = vectors.get(0);
         double maxDistance = ragProperties.getMaxCosineDistance();

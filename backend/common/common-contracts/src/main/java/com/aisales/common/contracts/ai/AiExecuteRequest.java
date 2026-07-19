@@ -44,4 +44,11 @@ public class AiExecuteRequest {
 
     /** Max chunks to retrieve (default applied in AI Gateway). */
     private Integer retrievalTopK;
+
+    /**
+     * When true, response includes rendered system/user prompts (debug/admin only).
+     * Defaults to false so clients do not receive full prompt text or retrieved knowledge.
+     */
+    @Builder.Default
+    private boolean includeRenderedPrompts = false;
 }

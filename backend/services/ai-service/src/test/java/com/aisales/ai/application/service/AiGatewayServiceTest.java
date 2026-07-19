@@ -2,15 +2,20 @@ package com.aisales.ai.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.aisales.ai.application.rag.KnowledgeContextAssembler;
+import com.aisales.ai.domain.cache.CachedLlmResponse;
 import com.aisales.ai.domain.entity.PromptTemplate;
 import com.aisales.ai.domain.entity.PromptVersionEntity;
 import com.aisales.ai.domain.llm.LlmCompletionResult;
 import com.aisales.ai.domain.llm.LlmProvider;
+import com.aisales.ai.infrastructure.configuration.LlmProperties;
 import com.aisales.common.contracts.ai.AiExecuteRequest;
 import com.aisales.common.contracts.ai.AiExecuteResponse;
 import com.aisales.common.contracts.ai.PromptStatus;
@@ -21,6 +26,7 @@ import com.aisales.common.events.publisher.EventPublisher;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +35,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 @ExtendWith(MockitoExtension.class)
 class AiGatewayServiceTest {
@@ -39,6 +47,8 @@ class AiGatewayServiceTest {
     @Mock private KnowledgeRetrievalService knowledgeRetrievalService;
     @Mock private AiQuotaService aiQuotaService;
     @Mock private TokenUsageService tokenUsageService;
+    @Mock private SemanticCacheService semanticCacheService;
+    @Mock private PlatformTransactionManager transactionManager;
 
     private AiGatewayService aiGatewayService;
     private UUID tenantId;
@@ -47,6 +57,13 @@ class AiGatewayServiceTest {
     void setUp() {
         tenantId = UUID.randomUUID();
         TenantContext.setTenantId(tenantId.toString());
+        LlmProperties llmProperties = new LlmProperties();
+        llmProperties.setProvider("STUB");
+        lenient().when(llmProvider.name()).thenReturn("STUB");
+        lenient().when(semanticCacheService.get(any(), anyString(), anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        lenient().when(aiQuotaService.reserveExecute(any())).thenReturn(4096L);
+        lenient().when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         aiGatewayService = new AiGatewayService(
                 promptService,
                 new PromptRenderer(),
@@ -55,7 +72,10 @@ class AiGatewayServiceTest {
                 knowledgeRetrievalService,
                 new KnowledgeContextAssembler(),
                 aiQuotaService,
-                tokenUsageService);
+                tokenUsageService,
+                semanticCacheService,
+                llmProperties,
+                transactionManager);
     }
 
     @AfterEach
@@ -103,7 +123,8 @@ class AiGatewayServiceTest {
                 .build());
 
         assertThat(response.getPromptCode()).isEqualTo("LEAD_QUALIFY");
-        assertThat(response.getRenderedUserPrompt()).isEqualTo("Qualify Jane");
+        assertThat(response.getRenderedUserPrompt()).isNull();
+        assertThat(response.getRenderedSystemPrompt()).isNull();
         assertThat(response.getProvider()).isEqualTo("STUB");
         assertThat(response.getStructuredOutput()).containsEntry("recommendation", "REVIEW");
         assertThat(response.getConfidence()).isEqualTo(0.85);
@@ -115,9 +136,42 @@ class AiGatewayServiceTest {
         assertThat(captor.getValue().getPromptTokens()).isEqualTo(10);
         assertThat(captor.getValue().getCompletionTokens()).isEqualTo(5);
         assertThat(captor.getValue().getTotalTokens()).isEqualTo(15);
-        verify(aiQuotaService).assertWithinDailyBudget(tenantId);
+        verify(aiQuotaService).reserveExecute(tenantId);
+        verify(aiQuotaService).release(eq(tenantId), eq(AiQuotaService.OPERATION_EXECUTE), eq(4096L));
         verify(tokenUsageService).recordExecuteUsage(
                 eq(tenantId), any(UUID.class), eq("LEAD_QUALIFY"), any(), eq("lead-1"));
+        verify(semanticCacheService)
+                .put(eq(tenantId), eq("LEAD_QUALIFY|v1"), anyString(), any(CachedLlmResponse.class), eq("stub-model"));
+    }
+
+    @Test
+    void shouldReturnCachedResponseWithoutCallingLlm() {
+        stubPrompt("LEAD_QUALIFY", "Qualify {{leadName}}", List.of("leadName"));
+        when(semanticCacheService.get(eq(tenantId), eq("LEAD_QUALIFY|v1"), anyString(), eq("stub-model")))
+                .thenReturn(Optional.of(CachedLlmResponse.builder()
+                        .content("{\"recommendation\":\"REVIEW\"}")
+                        .model("stub-model")
+                        .metadata(Map.of(
+                                "provider", "STUB",
+                                "confidence", 0.91,
+                                "structuredOutput", Map.of("recommendation", "REVIEW")))
+                        .build()));
+
+        AiExecuteResponse response = aiGatewayService.execute(AiExecuteRequest.builder()
+                .promptCode("LEAD_QUALIFY")
+                .variables(Map.of("leadName", "Jane"))
+                .businessReference("lead-cached")
+                .build());
+
+        assertThat(response.getProvider()).isEqualTo("STUB");
+        assertThat(response.getRawText()).contains("REVIEW");
+        assertThat(response.getStructuredOutput()).containsEntry("recommendation", "REVIEW");
+        assertThat(response.getPromptTokens()).isZero();
+        assertThat(response.getCompletionTokens()).isZero();
+        verify(llmProvider, never()).complete(any());
+        verify(tokenUsageService, never()).recordExecuteUsage(any(), any(), any(), any(), any());
+        verify(aiQuotaService, never()).reserveExecute(any());
+        verify(semanticCacheService, never()).put(any(), anyString(), anyString(), any(), anyString());
     }
 
     @Test
@@ -144,6 +198,7 @@ class AiGatewayServiceTest {
                 .knowledgeBaseId(knowledgeBaseId)
                 .retrievalQuery("warranty policy")
                 .retrievalTopK(3)
+                .includeRenderedPrompts(true)
                 .build());
 
         assertThat(response.getKnowledgeBaseId()).isEqualTo(knowledgeBaseId);
@@ -174,6 +229,7 @@ class AiGatewayServiceTest {
                         "location", "Whitefield",
                         "timeline", "3 months"))
                 .businessReference("lead-re-1")
+                .includeRenderedPrompts(true)
                 .build());
 
         assertThat(response.getPromptCode()).isEqualTo("LEAD_QUALIFY_REAL_ESTATE");
@@ -207,6 +263,7 @@ class AiGatewayServiceTest {
                         "financeRequired", "true",
                         "exchange", "yes"))
                 .businessReference("lead-auto-1")
+                .includeRenderedPrompts(true)
                 .build());
 
         assertThat(response.getPromptCode()).isEqualTo("LEAD_QUALIFY_AUTOMOBILE");

@@ -60,7 +60,10 @@ class IdentityCriticalPathsIntegrationTest extends IdentityIntegrationTestBase {
         assertThat(auditLogRepository.countByAction(AuditAction.USER_REGISTERED.name())).isGreaterThanOrEqualTo(1);
         assertThat(auditLogRepository.countByAction(AuditAction.USER_LOGIN.name())).isGreaterThanOrEqualTo(1);
         assertThat(auditLogRepository.countByAction(AuditAction.USER_LOGOUT.name())).isGreaterThanOrEqualTo(1);
-        assertThat(refreshTokenRepository.findByTokenAndRevokedFalse(login.getRefreshToken())).isEmpty();
+        assertThat(refreshTokenRepository.findByTokenAndRevokedFalse(
+                        com.aisales.identity.authentication.application.RefreshTokenHasher.sha256Hex(
+                                login.getRefreshToken())))
+                .isEmpty();
     }
 
     @Test

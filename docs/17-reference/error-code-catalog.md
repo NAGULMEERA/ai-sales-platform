@@ -30,6 +30,7 @@ Central registry of platform error codes. Enum source: `backend/common/common-ex
 
 | Code | HTTP | Default Message |
 |------|------|-----------------|
+| ERR_011 | 429 | Rate limit exceeded |
 | AI_001 | 429 | AI rate limit exceeded |
 | AI_002 | 503 | AI service unavailable |
 

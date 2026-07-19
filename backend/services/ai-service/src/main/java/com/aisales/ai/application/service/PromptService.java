@@ -3,6 +3,7 @@ package com.aisales.ai.application.service;
 import com.aisales.ai.application.mapper.AiMapper;
 import com.aisales.ai.domain.entity.PromptTemplate;
 import com.aisales.ai.domain.entity.PromptVersionEntity;
+import com.aisales.ai.domain.prompt.PlatformPromptConstants;
 import com.aisales.ai.infrastructure.persistence.PromptTemplateRepository;
 import com.aisales.ai.infrastructure.persistence.PromptVersionRepository;
 import com.aisales.common.contracts.ai.CreatePromptRequest;
@@ -17,6 +18,7 @@ import com.aisales.common.exception.exception.ValidationException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -86,8 +88,7 @@ public class PromptService {
 
     @Transactional(readOnly = true)
     public PromptDto getByCode(String code) {
-        PromptTemplate template = promptTemplateRepository
-                .findByTenantIdAndCodeAndDeletedAtIsNull(requireTenantId(), code.trim().toUpperCase())
+        PromptTemplate template = findByCodeWithPlatformFallback(requireTenantId(), code.trim().toUpperCase())
                 .orElseThrow(() -> new NotFoundException("Prompt not found: " + code));
         return mapper.toDto(template, latestVersion(template));
     }
@@ -161,8 +162,10 @@ public class PromptService {
         if (promptId != null) {
             template = requireTemplate(promptId);
         } else {
-            template = promptTemplateRepository
-                    .findByTenantIdAndCodeAndDeletedAtIsNull(requireTenantId(), promptCode.trim().toUpperCase())
+            if (!StringUtils.hasText(promptCode)) {
+                throw new ValidationException("promptCode or promptId is required");
+            }
+            template = findByCodeWithPlatformFallback(requireTenantId(), promptCode.trim().toUpperCase())
                     .orElseThrow(() -> new NotFoundException("Prompt not found: " + promptCode));
         }
         template.assertActiveRecord();
@@ -173,11 +176,25 @@ public class PromptService {
         int version = versionNumber != null
                 ? versionNumber
                 : (template.getActiveVersion() != null ? template.getActiveVersion() : 1);
+        // Version rows are owned by the template's tenant (tenant override or platform seed).
         PromptVersionEntity promptVersion = promptVersionRepository
-                .findByTenantIdAndPromptIdAndVersionNumber(requireTenantId(), template.getId(), version)
+                .findByTenantIdAndPromptIdAndVersionNumber(template.getTenantId(), template.getId(), version)
                 .orElseThrow(() -> new NotFoundException(
                         "Prompt version not found: " + template.getCode() + " v" + version));
         return new ResolvedPrompt(template, promptVersion);
+    }
+
+    private Optional<PromptTemplate> findByCodeWithPlatformFallback(UUID tenantId, String code) {
+        Optional<PromptTemplate> tenantPrompt =
+                promptTemplateRepository.findByTenantIdAndCodeAndDeletedAtIsNull(tenantId, code);
+        if (tenantPrompt.isPresent()) {
+            return tenantPrompt;
+        }
+        if (PlatformPromptConstants.PLATFORM_TENANT_ID.equals(tenantId)) {
+            return Optional.empty();
+        }
+        return promptTemplateRepository.findByTenantIdAndCodeAndDeletedAtIsNull(
+                PlatformPromptConstants.PLATFORM_TENANT_ID, code);
     }
 
     private void archiveActiveVersions(UUID tenantId, UUID promptId, UUID keepId) {

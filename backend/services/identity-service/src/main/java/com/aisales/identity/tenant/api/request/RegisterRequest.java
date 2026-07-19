@@ -1,8 +1,8 @@
 package com.aisales.identity.tenant.api.request;
 
+import com.aisales.common.core.validation.PasswordPolicy;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 
@@ -13,8 +13,7 @@ public class RegisterRequest {
     @Email
     private String email;
 
-    @NotBlank
-    @Size(min = 8, max = 128)
+    @PasswordPolicy
     private String password;
 
     @NotBlank

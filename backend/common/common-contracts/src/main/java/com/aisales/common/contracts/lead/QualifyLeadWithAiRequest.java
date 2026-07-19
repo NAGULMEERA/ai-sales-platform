@@ -1,6 +1,5 @@
 package com.aisales.common.contracts.lead;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +10,8 @@ import lombok.NoArgsConstructor;
 
 /**
  * AI-assisted qualification via AI Gateway. Same request shape for every industry;
- * {@code promptCode} and {@code variableKeys} come from plugin metadata.
+ * {@code promptCode} and {@code variableKeys} default from enabled industry plugin config
+ * when omitted (caller override still wins).
  */
 @Data
 @Builder
@@ -19,8 +19,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class QualifyLeadWithAiRequest {
 
-    /** Prompt registry code (e.g. LEAD_QUALIFY_REAL_ESTATE, LEAD_QUALIFY_AUTOMOBILE). */
-    @NotBlank
+    /**
+     * Prompt registry code (e.g. LEAD_QUALIFY_REAL_ESTATE). Optional when the tenant has an
+     * enabled industry plugin with {@code qualificationPromptCode}.
+     */
     @Size(max = 100)
     private String promptCode;
 

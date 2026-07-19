@@ -23,11 +23,26 @@ spec:
               value: prod
             - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
               value: http://service-registry:8761/eureka/
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
             - name: JWT_PUBLIC_KEY_PEM
               valueFrom:
                 secretKeyRef:
                   name: aisales-secrets
                   key: JWT_PUBLIC_KEY_PEM
+            # Honor X-Forwarded-For only from in-cluster / private peers (ingress).
+            - name: AISALES_GATEWAY_RATE_LIMIT_TRUSTED_PROXY_CIDRS_0
+              value: 10.0.0.0/8
+            - name: AISALES_GATEWAY_RATE_LIMIT_TRUSTED_PROXY_CIDRS_1
+              value: 172.16.0.0/12
+            - name: AISALES_GATEWAY_RATE_LIMIT_TRUSTED_PROXY_CIDRS_2
+              value: 192.168.0.0/16
           readinessProbe:
             httpGet:
               path: /actuator/health

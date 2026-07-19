@@ -68,7 +68,25 @@ public class TokenUsageService {
             List<String> texts,
             String businessReference,
             String collectionOrPurpose) {
-        int embeddingTokens = estimateEmbeddingTokens(texts);
+        return recordEmbeddingUsage(
+                tenantId, provider, model, texts, businessReference, collectionOrPurpose, null);
+    }
+
+    /**
+     * @param providerPromptTokens provider-reported prompt tokens when available; otherwise estimated
+     */
+    @Transactional
+    public TokenUsage recordEmbeddingUsage(
+            UUID tenantId,
+            String provider,
+            String model,
+            List<String> texts,
+            String businessReference,
+            String collectionOrPurpose,
+            Integer providerPromptTokens) {
+        int embeddingTokens = providerPromptTokens != null && providerPromptTokens > 0
+                ? providerPromptTokens
+                : estimateEmbeddingTokens(texts);
         BigDecimal cost = costEstimator.estimateEmbedding(model, embeddingTokens);
 
         TokenUsage usage = tokenUsageRepository.save(TokenUsage.builder()

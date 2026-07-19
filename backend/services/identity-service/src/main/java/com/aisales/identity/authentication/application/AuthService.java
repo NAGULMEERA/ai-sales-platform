@@ -4,6 +4,7 @@ import com.aisales.common.contracts.auth.AuthResponse;
 import com.aisales.common.contracts.auth.LoginRequest;
 import com.aisales.common.contracts.auth.RefreshTokenRequest;
 import com.aisales.common.core.util.CorrelationIdUtils;
+import com.aisales.common.core.util.EmailNormalizer;
 import com.aisales.common.events.model.EmailVerifiedEvent;
 import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.NotFoundException;
@@ -45,6 +46,13 @@ import com.aisales.identity.user.infrastructure.persistence.UserRepository;
 @RequiredArgsConstructor
 public class AuthService {
 
+    /**
+     * BCrypt hash used when the email is unknown so password verification always takes
+     * roughly the same time (reduces user-enumeration via timing).
+     */
+    private static final String DUMMY_PASSWORD_HASH =
+            "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
+
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
@@ -63,28 +71,41 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(LoginRequest request, String ipAddress, String userAgent) {
-        Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
-        if (userOptional.isEmpty()) {
-            auditLoginFailure(null, null, "unknown_account", ipAddress, userAgent);
-            recordLoginMetric(null, "failure", "unknown_account");
+        Optional<User> userOptional = userRepository.findByEmail(EmailNormalizer.normalize(request.getEmail()));
+        User user = userOptional.orElse(null);
+        if (user != null) {
+            loginLockoutService.unlockIfExpired(user);
+        }
+
+        // Always verify against a real or dummy hash before status/lockout responses.
+        String hashToCheck = user != null ? user.getPasswordHash() : DUMMY_PASSWORD_HASH;
+        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), hashToCheck);
+
+        if (user == null || !passwordMatches) {
+            if (user != null && !loginLockoutService.isCurrentlyLocked(user)) {
+                loginLockoutService.recordFailedPasswordAttempt(user.getId(), ipAddress, userAgent);
+            }
+            auditLoginFailure(
+                    user != null ? user.getTenantId() : null,
+                    user != null ? user.getId() : null,
+                    user == null ? "unknown_account" : "invalid_credentials",
+                    ipAddress,
+                    userAgent);
+            recordLoginMetric(
+                    user != null ? user.getTenantId() : null,
+                    "failure",
+                    user == null ? "unknown_account" : "invalid_credentials");
             throw new UnauthorizedException("Invalid credentials");
         }
-        User user = userOptional.get();
-        loginLockoutService.unlockIfExpired(user);
+
         if (loginLockoutService.isCurrentlyLocked(user)) {
             auditLoginFailure(user.getTenantId(), user.getId(), "account_locked", ipAddress, userAgent);
             recordLoginMetric(user.getTenantId(), "failure", "account_locked");
-            throw new UnauthorizedException("Account is temporarily locked. Try again later.");
+            throw new UnauthorizedException("Invalid credentials");
         }
         if (user.getStatus() != User.UserStatus.ACTIVE) {
             auditLoginFailure(user.getTenantId(), user.getId(), "account_inactive", ipAddress, userAgent);
             recordLoginMetric(user.getTenantId(), "failure", "account_inactive");
-            throw new UnauthorizedException("Account is not active");
-        }
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            loginLockoutService.recordFailedPasswordAttempt(user.getId(), ipAddress, userAgent);
-            auditLoginFailure(user.getTenantId(), user.getId(), "invalid_credentials", ipAddress, userAgent);
-            recordLoginMetric(user.getTenantId(), "failure", "invalid_credentials");
             throw new UnauthorizedException("Invalid credentials");
         }
         if (authProperties.isRequireEmailVerificationForLogin() && !user.isEmailVerified()) {
@@ -113,12 +134,17 @@ public class AuthService {
 
     @Transactional
     public AuthResponse refresh(RefreshTokenRequest request, String ipAddress, String userAgent) {
-        RefreshToken refreshToken = refreshTokenRepository.findByToken(request.getRefreshToken())
+        RefreshToken refreshToken = refreshTokenRepository
+                .findByToken(RefreshTokenHasher.sha256Hex(request.getRefreshToken()))
                 .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
         User user = userRepository.findById(refreshToken.getUserId())
                 .orElseThrow(() -> new NotFoundException("User", refreshToken.getUserId()));
+        if (user.getStatus() != User.UserStatus.ACTIVE) {
+            refreshTokenService.revokeTokenFamily(refreshToken.getTokenFamilyId());
+            throw new UnauthorizedException("Invalid refresh token");
+        }
         if (loginLockoutService.isCurrentlyLocked(user)) {
-            throw new UnauthorizedException("Account is temporarily locked. Try again later.");
+            throw new UnauthorizedException("Invalid refresh token");
         }
         if (authProperties.isRequireEmailVerificationForLogin() && !user.isEmailVerified()) {
             throw new UnauthorizedException("Email verification required");
@@ -128,12 +154,14 @@ public class AuthService {
 
     @Transactional
     public MessageResponse logout(LogoutRequest request, UUID userId, String ipAddress, String userAgent) {
-        refreshTokenRepository.findByTokenAndRevokedFalse(request.getRefreshToken()).ifPresent(token -> {
-            if (!token.getUserId().equals(userId)) {
-                throw new UnauthorizedException("Invalid refresh token");
-            }
-            refreshTokenService.revokeToken(token.getToken());
-        });
+        refreshTokenRepository
+                .findByTokenAndRevokedFalse(RefreshTokenHasher.sha256Hex(request.getRefreshToken()))
+                .ifPresent(token -> {
+                    if (!token.getUserId().equals(userId)) {
+                        throw new UnauthorizedException("Invalid refresh token");
+                    }
+                    refreshTokenService.revokeToken(request.getRefreshToken());
+                });
         auditService.logSecurityEvent(null, userId, AuditAction.USER_LOGOUT, "user", userId.toString(),
                 ipAddress, userAgent, null);
         return MessageResponse.builder().message("Logged out successfully").build();
@@ -172,7 +200,7 @@ public class AuthService {
 
     @Transactional
     public MessageResponse forgotPassword(ForgotPasswordRequest request) {
-        userRepository.findByEmail(request.getEmail()).ifPresent(user ->
+        userRepository.findByEmail(EmailNormalizer.normalize(request.getEmail())).ifPresent(user ->
                 passwordResetTokenService.issueResetToken(
                         user.getTenantId(), user.getId(), user.getEmail(), user.getFirstName()));
         return MessageResponse.builder()
@@ -182,7 +210,7 @@ public class AuthService {
 
     @Transactional
     public MessageResponse resendVerificationEmail(ResendVerificationEmailRequest request) {
-        userRepository.findByEmail(request.getEmail()).ifPresent(user -> {
+        userRepository.findByEmail(EmailNormalizer.normalize(request.getEmail())).ifPresent(user -> {
             if (!user.isEmailVerified()) {
                 emailVerificationService.resendVerificationToken(
                         user.getTenantId(), user.getId(), user.getEmail(), user.getFirstName());

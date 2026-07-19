@@ -37,6 +37,7 @@ public class LeadAiQualificationService {
 
     private final LeadRepository leadRepository;
     private final LeadQualificationVariableMapper variableMapper;
+    private final IndustryQualificationConfigResolver qualificationConfigResolver;
     private final AiServiceClient aiServiceClient;
     private final LeadService leadService;
     private final LeadExtensionService extensionService;
@@ -46,12 +47,13 @@ public class LeadAiQualificationService {
         Lead lead = leadRepository.findByTenantIdAndIdAndDeletedAtIsNull(requireTenantId(), leadId)
                 .orElseThrow(() -> new NotFoundException("Lead not found: " + leadId));
 
+        IndustryQualificationConfigResolver.Resolved config = qualificationConfigResolver.resolve(request);
+
         Map<String, String> variables = variableMapper.toVariables(
-                lead.getCustomerName(), lead.getAttributes(), request.getVariableKeys());
+                lead.getCustomerName(), lead.getAttributes(), config.variableKeys());
 
         // Remote AI call — must not hold a DB connection / transaction.
-        AiExecuteResponse ai = executeAi(request.getPromptCode().trim().toUpperCase(Locale.ROOT),
-                variables, leadId.toString());
+        AiExecuteResponse ai = executeAi(config.promptCode(), variables, leadId.toString());
 
         String recommendation = extractRecommendation(ai);
         Integer suggestedScore = extractSuggestedScore(ai);
@@ -103,7 +105,8 @@ public class LeadAiQualificationService {
                 .suggestedScore(scoreForRecord)
                 .qualified(qualified)
                 .variablesUsed(variables)
-                .renderedUserPrompt(ai.getRenderedUserPrompt())
+                // Prompt text is omitted from public qualification results (AI_003 privacy).
+                .renderedUserPrompt(null)
                 .notes(request.getNotes())
                 .build();
     }

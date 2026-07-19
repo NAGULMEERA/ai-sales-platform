@@ -93,4 +93,19 @@ class TokenUsageServiceTest {
         verify(tokenUsageRepository).save(captor.capture());
         assertThat(captor.getValue().getBusinessReference()).isEqualTo("doc-1");
     }
+
+    @Test
+    void shouldPreferProviderReportedEmbeddingTokens() {
+        TokenUsage usage = service.recordEmbeddingUsage(
+                tenantId,
+                "OPENAI",
+                "text-embedding-3-small",
+                List.of("short text"),
+                "doc-2",
+                "EMBED",
+                42);
+
+        assertThat(usage.getTotalTokens()).isEqualTo(42);
+        assertThat(usage.getPromptTokens()).isEqualTo(42);
+    }
 }

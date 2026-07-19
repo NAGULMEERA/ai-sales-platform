@@ -35,6 +35,11 @@ public class SemanticCacheEntry {
     @Column(name = "tenant_id", nullable = false)
     private UUID tenantId;
 
+    /** Prompt code + version scope; empty for unscoped legacy entries. */
+    @Column(name = "prompt_scope", nullable = false, length = 150)
+    @Builder.Default
+    private String promptScope = "";
+
     @Column(name = "query_hash", nullable = false, length = 64)
     private String queryHash;
 

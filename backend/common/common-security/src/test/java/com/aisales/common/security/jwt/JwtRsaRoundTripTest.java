@@ -34,11 +34,12 @@ class JwtRsaRoundTripTest {
     @Test
     void shouldSignAndVerifyAccessTokenWithRsa() {
         var tokens = tokenProvider.generateAccessToken(
-                "user-1", "tenant-1", null, "a@b.com", Set.of("TENANT_ADMIN"), Set.of("lead:read"));
+                "user-1", "tenant-1", null, "a@b.com", Set.of("TENANT_ADMIN"), Set.of("lead:read"), "PREMIUM");
 
         var claims = jwtUtils.parseClaims(tokens.getAccessToken());
         assertThat(claims.getSubject()).isEqualTo("user-1");
         assertThat(claims.get("tenantId", String.class)).isEqualTo("tenant-1");
+        assertThat(claims.get("subscriptionPlan", String.class)).isEqualTo("PREMIUM");
         assertThat(keyProvider.jwks().toString()).contains("aisales-1");
     }
 }
