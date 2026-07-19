@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/search")
 @RequiredArgsConstructor
 @PreAuthorizeTenant
+@PreAuthorize("hasAuthority('search:read') or hasAuthority('tenant:admin') or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')")
 @Tag(name = "Search", description = "Tenant-aware hybrid enterprise search")
 public class SearchController {
 

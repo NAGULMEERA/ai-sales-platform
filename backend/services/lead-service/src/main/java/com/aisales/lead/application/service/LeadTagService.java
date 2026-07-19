@@ -12,7 +12,9 @@ import com.aisales.lead.infrastructure.persistence.LeadTagMappingRepository;
 import com.aisales.lead.infrastructure.persistence.LeadTagRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,11 +78,15 @@ public class LeadTagService {
     public List<LeadTagDto> listTags(UUID leadId) {
         UUID tenantId = requireTenantId();
         requireLead(tenantId, leadId);
-        return mappingRepository.findByLeadIdOrderByAssignedAtDesc(leadId).stream()
-                .map(mapping -> tagRepository
-                        .findById(mapping.getTagId())
-                        .filter(t -> t.getTenantId().equals(tenantId))
-                        .orElse(null))
+        List<LeadTagMapping> mappings = mappingRepository.findByLeadIdOrderByAssignedAtDesc(leadId);
+        if (mappings.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> tagIds = mappings.stream().map(LeadTagMapping::getTagId).distinct().toList();
+        Map<UUID, LeadTag> tagsById = tagRepository.findByTenantIdAndIdIn(tenantId, tagIds).stream()
+                .collect(Collectors.toMap(LeadTag::getId, t -> t, (a, b) -> a));
+        return mappings.stream()
+                .map(mapping -> tagsById.get(mapping.getTagId()))
                 .filter(t -> t != null)
                 .map(this::toDto)
                 .toList();

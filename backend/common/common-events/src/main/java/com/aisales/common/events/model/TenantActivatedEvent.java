@@ -11,12 +11,14 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class TenantActivatedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "TenantActivated";
+
     private String tenantName;
     private String slug;
 
     public static TenantActivatedEvent of(String tenantId, String tenantName, String slug, String correlationId) {
         TenantActivatedEvent event = new TenantActivatedEvent();
-        event.init("TenantActivated", tenantId, tenantId, correlationId);
+        event.init(EVENT_TYPE, tenantId, tenantId, correlationId);
         event.tenantName = tenantName;
         event.slug = slug;
         return event;

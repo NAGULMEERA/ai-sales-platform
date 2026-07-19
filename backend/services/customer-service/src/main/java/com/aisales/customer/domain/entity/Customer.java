@@ -1,5 +1,6 @@
 package com.aisales.customer.domain.entity;
 
+import com.aisales.common.contracts.customer.ContactMethodType;
 import com.aisales.common.contracts.customer.CustomerSourceType;
 import com.aisales.common.contracts.customer.CustomerStatus;
 import com.aisales.common.exception.exception.ValidationException;
@@ -218,16 +219,16 @@ public class Customer {
         touch(actor);
     }
 
-    public void syncPrimaryContact(String methodType, String value, UUID actor) {
+    public void syncPrimaryContact(ContactMethodType methodType, String value, UUID actor) {
         assertActiveRecord();
-        if (isBlank(value)) {
+        if (methodType == null || isBlank(value)) {
             return;
         }
         String normalized = value.trim();
         switch (methodType) {
-            case "PHONE" -> this.phone = normalized;
-            case "EMAIL" -> this.email = normalized;
-            case "WHATSAPP" -> this.whatsapp = normalized;
+            case PHONE -> this.phone = normalized;
+            case EMAIL -> this.email = normalized;
+            case WHATSAPP -> this.whatsapp = normalized;
             default -> {
                 // social accounts stay in contact methods / metadata
             }

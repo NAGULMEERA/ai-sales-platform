@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class CustomerVerifiedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "CustomerVerified";
+
     private String customerName;
     private String methodType;
     private String contactValue;
@@ -23,7 +25,7 @@ public class CustomerVerifiedEvent extends BaseEvent {
             String contactValue,
             String correlationId) {
         CustomerVerifiedEvent event = new CustomerVerifiedEvent();
-        event.init("CustomerVerified", tenantId, customerId, correlationId);
+        event.init(EVENT_TYPE, tenantId, customerId, correlationId);
         event.customerName = customerName;
         event.methodType = methodType;
         event.contactValue = contactValue;

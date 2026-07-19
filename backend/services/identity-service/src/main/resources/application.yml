@@ -9,9 +9,13 @@ aisales:
       # RS256: identity signs with the private key; others validate via public key or JWKS.
       # Production private key: Vault/Secret Manager → JWT_PRIVATE_KEY_PEM (or file location).
       signing-enabled: true
-      private-key-location: ${JWT_PRIVATE_KEY_LOCATION:${JWT_PRIVATE_KEY_PEM:classpath:jwt/local-private.pem}}
+      # Never default to classpath private key outside local profile (see application-local.yml).
+      private-key-location: ${JWT_PRIVATE_KEY_LOCATION:${JWT_PRIVATE_KEY_PEM:}}
       public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:jwt/local-public.pem}
       key-id: ${JWT_KEY_ID:aisales-1}
+      issuer: ${JWT_ISSUER:aisales-platform}
+      audience: ${JWT_AUDIENCE:aisales-api}
+      require-issuer-audience: ${JWT_REQUIRE_ISS_AUD:false}
       access-token-expiration-ms: 3600000
       refresh-token-expiration-ms: 86400000
   auth:
@@ -60,6 +64,7 @@ spring:
     import:
       - optional:configserver:http://localhost:8888
       - optional:classpath:platform/application-observability.yml
+      - optional:classpath:platform/application-prod.yml
       - optional:classpath:platform/application-cache.yml
       - optional:classpath:platform/application-openapi.yml
   datasource:

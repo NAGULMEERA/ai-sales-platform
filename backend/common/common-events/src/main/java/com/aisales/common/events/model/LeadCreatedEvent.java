@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class LeadCreatedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "LeadCreated";
+
     private String leadName;
     private String source;
     private String status;
@@ -18,7 +20,7 @@ public class LeadCreatedEvent extends BaseEvent {
     public static LeadCreatedEvent of(String tenantId, String leadId, String leadName,
                                       String source, String status, String correlationId) {
         LeadCreatedEvent event = new LeadCreatedEvent();
-        event.init("LeadCreated", tenantId, leadId, correlationId);
+        event.init(EVENT_TYPE, tenantId, leadId, correlationId);
         event.leadName = leadName;
         event.source = source;
         event.status = status;

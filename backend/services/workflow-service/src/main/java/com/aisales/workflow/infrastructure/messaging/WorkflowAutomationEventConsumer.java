@@ -36,8 +36,7 @@ public class WorkflowAutomationEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "workflow-automation-lead-created",
-                "LeadCreated",
-                LeadCreatedEvent.class,
+                LeadCreatedEvent.EVENT_TYPE, LeadCreatedEvent.class,
                 event -> automationEngine.onTrigger(
                         event.getTenantId(),
                         WorkflowTriggerType.LEAD_CREATED,
@@ -48,8 +47,7 @@ public class WorkflowAutomationEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "workflow-automation-lead-qualified",
-                "LeadQualified",
-                LeadQualifiedEvent.class,
+                LeadQualifiedEvent.EVENT_TYPE, LeadQualifiedEvent.class,
                 event -> automationEngine.onTrigger(
                         event.getTenantId(),
                         WorkflowTriggerType.LEAD_QUALIFIED,
@@ -60,8 +58,7 @@ public class WorkflowAutomationEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "workflow-automation-opportunity-created",
-                "OpportunityCreated",
-                OpportunityCreatedEvent.class,
+                OpportunityCreatedEvent.EVENT_TYPE, OpportunityCreatedEvent.class,
                 event -> automationEngine.onTrigger(
                         event.getTenantId(),
                         WorkflowTriggerType.OPPORTUNITY_CREATED,
@@ -80,8 +77,7 @@ public class WorkflowAutomationEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "workflow-automation-conversation-started",
-                "ConversationStarted",
-                ConversationStartedEvent.class,
+                ConversationStartedEvent.EVENT_TYPE, ConversationStartedEvent.class,
                 event -> automationEngine.onTrigger(
                         event.getTenantId(),
                         WorkflowTriggerType.CONVERSATION_STARTED,
@@ -98,8 +94,7 @@ public class WorkflowAutomationEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "workflow-automation-message-received",
-                "MessageReceived",
-                MessageReceivedEvent.class,
+                MessageReceivedEvent.EVENT_TYPE, MessageReceivedEvent.class,
                 event -> automationEngine.onTrigger(
                         event.getTenantId(),
                         WorkflowTriggerType.MESSAGE_RECEIVED,
@@ -116,8 +111,7 @@ public class WorkflowAutomationEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "workflow-automation-message-sent",
-                "MessageSent",
-                MessageSentEvent.class,
+                MessageSentEvent.EVENT_TYPE, MessageSentEvent.class,
                 event -> automationEngine.onTrigger(
                         event.getTenantId(),
                         WorkflowTriggerType.MESSAGE_SENT,
@@ -134,8 +128,7 @@ public class WorkflowAutomationEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "workflow-automation-customer-converted",
-                "LeadConvertedToCustomer",
-                LeadConvertedToCustomerEvent.class,
+                LeadConvertedToCustomerEvent.EVENT_TYPE, LeadConvertedToCustomerEvent.class,
                 event -> automationEngine.onTrigger(
                         event.getTenantId(),
                         WorkflowTriggerType.CUSTOMER_CONVERTED,
@@ -152,8 +145,7 @@ public class WorkflowAutomationEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "workflow-automation-ai-qualification",
-                "AIQualificationCompleted",
-                AiQualificationCompletedEvent.class,
+                AiQualificationCompletedEvent.EVENT_TYPE, AiQualificationCompletedEvent.class,
                 event -> automationEngine.onTrigger(
                         event.getTenantId(),
                         WorkflowTriggerType.AI_QUALIFICATION_COMPLETED,
@@ -170,8 +162,7 @@ public class WorkflowAutomationEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "workflow-automation-catalog-recommendation",
-                "CatalogRecommendationGenerated",
-                CatalogRecommendationGeneratedEvent.class,
+                CatalogRecommendationGeneratedEvent.EVENT_TYPE, CatalogRecommendationGeneratedEvent.class,
                 event -> automationEngine.onTrigger(
                         event.getTenantId(),
                         WorkflowTriggerType.CATALOG_RECOMMENDATION_GENERATED,

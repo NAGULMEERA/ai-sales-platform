@@ -99,10 +99,26 @@ services:
   prometheus:
     image: prom/prometheus:v2.52.0
     container_name: aisales-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
     volumes:
       - ../infrastructure/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ../infrastructure/monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml
     ports:
       - "9090:9090"
+    networks:
+      - aisales-network
+    depends_on:
+      - alertmanager
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: aisales-alertmanager
+    volumes:
+      - ../infrastructure/monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"
     networks:
       - aisales-network
 

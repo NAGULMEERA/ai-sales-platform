@@ -2,6 +2,7 @@ package com.aisales.analytics.infrastructure.messaging;
 
 import com.aisales.analytics.application.service.AnalyticsRecordingService;
 import com.aisales.analytics.domain.AnalyticsMetricNames;
+import com.aisales.common.core.util.ObjectStrings;
 import com.aisales.common.events.consumer.IntegrationEventListener;
 import com.aisales.common.events.model.AiQualificationCompletedEvent;
 import com.aisales.common.events.model.AiRecommendationGeneratedEvent;
@@ -42,7 +43,7 @@ public class AnalyticsEventConsumer {
             containerFactory = "integrationKafkaListenerContainerFactory")
     public void onMessage(ConsumerRecord<String, String> record) {
         integrationEventListener.handleIfType(
-                record, "analytics-lead-created", "LeadCreated", LeadCreatedEvent.class, event ->
+                record, "analytics-lead-created", LeadCreatedEvent.EVENT_TYPE, LeadCreatedEvent.class, event ->
                         recordingService.recordCount(
                                 event.getTenantId(),
                                 AnalyticsMetricNames.LEAD_CREATED,
@@ -53,7 +54,7 @@ public class AnalyticsEventConsumer {
                                         "status", nullSafe(event.getStatus()))));
 
         integrationEventListener.handleIfType(
-                record, "analytics-lead-qualified", "LeadQualified", LeadQualifiedEvent.class, event ->
+                record, "analytics-lead-qualified", LeadQualifiedEvent.EVENT_TYPE, LeadQualifiedEvent.class, event ->
                         recordingService.recordCount(
                                 event.getTenantId(),
                                 AnalyticsMetricNames.LEAD_QUALIFIED,
@@ -62,7 +63,7 @@ public class AnalyticsEventConsumer {
                                 Map.of("status", nullSafe(event.getStatus()))));
 
         integrationEventListener.handleIfType(
-                record, "analytics-lead-converted", "LeadConverted", LeadConvertedEvent.class, event ->
+                record, "analytics-lead-converted", LeadConvertedEvent.EVENT_TYPE, LeadConvertedEvent.class, event ->
                         recordingService.recordCount(
                                 event.getTenantId(),
                                 AnalyticsMetricNames.LEAD_CONVERTED,
@@ -73,8 +74,7 @@ public class AnalyticsEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "analytics-lead-status",
-                "LeadStatusChanged",
-                LeadStatusChangedEvent.class,
+                LeadStatusChangedEvent.EVENT_TYPE, LeadStatusChangedEvent.class,
                 event -> {
                     recordingService.recordCount(
                             event.getTenantId(),
@@ -97,7 +97,7 @@ public class AnalyticsEventConsumer {
                 });
 
         integrationEventListener.handleIfType(
-                record, "analytics-customer-created", "CustomerCreated", CustomerCreatedEvent.class, event ->
+                record, "analytics-customer-created", CustomerCreatedEvent.EVENT_TYPE, CustomerCreatedEvent.class, event ->
                         recordingService.recordCount(
                                 event.getTenantId(),
                                 AnalyticsMetricNames.CUSTOMER_CREATED,
@@ -108,8 +108,7 @@ public class AnalyticsEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "analytics-opportunity-created",
-                "OpportunityCreated",
-                OpportunityCreatedEvent.class,
+                OpportunityCreatedEvent.EVENT_TYPE, OpportunityCreatedEvent.class,
                 event -> recordingService.recordCount(
                         event.getTenantId(),
                         AnalyticsMetricNames.OPPORTUNITY_CREATED,
@@ -120,8 +119,7 @@ public class AnalyticsEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "analytics-opportunity-status",
-                "OpportunityStatusChanged",
-                OpportunityStatusChangedEvent.class,
+                OpportunityStatusChangedEvent.EVENT_TYPE, OpportunityStatusChangedEvent.class,
                 event -> {
                     String status = nullSafe(event.getStatus()).toUpperCase(Locale.ROOT);
                     recordingService.recordCount(
@@ -154,8 +152,7 @@ public class AnalyticsEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "analytics-conversation-started",
-                "ConversationStarted",
-                ConversationStartedEvent.class,
+                ConversationStartedEvent.EVENT_TYPE, ConversationStartedEvent.class,
                 event -> recordingService.recordCount(
                         event.getTenantId(),
                         AnalyticsMetricNames.CONVERSATION_STARTED,
@@ -164,7 +161,7 @@ public class AnalyticsEventConsumer {
                         Map.of()));
 
         integrationEventListener.handleIfType(
-                record, "analytics-message-sent", "MessageSent", MessageSentEvent.class, event ->
+                record, "analytics-message-sent", MessageSentEvent.EVENT_TYPE, MessageSentEvent.class, event ->
                         recordingService.recordCount(
                                 event.getTenantId(),
                                 AnalyticsMetricNames.MESSAGE_SENT,
@@ -179,8 +176,7 @@ public class AnalyticsEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "analytics-message-received",
-                "MessageReceived",
-                MessageReceivedEvent.class,
+                MessageReceivedEvent.EVENT_TYPE, MessageReceivedEvent.class,
                 event -> recordingService.recordCount(
                         event.getTenantId(),
                         AnalyticsMetricNames.MESSAGE_RECEIVED,
@@ -191,8 +187,7 @@ public class AnalyticsEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "analytics-workflow-triggered",
-                "WorkflowTriggered",
-                WorkflowTriggeredEvent.class,
+                WorkflowTriggeredEvent.EVENT_TYPE, WorkflowTriggeredEvent.class,
                 event -> recordingService.recordCount(
                         event.getTenantId(),
                         AnalyticsMetricNames.WORKFLOW_EXECUTED,
@@ -207,8 +202,7 @@ public class AnalyticsEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "analytics-workflow-completed",
-                "WorkflowCompleted",
-                WorkflowCompletedEvent.class,
+                WorkflowCompletedEvent.EVENT_TYPE, WorkflowCompletedEvent.class,
                 event -> recordingService.recordCount(
                         event.getTenantId(),
                         AnalyticsMetricNames.WORKFLOW_COMPLETED,
@@ -219,8 +213,7 @@ public class AnalyticsEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "analytics-ai-qualification",
-                "AIQualificationCompleted",
-                AiQualificationCompletedEvent.class,
+                AiQualificationCompletedEvent.EVENT_TYPE, AiQualificationCompletedEvent.class,
                 event -> {
                     recordingService.recordCount(
                             event.getTenantId(),
@@ -247,8 +240,7 @@ public class AnalyticsEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "analytics-ai-recommendation",
-                "AIRecommendationGenerated",
-                AiRecommendationGeneratedEvent.class,
+                AiRecommendationGeneratedEvent.EVENT_TYPE, AiRecommendationGeneratedEvent.class,
                 event -> recordingService.recordCount(
                         event.getTenantId(),
                         AnalyticsMetricNames.AI_REQUEST,
@@ -259,8 +251,7 @@ public class AnalyticsEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "analytics-knowledge-retrieved",
-                "KnowledgeRetrieved",
-                KnowledgeRetrievedEvent.class,
+                KnowledgeRetrievedEvent.EVENT_TYPE, KnowledgeRetrievedEvent.class,
                 event -> recordingService.recordCount(
                         event.getTenantId(),
                         AnalyticsMetricNames.RAG_REQUEST,
@@ -269,7 +260,7 @@ public class AnalyticsEventConsumer {
                         Map.of("retriever", nullSafe(event.getRetriever()))));
 
         integrationEventListener.handleIfType(
-                record, "analytics-catalog-matched", "CatalogMatched", CatalogMatchedEvent.class, event ->
+                record, "analytics-catalog-matched", CatalogMatchedEvent.EVENT_TYPE, CatalogMatchedEvent.class, event ->
                         recordingService.recordCount(
                                 event.getTenantId(),
                                 AnalyticsMetricNames.CATALOG_MATCH,
@@ -280,8 +271,7 @@ public class AnalyticsEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "analytics-catalog-recommendation",
-                "CatalogRecommendationGenerated",
-                CatalogRecommendationGeneratedEvent.class,
+                CatalogRecommendationGeneratedEvent.EVENT_TYPE, CatalogRecommendationGeneratedEvent.class,
                 event -> {
                     recordingService.recordCount(
                             event.getTenantId(),
@@ -307,7 +297,7 @@ public class AnalyticsEventConsumer {
     }
 
     private static String nullSafe(Object value) {
-        return value == null ? "" : String.valueOf(value);
+        return ObjectStrings.nullSafe(value);
     }
 
     private static Double parseDouble(String value) {

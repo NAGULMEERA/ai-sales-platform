@@ -5,7 +5,10 @@ spring:
   application:
     name: integration-service
   config:
-    import: optional:configserver:http://localhost:8888
+    import:
+      - optional:configserver:http://localhost:8888
+      - optional:classpath:platform/application-observability.yml
+      - optional:classpath:platform/application-prod.yml
   datasource:
     url: jdbc:postgresql://localhost:5432/integration_db
     username: aisales

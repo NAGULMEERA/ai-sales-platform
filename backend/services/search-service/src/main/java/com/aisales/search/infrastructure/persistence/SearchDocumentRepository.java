@@ -75,6 +75,7 @@ public interface SearchDocumentRepository extends JpaRepository<SearchDocument, 
               AND (
                     :query IS NULL OR :query = ''
                     OR d.search_vector @@ plainto_tsquery('english', :query)
+                    OR lower(d.title) LIKE lower(concat(:query, '%'))
                     OR lower(d.title) LIKE lower(concat('%', :query, '%'))
                   )
             """, nativeQuery = true)

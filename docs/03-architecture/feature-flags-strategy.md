@@ -21,13 +21,13 @@
 
 ## Evaluation
 
-Interface: `FeatureFlagEvaluator` in `common-contracts`
-
-Implementation owner: **tenant-service**
+Current evaluation API: `FeatureCheckService` in **identity-service** (subscription features).
 
 ```java
-featureFlagEvaluator.isEnabledWithRollout(tenantId, "voice_ai");
+featureCheckService.isFeatureEnabled(tenantId, "voice_ai");
 ```
+
+A shared `FeatureFlagEvaluator` contract was removed as unused dead code; reintroduce in `common-contracts` only when multiple services need a Feign/SDK-facing evaluator.
 
 Cache in Redis with TTL; invalidate on admin update.
 
@@ -36,4 +36,5 @@ Cache in Redis with TTL; invalidate on admin update.
 ## Related
 
 - DDL: `tenant_features` in `V003__tenant.sql`
-- Code: `backend/common/common-contracts/.../FeatureFlagEvaluator.java`
+- Code: `backend/services/identity-service/.../FeatureCheckService.java`
+- Debt notes: `docs/13-quality/tech-debt-review.md`

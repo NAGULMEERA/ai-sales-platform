@@ -31,15 +31,13 @@ public class LeadConversationEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 STARTED_CONSUMER,
-                "ConversationStarted",
-                ConversationStartedEvent.class,
+                ConversationStartedEvent.EVENT_TYPE, ConversationStartedEvent.class,
                 event -> timelineService.onConversationStarted(
                         event.getLeadId(), event.getAggregateId(), event.getChannel()));
         integrationEventListener.handleIfType(
                 record,
                 MESSAGE_CONSUMER,
-                "ConversationMessageAdded",
-                ConversationMessageAddedEvent.class,
+                ConversationMessageAddedEvent.EVENT_TYPE, ConversationMessageAddedEvent.class,
                 event -> timelineService.onMessageAdded(
                         event.getLeadId(),
                         event.getConversationId(),
@@ -48,8 +46,7 @@ public class LeadConversationEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 CLOSED_CONSUMER,
-                "ConversationClosed",
-                ConversationClosedEvent.class,
+                ConversationClosedEvent.EVENT_TYPE, ConversationClosedEvent.class,
                 event -> timelineService.onConversationClosed(
                         event.getLeadId(), event.getAggregateId(), event.getReason()));
     }

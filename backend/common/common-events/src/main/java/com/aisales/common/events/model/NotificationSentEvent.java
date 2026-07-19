@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class NotificationSentEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "NotificationSent";
+
     private String channel;
     private String recipient;
     private String templateId;
@@ -18,7 +20,7 @@ public class NotificationSentEvent extends BaseEvent {
     public static NotificationSentEvent of(String tenantId, String notificationId, String channel,
                                            String recipient, String templateId, String correlationId) {
         NotificationSentEvent event = new NotificationSentEvent();
-        event.init("NotificationSent", tenantId, notificationId, correlationId);
+        event.init(EVENT_TYPE, tenantId, notificationId, correlationId);
         event.channel = channel;
         event.recipient = recipient;
         event.templateId = templateId;

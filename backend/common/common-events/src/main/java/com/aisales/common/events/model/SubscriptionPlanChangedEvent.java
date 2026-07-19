@@ -15,6 +15,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class SubscriptionPlanChangedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "SubscriptionPlanChanged";
+
     private String previousPlan;
     private String newPlan;
     private String externalSubscriptionId;
@@ -26,7 +28,7 @@ public class SubscriptionPlanChangedEvent extends BaseEvent {
             String externalSubscriptionId,
             String correlationId) {
         SubscriptionPlanChangedEvent event = new SubscriptionPlanChangedEvent();
-        event.init("SubscriptionPlanChanged", tenantId, tenantId, correlationId);
+        event.init(EVENT_TYPE, tenantId, tenantId, correlationId);
         event.previousPlan = previousPlan;
         event.newPlan = newPlan;
         event.externalSubscriptionId = externalSubscriptionId;

@@ -5,7 +5,10 @@ spring:
   application:
     name: appointment-service
   config:
-    import: optional:configserver:http://localhost:8888
+    import:
+      - optional:configserver:http://localhost:8888
+      - optional:classpath:platform/application-observability.yml
+      - optional:classpath:platform/application-prod.yml
   datasource:
     url: jdbc:postgresql://localhost:5432/appointment_db
     username: aisales

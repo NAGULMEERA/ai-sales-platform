@@ -11,11 +11,13 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class EmailVerifiedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "EmailVerified";
+
     private String email;
 
     public static EmailVerifiedEvent of(String tenantId, String userId, String email, String correlationId) {
         EmailVerifiedEvent event = new EmailVerifiedEvent();
-        event.init("EmailVerified", tenantId, userId, correlationId);
+        event.init(EVENT_TYPE, tenantId, userId, correlationId);
         event.email = email;
         return event;
     }

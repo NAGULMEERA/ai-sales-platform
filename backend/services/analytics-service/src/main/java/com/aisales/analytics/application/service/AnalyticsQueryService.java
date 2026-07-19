@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,22 @@ public class AnalyticsQueryService {
     private final AnalyticsEventRepository eventRepository;
     private final ObjectProvider<PlatformMetrics> platformMetrics;
 
+    private static final List<String> DASHBOARD_METRICS = List.of(
+            AnalyticsMetricNames.LEAD_CREATED,
+            AnalyticsMetricNames.LEAD_CONVERTED,
+            AnalyticsMetricNames.CUSTOMER_CREATED,
+            AnalyticsMetricNames.OPPORTUNITY_CREATED,
+            AnalyticsMetricNames.OPPORTUNITY_WON,
+            AnalyticsMetricNames.OPPORTUNITY_LOST,
+            AnalyticsMetricNames.CONVERSATION_STARTED,
+            AnalyticsMetricNames.WORKFLOW_EXECUTED,
+            AnalyticsMetricNames.WORKFLOW_COMPLETED,
+            AnalyticsMetricNames.WORKFLOW_FAILED,
+            AnalyticsMetricNames.AI_REQUEST,
+            AnalyticsMetricNames.AI_QUALIFICATION,
+            AnalyticsMetricNames.SEARCH_REQUEST,
+            AnalyticsMetricNames.CATALOG_MATCH);
+
     @Transactional(readOnly = true)
     public DashboardSummaryDto dashboard(AnalyticsPeriod period) {
         UUID tenantId = requireTenantId();
@@ -45,23 +62,29 @@ public class AnalyticsQueryService {
         Instant dayStart = LocalDate.now(ZoneOffset.UTC).atStartOfDay().toInstant(ZoneOffset.UTC);
         Instant periodStart = resolvePeriodStart(period, now);
 
-        long leadsToday = count(tenantId, AnalyticsMetricNames.LEAD_CREATED, dayStart, now);
-        long leadsWeek = count(tenantId, AnalyticsMetricNames.LEAD_CREATED, weekStart, now);
-        long leadsMonth = count(tenantId, AnalyticsMetricNames.LEAD_CREATED, monthStart, now);
-        long customers = count(tenantId, AnalyticsMetricNames.CUSTOMER_CREATED, periodStart, now);
-        long oppCreated = count(tenantId, AnalyticsMetricNames.OPPORTUNITY_CREATED, periodStart, now);
-        long oppWon = count(tenantId, AnalyticsMetricNames.OPPORTUNITY_WON, periodStart, now);
-        long oppLost = count(tenantId, AnalyticsMetricNames.OPPORTUNITY_LOST, periodStart, now);
-        long conversations = count(tenantId, AnalyticsMetricNames.CONVERSATION_STARTED, periodStart, now);
-        long workflowsExecuted = count(tenantId, AnalyticsMetricNames.WORKFLOW_EXECUTED, periodStart, now);
-        long workflowsCompleted = count(tenantId, AnalyticsMetricNames.WORKFLOW_COMPLETED, periodStart, now);
-        long workflowsFailed = count(tenantId, AnalyticsMetricNames.WORKFLOW_FAILED, periodStart, now);
-        long aiRequests = count(tenantId, AnalyticsMetricNames.AI_REQUEST, periodStart, now)
-                + count(tenantId, AnalyticsMetricNames.AI_QUALIFICATION, periodStart, now);
-        long searchRequests = count(tenantId, AnalyticsMetricNames.SEARCH_REQUEST, periodStart, now);
-        long catalogMatches = count(tenantId, AnalyticsMetricNames.CATALOG_MATCH, periodStart, now);
-        long leadsConverted = count(tenantId, AnalyticsMetricNames.LEAD_CONVERTED, periodStart, now);
-        long leadsCreatedPeriod = count(tenantId, AnalyticsMetricNames.LEAD_CREATED, periodStart, now);
+        Map<String, Long> dayCounts = countGrouped(tenantId, DASHBOARD_METRICS, dayStart, now);
+        Map<String, Long> weekCounts = countGrouped(tenantId, DASHBOARD_METRICS, weekStart, now);
+        Map<String, Long> monthCounts = countGrouped(tenantId, DASHBOARD_METRICS, monthStart, now);
+        Map<String, Long> periodCounts = countGrouped(tenantId, DASHBOARD_METRICS, periodStart, now);
+
+        long leadsToday = periodCount(dayCounts, AnalyticsMetricNames.LEAD_CREATED);
+        long leadsWeek = periodCount(weekCounts, AnalyticsMetricNames.LEAD_CREATED);
+        long leadsMonth = periodCount(monthCounts, AnalyticsMetricNames.LEAD_CREATED);
+        long customers = periodCount(periodCounts, AnalyticsMetricNames.CUSTOMER_CREATED);
+        long oppCreated = periodCount(periodCounts, AnalyticsMetricNames.OPPORTUNITY_CREATED);
+        long oppWon = periodCount(periodCounts, AnalyticsMetricNames.OPPORTUNITY_WON);
+        long oppLost = periodCount(periodCounts, AnalyticsMetricNames.OPPORTUNITY_LOST);
+        long conversations = periodCount(periodCounts, AnalyticsMetricNames.CONVERSATION_STARTED);
+        long workflowsExecuted = periodCount(periodCounts, AnalyticsMetricNames.WORKFLOW_EXECUTED);
+        long workflowsCompleted = periodCount(periodCounts, AnalyticsMetricNames.WORKFLOW_COMPLETED);
+        // No WorkflowFailed integration event exists yet; remains 0 until that contract is published.
+        long workflowsFailed = periodCount(periodCounts, AnalyticsMetricNames.WORKFLOW_FAILED);
+        long aiRequests = periodCount(periodCounts, AnalyticsMetricNames.AI_REQUEST)
+                + periodCount(periodCounts, AnalyticsMetricNames.AI_QUALIFICATION);
+        long searchRequests = periodCount(periodCounts, AnalyticsMetricNames.SEARCH_REQUEST);
+        long catalogMatches = periodCount(periodCounts, AnalyticsMetricNames.CATALOG_MATCH);
+        long leadsConverted = periodCount(periodCounts, AnalyticsMetricNames.LEAD_CONVERTED);
+        long leadsCreatedPeriod = periodCount(periodCounts, AnalyticsMetricNames.LEAD_CREATED);
 
         Double aiAccuracy = avgOrNull(tenantId, AnalyticsMetricNames.AI_QUALIFICATION_ACCURACY, periodStart, now);
         Double catalogAccuracy =
@@ -134,7 +157,7 @@ public class AnalyticsQueryService {
 
         List<FunnelStageDto> stages = buildFunnelStages(List.of(
                 Map.entry("CREATED", created),
-                Map.entry("VALIDATED", Math.max(validated, created > 0 ? created : 0)),
+                Map.entry("VALIDATED", validated),
                 Map.entry("QUALIFIED", qualified),
                 Map.entry("CONTACTED", contacted),
                 Map.entry("CONVERTED", converted),
@@ -142,7 +165,7 @@ public class AnalyticsQueryService {
 
         return LeadFunnelDto.builder()
                 .created(created)
-                .validated(Math.max(validated, 0))
+                .validated(validated)
                 .qualified(qualified)
                 .contacted(contacted)
                 .converted(converted)
@@ -234,11 +257,21 @@ public class AnalyticsQueryService {
         UUID tenantId = requireTenantId();
         Instant now = Instant.now();
         Instant from = resolvePeriodStart(period, now);
+        Map<String, Long> counts = countGrouped(
+                tenantId,
+                List.of(
+                        AnalyticsMetricNames.AI_REQUEST,
+                        AnalyticsMetricNames.AI_QUALIFICATION,
+                        AnalyticsMetricNames.RAG_REQUEST),
+                from,
+                now);
+        long qualifications = periodCount(counts, AnalyticsMetricNames.AI_QUALIFICATION);
         Map<String, Object> usage = new HashMap<>();
-        usage.put("aiRequests", count(tenantId, AnalyticsMetricNames.AI_REQUEST, from, now)
-                + count(tenantId, AnalyticsMetricNames.AI_QUALIFICATION, from, now));
-        usage.put("qualifications", count(tenantId, AnalyticsMetricNames.AI_QUALIFICATION, from, now));
-        usage.put("ragRequests", count(tenantId, AnalyticsMetricNames.RAG_REQUEST, from, now));
+        usage.put(
+                "aiRequests",
+                periodCount(counts, AnalyticsMetricNames.AI_REQUEST) + qualifications);
+        usage.put("qualifications", qualifications);
+        usage.put("ragRequests", periodCount(counts, AnalyticsMetricNames.RAG_REQUEST));
         usage.put(
                 "qualificationAccuracy",
                 avgOrNull(tenantId, AnalyticsMetricNames.AI_QUALIFICATION_ACCURACY, from, now));
@@ -292,11 +325,29 @@ public class AnalyticsQueryService {
         return eventRepository.countMetric(tenantId, metric, from, to);
     }
 
+    private Map<String, Long> countGrouped(
+            UUID tenantId, Collection<String> metrics, Instant from, Instant to) {
+        Map<String, Long> counts = new HashMap<>();
+        for (Object[] row : eventRepository.countMetricsGrouped(tenantId, metrics, from, to)) {
+            if (row != null && row.length >= 2 && row[0] != null) {
+                counts.put(String.valueOf(row[0]), ((Number) row[1]).longValue());
+            }
+        }
+        return counts;
+    }
+
+    private static long periodCount(Map<String, Long> counts, String metric) {
+        return counts.getOrDefault(metric, 0L);
+    }
+
     private Double avgOrNull(UUID tenantId, String metric, Instant from, Instant to) {
         Double avg = eventRepository.avgMetric(tenantId, metric, from, to);
-        if (avg == null || avg == 0d) {
-            long n = count(tenantId, metric, from, to);
-            return n == 0 ? null : avg;
+        if (avg == null) {
+            return null;
+        }
+        // AVG over empty set returns 0 in our native query; treat as absent when no facts exist.
+        if (avg == 0d && count(tenantId, metric, from, to) == 0) {
+            return null;
         }
         return avg;
     }

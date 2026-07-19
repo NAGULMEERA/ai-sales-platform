@@ -13,6 +13,8 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 public class UserCreatedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "UserCreated";
+
     private String email;
     private String firstName;
     private String lastName;
@@ -22,7 +24,7 @@ public class UserCreatedEvent extends BaseEvent {
                                       String firstName, String lastName, Set<String> roles,
                                       String correlationId) {
         UserCreatedEvent event = new UserCreatedEvent();
-        event.init("UserCreated", tenantId, userId, correlationId);
+        event.init(EVENT_TYPE, tenantId, userId, correlationId);
         event.email = email;
         event.firstName = firstName;
         event.lastName = lastName;

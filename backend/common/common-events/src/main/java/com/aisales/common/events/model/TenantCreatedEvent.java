@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class TenantCreatedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "TenantCreated";
+
     private String tenantName;
     private String slug;
     private String plan;
@@ -19,7 +21,7 @@ public class TenantCreatedEvent extends BaseEvent {
     public static TenantCreatedEvent of(String tenantId, String tenantName, String slug,
                                         String plan, String industry, String correlationId) {
         TenantCreatedEvent event = new TenantCreatedEvent();
-        event.init("TenantCreated", tenantId, tenantId, correlationId);
+        event.init(EVENT_TYPE, tenantId, tenantId, correlationId);
         event.tenantName = tenantName;
         event.slug = slug;
         event.plan = plan;

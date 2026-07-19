@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class CustomerDeactivatedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "CustomerDeactivated";
+
     private String customerName;
     private String reason;
 
@@ -21,7 +23,7 @@ public class CustomerDeactivatedEvent extends BaseEvent {
             String reason,
             String correlationId) {
         CustomerDeactivatedEvent event = new CustomerDeactivatedEvent();
-        event.init("CustomerDeactivated", tenantId, customerId, correlationId);
+        event.init(EVENT_TYPE, tenantId, customerId, correlationId);
         event.customerName = customerName;
         event.reason = reason;
         return event;

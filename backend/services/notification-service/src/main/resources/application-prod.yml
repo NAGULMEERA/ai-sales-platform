@@ -5,6 +5,9 @@ spring:
   datasource:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+  config:
+    import:
+      - optional:classpath:platform/application-prod.yml
   mail:
     host: ${SMTP_HOST}
     port: ${SMTP_PORT}
@@ -18,6 +21,10 @@ spring:
             enable: ${SMTP_STARTTLS:true}
 
 aisales:
+  startup-validation:
+    enabled: true
+    required-config-values:
+      - spring.datasource.password
   notification:
     delivery-mode: ${NOTIFICATION_DELIVERY_MODE:smtp}
     from-address: ${SMTP_FROM}

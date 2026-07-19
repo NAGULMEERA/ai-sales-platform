@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class KnowledgeBaseCreatedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "KnowledgeBaseCreated";
+
     private String code;
     private String name;
     private String status;
@@ -18,7 +20,7 @@ public class KnowledgeBaseCreatedEvent extends BaseEvent {
     public static KnowledgeBaseCreatedEvent of(String tenantId, String knowledgeBaseId, String code,
                                                String name, String status, String correlationId) {
         KnowledgeBaseCreatedEvent event = new KnowledgeBaseCreatedEvent();
-        event.init("KnowledgeBaseCreated", tenantId, knowledgeBaseId, correlationId);
+        event.init(EVENT_TYPE, tenantId, knowledgeBaseId, correlationId);
         event.code = code;
         event.name = name;
         event.status = status;

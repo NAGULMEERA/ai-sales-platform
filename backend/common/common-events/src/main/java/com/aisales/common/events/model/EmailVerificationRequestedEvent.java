@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class EmailVerificationRequestedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "EmailVerificationRequested";
+
     private String email;
     private String firstName;
     private String token;
@@ -20,7 +22,7 @@ public class EmailVerificationRequestedEvent extends BaseEvent {
                                                      String firstName, String token, String verificationLink,
                                                      String correlationId) {
         EmailVerificationRequestedEvent event = new EmailVerificationRequestedEvent();
-        event.init("EmailVerificationRequested", tenantId, userId, correlationId);
+        event.init(EVENT_TYPE, tenantId, userId, correlationId);
         event.email = email;
         event.firstName = firstName;
         event.token = token;

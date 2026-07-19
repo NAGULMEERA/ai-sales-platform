@@ -11,13 +11,15 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class LeadLostEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "LeadLost";
+
     private String leadName;
     private String reason;
 
     public static LeadLostEvent of(String tenantId, String leadId, String leadName,
                                    String reason, String correlationId) {
         LeadLostEvent event = new LeadLostEvent();
-        event.init("LeadLost", tenantId, leadId, correlationId);
+        event.init(EVENT_TYPE, tenantId, leadId, correlationId);
         event.leadName = leadName;
         event.reason = reason;
         return event;

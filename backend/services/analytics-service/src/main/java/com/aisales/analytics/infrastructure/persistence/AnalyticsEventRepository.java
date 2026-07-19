@@ -2,6 +2,7 @@ package com.aisales.analytics.infrastructure.persistence;
 
 import com.aisales.analytics.domain.entity.AnalyticsEvent;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,6 +22,21 @@ public interface AnalyticsEventRepository extends JpaRepository<AnalyticsEvent, 
     long countMetric(
             @Param("tenantId") UUID tenantId,
             @Param("metricName") String metricName,
+            @Param("from") Instant from,
+            @Param("to") Instant to);
+
+    @Query("""
+            SELECT e.metricName, COUNT(e) FROM AnalyticsEvent e
+            WHERE e.tenantId = :tenantId
+              AND e.metricName IN :metricNames
+              AND e.occurredAt >= :from
+              AND e.occurredAt < :to
+              AND e.deletedAt IS NULL
+            GROUP BY e.metricName
+            """)
+    List<Object[]> countMetricsGrouped(
+            @Param("tenantId") UUID tenantId,
+            @Param("metricNames") Collection<String> metricNames,
             @Param("from") Instant from,
             @Param("to") Instant to);
 

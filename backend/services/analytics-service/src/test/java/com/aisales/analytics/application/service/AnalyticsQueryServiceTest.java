@@ -65,14 +65,20 @@ class AnalyticsQueryServiceTest {
         LeadFunnelDto funnel = service.leadFunnel();
 
         assertThat(funnel.getCreated()).isEqualTo(100L);
+        assertThat(funnel.getValidated()).isEqualTo(50L);
         assertThat(funnel.getQualified()).isEqualTo(40L);
         assertThat(funnel.getConverted()).isEqualTo(10L);
         assertThat(funnel.getConversionRate()).isEqualTo(0.1);
         assertThat(funnel.getStages()).isNotEmpty();
+        assertThat(funnel.getStages().get(1).getStage()).isEqualTo("VALIDATED");
+        assertThat(funnel.getStages().get(1).getCount()).isEqualTo(50L);
     }
 
     @Test
     void shouldBuildDashboardSummary() {
+        List<Object[]> grouped = List.<Object[]>of(
+                new Object[] {AnalyticsMetricNames.LEAD_CREATED, 2L});
+        when(eventRepository.countMetricsGrouped(any(UUID.class), any(), any(), any())).thenReturn(grouped);
         when(eventRepository.countMetric(any(UUID.class), anyString(), any(), any())).thenReturn(2L);
         when(eventRepository.avgMetric(any(UUID.class), anyString(), any(), any())).thenReturn(0.85);
         when(eventRepository.dailySeries(any(UUID.class), anyString(), any(), any())).thenReturn(List.of());

@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -86,6 +87,7 @@ public class LeadController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAuthority('lead:create') or hasAuthority('tenant:admin') or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Create lead")
     public ApiResponse<LeadDto> createLead(
             @Valid @RequestBody CreateLeadRequest request,
@@ -95,6 +97,7 @@ public class LeadController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('lead:read') or hasAuthority('tenant:admin') or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Search / list leads")
     public ApiResponse<PageResponse<LeadDto>> listLeads(
             @RequestParam(defaultValue = "0") int page,
@@ -114,12 +117,14 @@ public class LeadController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('lead:read') or hasAuthority('tenant:admin') or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Get lead")
     public ApiResponse<LeadDto> getLead(@PathVariable UUID id) {
         return ok(leadService.getLead(id));
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("hasAuthority('lead:update') or hasAuthority('tenant:admin') or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Update lead details")
     public ApiResponse<LeadDto> updateLead(
             @PathVariable UUID id, @Valid @RequestBody UpdateLeadRequest request) {
@@ -128,6 +133,7 @@ public class LeadController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAuthority('lead:delete') or hasAuthority('tenant:admin') or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Soft-delete lead")
     public void deleteLead(@PathVariable UUID id) {
         leadService.deleteLead(id);

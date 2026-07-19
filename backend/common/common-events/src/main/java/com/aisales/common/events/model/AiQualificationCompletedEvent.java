@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class AiQualificationCompletedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "AIQualificationCompleted";
+
     private String promptCode;
     private String promptVersion;
     private String provider;
@@ -35,7 +37,7 @@ public class AiQualificationCompletedEvent extends BaseEvent {
             boolean cacheHit,
             String correlationId) {
         AiQualificationCompletedEvent event = new AiQualificationCompletedEvent();
-        event.init("AIQualificationCompleted", tenantId, executionId, correlationId);
+        event.init(EVENT_TYPE, tenantId, executionId, correlationId);
         event.promptCode = promptCode;
         event.promptVersion = promptVersion;
         event.provider = provider;

@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class CustomerMergedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "CustomerMerged";
+
     private String customerName;
     private String mergedCustomerId;
     private String survivorCustomerId;
@@ -22,7 +24,7 @@ public class CustomerMergedEvent extends BaseEvent {
             String mergedCustomerId,
             String correlationId) {
         CustomerMergedEvent event = new CustomerMergedEvent();
-        event.init("CustomerMerged", tenantId, survivorCustomerId, correlationId);
+        event.init(EVENT_TYPE, tenantId, survivorCustomerId, correlationId);
         event.customerName = customerName;
         event.mergedCustomerId = mergedCustomerId;
         event.survivorCustomerId = survivorCustomerId;

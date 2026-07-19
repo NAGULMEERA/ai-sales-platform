@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class CatalogProductUpdatedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "CatalogProductUpdated";
+
     private String code;
     private String name;
     private String productType;
@@ -25,7 +27,7 @@ public class CatalogProductUpdatedEvent extends BaseEvent {
             String status,
             String correlationId) {
         CatalogProductUpdatedEvent event = new CatalogProductUpdatedEvent();
-        event.init("CatalogProductUpdated", tenantId, productId, correlationId);
+        event.init(EVENT_TYPE, tenantId, productId, correlationId);
         event.code = code;
         event.name = name;
         event.productType = productType;

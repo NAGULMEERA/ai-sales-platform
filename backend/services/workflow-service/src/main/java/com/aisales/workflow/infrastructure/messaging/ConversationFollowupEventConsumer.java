@@ -29,15 +29,13 @@ public class ConversationFollowupEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 STARTED_CONSUMER,
-                "ConversationStarted",
-                ConversationStartedEvent.class,
+                ConversationStartedEvent.EVENT_TYPE, ConversationStartedEvent.class,
                 event -> conversationFollowupWorkflowService.startOnConversationStarted(
                         event.getTenantId(), event.getAggregateId(), event.getCorrelationId()));
         integrationEventListener.handleIfType(
                 record,
                 CLOSED_CONSUMER,
-                "ConversationClosed",
-                ConversationClosedEvent.class,
+                ConversationClosedEvent.EVENT_TYPE, ConversationClosedEvent.class,
                 event -> conversationFollowupWorkflowService.completeOnConversationClosed(
                         event.getTenantId(), event.getAggregateId(), event.getCorrelationId()));
     }

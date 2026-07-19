@@ -29,15 +29,13 @@ public class OnboardingEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 USER_CREATED_CONSUMER,
-                "UserCreated",
-                UserCreatedEvent.class,
+                UserCreatedEvent.EVENT_TYPE, UserCreatedEvent.class,
                 event -> onboardingWorkflowService.startOnUserCreated(
                         event.getTenantId(), event.getAggregateId(), event.getCorrelationId()));
         integrationEventListener.handleIfType(
                 record,
                 EMAIL_VERIFIED_CONSUMER,
-                "EmailVerified",
-                EmailVerifiedEvent.class,
+                EmailVerifiedEvent.EVENT_TYPE, EmailVerifiedEvent.class,
                 event -> onboardingWorkflowService.completeOnEmailVerified(
                         event.getTenantId(), event.getAggregateId(), event.getCorrelationId()));
     }

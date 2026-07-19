@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,12 +29,14 @@ public class AiGatewayController {
     private final AiQualificationOrchestrator qualificationOrchestrator;
 
     @PostMapping("/execute")
+    @PreAuthorize("hasAuthority('ai:execute') or hasAuthority('tenant:admin') or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Execute a versioned prompt via the AI gateway (business services validate output)")
     public ApiResponse<AiExecuteResponse> execute(@Valid @RequestBody AiExecuteRequest request) {
         return ApiResponse.ok(aiGatewayService.execute(request));
     }
 
     @PostMapping("/qualify")
+    @PreAuthorize("hasAuthority('ai:execute') or hasAuthority('tenant:admin') or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')")
     @Operation(summary = "Lead qualification orchestration (structured output via AI Gateway)")
     public ApiResponse<QualificationResultDto> qualify(@Valid @RequestBody QualifyLeadAiRequest request) {
         return ApiResponse.ok(qualificationOrchestrator.qualify(request));

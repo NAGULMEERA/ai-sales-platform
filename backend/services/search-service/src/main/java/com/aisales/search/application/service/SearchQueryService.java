@@ -1,9 +1,9 @@
 package com.aisales.search.application.service;
 
-import com.aisales.common.contracts.ai.RetrievedKnowledgeChunkDto;
-import com.aisales.common.contracts.client.AiServiceClient;
 import com.aisales.common.contracts.ai.AiExecuteRequest;
 import com.aisales.common.contracts.ai.AiExecuteResponse;
+import com.aisales.common.contracts.ai.RetrievedKnowledgeChunkDto;
+import com.aisales.common.contracts.client.AiServiceClient;
 import com.aisales.common.contracts.search.AutocompleteRequest;
 import com.aisales.common.contracts.search.SearchEntityType;
 import com.aisales.common.contracts.search.SearchHitDto;
@@ -16,18 +16,12 @@ import com.aisales.common.exception.exception.ValidationException;
 import com.aisales.common.observability.metrics.MetricNames;
 import com.aisales.common.observability.metrics.PlatformMetrics;
 import com.aisales.search.application.audit.SearchAuditor;
-import com.aisales.search.domain.entity.SearchDocument;
 import com.aisales.search.infrastructure.persistence.SearchDocumentRepository;
 import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -44,8 +38,11 @@ public class SearchQueryService {
     private final ObjectProvider<AiServiceClient> aiServiceClient;
     private final ObjectProvider<PlatformMetrics> platformMetrics;
     private final ObjectProvider<SearchAuditor> searchAuditor;
+    private final SearchLocalQueryService localQueryService;
 
-    @Transactional(readOnly = true)
+    /**
+     * Orchestrates search. Remote AI calls stay outside any DB transaction.
+     */
     public SearchResponse search(SearchRequest request) {
         UUID tenantId = requireTenantId();
         SearchMode mode = request.getMode() == null ? SearchMode.HYBRID : request.getMode();
@@ -65,8 +62,10 @@ public class SearchQueryService {
         PlatformMetrics metrics = platformMetrics.getIfAvailable();
         Timer.Sample sample = metrics == null ? null : metrics.startTimer();
         try {
-            if (mode == SearchMode.SEMANTIC || entityType == SearchEntityType.KNOWLEDGE
-                    && mode == SearchMode.VECTOR) {
+            boolean useSemantic =
+                    mode == SearchMode.SEMANTIC
+                            || (mode == SearchMode.VECTOR && entityType == SearchEntityType.KNOWLEDGE);
+            if (useSemantic) {
                 SearchResponse semantic = semanticKnowledge(request, tenantId, page, size);
                 if (metrics != null) {
                     metrics.incrementBusinessMetric(
@@ -76,50 +75,9 @@ public class SearchQueryService {
                 return semantic;
             }
 
-            String entityTypeParam = entityType.name();
-            List<UUID> ids = documentRepository.searchHybrid(
-                    tenantId, entityTypeParam, query, status, source, size, page * size);
-            long total = documentRepository.countHybrid(
-                    tenantId, entityTypeParam, query, status, source);
-
-            Map<UUID, SearchDocument> byId = documentRepository.findAllByTenantAndIds(tenantId, ids).stream()
-                    .collect(Collectors.toMap(SearchDocument::getId, Function.identity(), (a, b) -> a, LinkedHashMap::new));
-
-            List<SearchHitDto> hits = new ArrayList<>();
-            int rank = 0;
-            for (UUID id : ids) {
-                SearchDocument doc = byId.get(id);
-                if (doc == null) {
-                    continue;
-                }
-                hits.add(toHit(doc, query, request.isHighlight(), 1.0 / (++rank)));
-            }
-
-            Map<String, Map<String, Long>> facets = new HashMap<>();
-            if (request.isIncludeFacets()) {
-                facets.put("status", toFacetMap(documentRepository.facetStatus(tenantId, entityTypeParam)));
-                facets.put("entityType", toFacetMap(documentRepository.facetEntityType(tenantId)));
-                facets.put("source", toFacetMap(documentRepository.facetSource(tenantId, entityTypeParam)));
-            }
-
-            List<String> autocomplete = List.of();
-            if (StringUtils.hasText(query) && query.length() >= 2) {
-                autocomplete = documentRepository.autocomplete(tenantId, entityTypeParam, query, 5);
-            }
-
-            int totalPages = size == 0 ? 0 : (int) Math.ceil((double) total / size);
-            SearchResponse response = SearchResponse.builder()
-                    .query(query)
-                    .mode(mode)
-                    .entityType(entityType)
-                    .page(page)
-                    .size(size)
-                    .totalElements(total)
-                    .totalPages(totalPages)
-                    .hits(hits)
-                    .facets(facets)
-                    .autocomplete(autocomplete)
-                    .build();
+            SearchResponse response = localQueryService.searchLocal(
+                    tenantId, mode, entityType, page, size, query, status, source,
+                    request.isIncludeFacets(), request.isHighlight());
             recordMetrics(metrics, sample, tenantId, mode, true);
             return response;
         } catch (RuntimeException ex) {
@@ -142,20 +100,22 @@ public class SearchQueryService {
 
     private SearchResponse semanticKnowledge(
             SearchRequest request, UUID tenantId, int page, int size) {
+        SearchEntityType fallbackType = request.getEntityType() == null
+                ? SearchEntityType.KNOWLEDGE
+                : request.getEntityType();
         AiServiceClient client = aiServiceClient.getIfAvailable();
         if (client == null || request.getKnowledgeBaseId() == null || !StringUtils.hasText(request.getQuery())) {
-            // Fall back to local FTS for knowledge projections
-            SearchRequest fallback = SearchRequest.builder()
-                    .query(request.getQuery())
-                    .entityType(SearchEntityType.KNOWLEDGE)
-                    .mode(SearchMode.FULL_TEXT)
-                    .filters(request.getFilters())
-                    .page(page)
-                    .size(size)
-                    .includeFacets(request.isIncludeFacets())
-                    .highlight(request.isHighlight())
-                    .build();
-            return search(fallback);
+            return localQueryService.searchLocal(
+                    tenantId,
+                    SearchMode.FULL_TEXT,
+                    fallbackType,
+                    page,
+                    size,
+                    trimToNull(request.getQuery()),
+                    filterValue(request.getFilters(), "status"),
+                    filterValue(request.getFilters(), "source"),
+                    request.isIncludeFacets(),
+                    request.isHighlight());
         }
         try {
             ApiResponse<AiExecuteResponse> response = client.execute(AiExecuteRequest.builder()
@@ -196,82 +156,18 @@ public class SearchQueryService {
                     .build();
         } catch (Exception ex) {
             log.warn("Semantic knowledge search fell back to FTS: {}", ex.getMessage());
-            SearchRequest fallback = SearchRequest.builder()
-                    .query(request.getQuery())
-                    .entityType(SearchEntityType.KNOWLEDGE)
-                    .mode(SearchMode.FULL_TEXT)
-                    .page(page)
-                    .size(size)
-                    .includeFacets(false)
-                    .highlight(true)
-                    .build();
-            return search(fallback);
+            return localQueryService.searchLocal(
+                    tenantId,
+                    SearchMode.FULL_TEXT,
+                    fallbackType,
+                    page,
+                    size,
+                    trimToNull(request.getQuery()),
+                    null,
+                    null,
+                    false,
+                    true);
         }
-    }
-
-    private SearchHitDto toHit(SearchDocument doc, String query, boolean highlight, double rankScore) {
-        String snippet = snippet(doc.getBody(), query);
-        return SearchHitDto.builder()
-                .documentId(doc.getId())
-                .entityType(doc.getEntityType())
-                .entityId(doc.getEntityId())
-                .title(doc.getTitle())
-                .snippet(snippet)
-                .highlightedTitle(highlight ? highlight(doc.getTitle(), query) : doc.getTitle())
-                .highlightedBody(highlight ? highlight(snippet, query) : snippet)
-                .score(rankScore)
-                .textScore(rankScore)
-                .businessScore(doc.getBusinessScore())
-                .sourceUpdatedAt(doc.getSourceUpdatedAt())
-                .metadata(doc.getMetadata() == null ? Map.of() : new HashMap<>(doc.getMetadata()))
-                .build();
-    }
-
-    private static String snippet(String body, String query) {
-        if (!StringUtils.hasText(body)) {
-            return "";
-        }
-        if (!StringUtils.hasText(query)) {
-            return body.length() <= 240 ? body : body.substring(0, 240) + "...";
-        }
-        String lower = body.toLowerCase(Locale.ROOT);
-        String q = query.toLowerCase(Locale.ROOT);
-        int idx = lower.indexOf(q);
-        if (idx < 0) {
-            return body.length() <= 240 ? body : body.substring(0, 240) + "...";
-        }
-        int start = Math.max(0, idx - 60);
-        int end = Math.min(body.length(), idx + query.length() + 120);
-        String slice = body.substring(start, end);
-        return (start > 0 ? "..." : "") + slice + (end < body.length() ? "..." : "");
-    }
-
-    private static String highlight(String text, String query) {
-        if (!StringUtils.hasText(text) || !StringUtils.hasText(query)) {
-            return text;
-        }
-        String pattern = "(?i)(" + java.util.regex.Pattern.quote(query.trim()) + ")";
-        return text.replaceAll(pattern, "<em>$1</em>");
-    }
-
-    private static Map<String, Long> toFacetMap(List<Object[]> rows) {
-        Map<String, Long> map = new LinkedHashMap<>();
-        if (rows == null) {
-            return map;
-        }
-        for (Object[] row : rows) {
-            if (row != null && row.length >= 2 && row[0] != null) {
-                map.put(String.valueOf(row[0]), ((Number) row[1]).longValue());
-            }
-        }
-        return map;
-    }
-
-    private static String filterValue(Map<String, String> filters, String key) {
-        if (filters == null || !filters.containsKey(key)) {
-            return null;
-        }
-        return trimToNull(filters.get(key));
     }
 
     private void recordMetrics(
@@ -297,6 +193,13 @@ public class SearchQueryService {
             throw new ValidationException("Tenant context is required");
         }
         return UUID.fromString(raw);
+    }
+
+    private static String filterValue(Map<String, String> filters, String key) {
+        if (filters == null || !filters.containsKey(key)) {
+            return null;
+        }
+        return trimToNull(filters.get(key));
     }
 
     private static String trimToNull(String value) {

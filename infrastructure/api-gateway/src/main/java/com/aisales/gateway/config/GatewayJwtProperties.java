@@ -16,4 +16,11 @@ public class GatewayJwtProperties {
      * Local default is the committed dev public key; production injects PEM via env/secret.
      */
     private String publicKeyLocation = "classpath:jwt/local-public.pem";
+
+    private String issuer = "aisales-platform";
+
+    private String audience = "aisales-api";
+
+    /** When true, tokens must include matching issuer and audience. */
+    private boolean requireIssuerAudience = false;
 }

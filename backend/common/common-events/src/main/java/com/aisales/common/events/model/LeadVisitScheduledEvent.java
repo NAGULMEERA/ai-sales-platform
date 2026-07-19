@@ -12,6 +12,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class LeadVisitScheduledEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "LeadVisitScheduled";
+
     private String leadName;
     private Instant scheduledAt;
     private String location;
@@ -19,7 +21,7 @@ public class LeadVisitScheduledEvent extends BaseEvent {
     public static LeadVisitScheduledEvent of(String tenantId, String leadId, String leadName,
                                              Instant scheduledAt, String location, String correlationId) {
         LeadVisitScheduledEvent event = new LeadVisitScheduledEvent();
-        event.init("LeadVisitScheduled", tenantId, leadId, correlationId);
+        event.init(EVENT_TYPE, tenantId, leadId, correlationId);
         event.leadName = leadName;
         event.scheduledAt = scheduledAt;
         event.location = location;

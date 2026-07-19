@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class PromptExecutedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "PromptExecuted";
+
     private String promptCode;
     private String promptVersion;
     private String provider;
@@ -35,7 +37,7 @@ public class PromptExecutedEvent extends BaseEvent {
                                          String correlationId,
                                          Integer promptTokens, Integer completionTokens) {
         PromptExecutedEvent event = new PromptExecutedEvent();
-        event.init("PromptExecuted", tenantId, executionId, correlationId);
+        event.init(EVENT_TYPE, tenantId, executionId, correlationId);
         event.promptCode = promptCode;
         event.promptVersion = promptVersion;
         event.provider = provider;

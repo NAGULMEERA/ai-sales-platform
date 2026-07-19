@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class WorkflowTriggeredEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "WorkflowTriggered";
+
     private String definitionKey;
     private String ruleCode;
     private String triggerType;
@@ -25,7 +27,7 @@ public class WorkflowTriggeredEvent extends BaseEvent {
             String businessKey,
             String correlationId) {
         WorkflowTriggeredEvent event = new WorkflowTriggeredEvent();
-        event.init("WorkflowTriggered", tenantId, workflowId, correlationId);
+        event.init(EVENT_TYPE, tenantId, workflowId, correlationId);
         event.definitionKey = definitionKey;
         event.ruleCode = ruleCode;
         event.triggerType = triggerType;

@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class CatalogRecommendationGeneratedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "CatalogRecommendationGenerated";
+
     private String leadId;
     private String recommendationCount;
     private String topProductId;
@@ -25,7 +27,7 @@ public class CatalogRecommendationGeneratedEvent extends BaseEvent {
             String confidence,
             String correlationId) {
         CatalogRecommendationGeneratedEvent event = new CatalogRecommendationGeneratedEvent();
-        event.init("CatalogRecommendationGenerated", tenantId, aggregateId, correlationId);
+        event.init(EVENT_TYPE, tenantId, aggregateId, correlationId);
         event.leadId = leadId;
         event.recommendationCount = recommendationCount;
         event.topProductId = topProductId;
