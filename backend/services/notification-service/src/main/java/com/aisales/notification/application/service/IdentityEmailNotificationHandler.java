@@ -34,7 +34,7 @@ public class IdentityEmailNotificationHandler {
                 .correlationId(event.getCorrelationId())
                 .build());
         log.info("Processed EmailVerificationRequested eventId={} recipient={}",
-                event.getEventId(), event.getEmail());
+                event.getEventId(), EmailDeliveryService.redactEmail(event.getEmail()));
     }
 
     public void onPasswordResetRequested(PasswordResetRequestedEvent event) {
@@ -49,6 +49,6 @@ public class IdentityEmailNotificationHandler {
                 .correlationId(event.getCorrelationId())
                 .build());
         log.info("Processed PasswordResetRequested eventId={} recipient={}",
-                event.getEventId(), event.getEmail());
+                event.getEventId(), EmailDeliveryService.redactEmail(event.getEmail()));
     }
 }

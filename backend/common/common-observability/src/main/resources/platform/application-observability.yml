@@ -18,15 +18,24 @@ spring:
       leak-detection-threshold: ${HIKARI_LEAK_DETECTION_MS:60000}
   jpa:
     open-in-view: false
+    properties:
+      # JDBC batching for inserts/updates (outbox, chunks, quote lines). Behavior unchanged.
+      hibernate.jdbc.batch_size: ${HIBERNATE_JDBC_BATCH_SIZE:50}
+      hibernate.order_inserts: true
+      hibernate.order_updates: true
+      hibernate.jdbc.batch_versioned_data: true
   kafka:
+    listener:
+      # Default 1 preserves per-partition ordering; raise via env for high-throughput consumers.
+      concurrency: ${KAFKA_LISTENER_CONCURRENCY:1}
     producer:
       acks: all
       properties:
-        linger.ms: ${KAFKA_LINGER_MS:5}
-        batch.size: ${KAFKA_BATCH_SIZE:32768}
+        linger.ms: ${KAFKA_LINGER_MS:10}
+        batch.size: ${KAFKA_BATCH_SIZE:65536}
         compression.type: ${KAFKA_COMPRESSION:snappy}
     consumer:
-      max-poll-records: ${KAFKA_MAX_POLL_RECORDS:100}
+      max-poll-records: ${KAFKA_MAX_POLL_RECORDS:200}
       fetch-min-size: ${KAFKA_FETCH_MIN_BYTES:1024}
       fetch-max-wait: ${KAFKA_FETCH_MAX_WAIT_MS:500ms}
 

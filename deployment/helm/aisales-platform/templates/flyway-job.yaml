@@ -1,0 +1,53 @@
+{{- if .Values.flyway.enabled }}
+{{- range $name, $svc := .Values.services }}
+{{- if and $svc.enabled $svc.database }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flyway-{{ $name }}-{{ $.Release.Revision }}
+  namespace: {{ include "aisales.namespace" $ }}
+  labels:
+    app: flyway-{{ $name }}
+    {{- include "aisales.labels" $ | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-upgrade,pre-install
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: flyway
+          image: {{ $.Values.flyway.image }}
+          args:
+            - -url=jdbc:postgresql://{{ $.Values.flyway.jdbcHost }}:{{ $.Values.flyway.jdbcPort }}/{{ $svc.database }}
+            - -user=$(FLYWAY_USER)
+            - -password=$(FLYWAY_PASSWORD)
+            - -locations=filesystem:/flyway/sql
+            - migrate
+          env:
+            - name: FLYWAY_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.existingSecret }}
+                  key: DB_USERNAME
+            - name: FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.existingSecret }}
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: migrations
+              mountPath: /flyway/sql
+              readOnly: true
+      volumes:
+        - name: migrations
+          configMap:
+            name: flyway-sql-{{ $name }}
+            optional: true
+{{- end }}
+{{- end }}
+{{- end }}

@@ -2,6 +2,22 @@ name: Deploy Staging
 
 on:
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Container image tag to deploy
+        required: true
+        default: latest
+      strategy:
+        description: Deployment strategy
+        type: choice
+        options:
+          - rolling
+          - blueGreen
+        default: rolling
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -9,5 +25,52 @@ jobs:
     environment: staging
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy to staging
-        run: echo "Deploy to staging environment"
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Apply platform secrets/config baseline
+        run: |
+          kubectl apply -f deployment/kubernetes/namespace.yml
+          kubectl apply -f deployment/kubernetes/configmap.yml
+          # Secrets are managed by External Secrets / sealed secrets in staging.
+          # kubectl apply -f deployment/kubernetes/secrets.yml
+
+      - name: Helm upgrade (rolling)
+        if: inputs.strategy == 'rolling'
+        run: |
+          helm upgrade --install aisales-staging deployment/helm/aisales-platform \
+            --namespace aisales \
+            --create-namespace \
+            --set global.imageRegistry=${{ secrets.IMAGE_REGISTRY }} \
+            --set global.imageTag=${{ inputs.image_tag }} \
+            --set global.deploymentStrategy=rolling \
+            --wait --timeout 20m
+
+      - name: Helm upgrade (blue/green)
+        if: inputs.strategy == 'blueGreen'
+        run: |
+          helm upgrade --install aisales-staging deployment/helm/aisales-platform \
+            --namespace aisales \
+            --create-namespace \
+            -f deployment/helm/aisales-platform/values-bluegreen.yaml \
+            --set global.imageRegistry=${{ secrets.IMAGE_REGISTRY }} \
+            --set global.imageTag=${{ inputs.image_tag }} \
+            --set global.activeColor=blue \
+            --wait --timeout 20m
+
+      - name: Smoke — gateway health
+        run: |
+          kubectl -n aisales rollout status deploy/api-gateway --timeout=300s || \
+          kubectl -n aisales rollout status deploy/api-gateway-blue --timeout=300s

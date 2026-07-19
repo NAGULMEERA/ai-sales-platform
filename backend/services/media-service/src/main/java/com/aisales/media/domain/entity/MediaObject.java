@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -66,8 +67,10 @@ public class MediaObject {
     @Column(name = "updated_by", nullable = false, length = 100)
     private String updatedBy;
 
+    @Version
     @Column(nullable = false)
-    private Long version;
+    @Builder.Default
+    private Long version = 0L;
 
     @Column(name = "deleted_at")
     private Instant deletedAt;

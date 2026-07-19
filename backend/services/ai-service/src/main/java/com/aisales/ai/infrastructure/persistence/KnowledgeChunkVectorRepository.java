@@ -22,6 +22,23 @@ public class KnowledgeChunkVectorRepository {
     }
 
     /**
+     * Batch-write embeddings for already-persisted chunks (same semantics as
+     * {@link #updateEmbedding(UUID, float[])}, fewer round-trips).
+     */
+    public void updateEmbeddings(List<UUID> chunkIds, List<float[]> embeddings) {
+        if (chunkIds == null || embeddings == null || chunkIds.isEmpty()) {
+            return;
+        }
+        if (chunkIds.size() != embeddings.size()) {
+            throw new IllegalArgumentException("chunkIds and embeddings size mismatch");
+        }
+        for (int i = 0; i < chunkIds.size(); i++) {
+            updateEmbedding(chunkIds.get(i), embeddings.get(i));
+        }
+        entityManager.flush();
+    }
+
+    /**
      * Top-k cosine nearest chunks for a knowledge base (tenant isolated).
      * Only chunks belonging to READY documents are searchable.
      */

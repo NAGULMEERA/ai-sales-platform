@@ -15,11 +15,13 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 /**
  * Applies Twilio call status callbacks using {@code voice_call} lookup (CallSid → tenant/lead).
+ * Persist status in a short TX; Lead Feign updates run outside the transaction.
  */
 @Slf4j
 @Service
@@ -28,8 +30,8 @@ public class TwilioVoiceStatusService {
 
     private final VoiceCallRepository voiceCallRepository;
     private final LeadServiceClient leadServiceClient;
+    private final PlatformTransactionManager transactionManager;
 
-    @Transactional
     public void onStatus(String callSid, String callStatus, String to, String from) {
         if (!StringUtils.hasText(callSid)) {
             return;
@@ -37,17 +39,22 @@ public class TwilioVoiceStatusService {
         String normalized = callStatus != null ? callStatus.trim().toUpperCase() : "UNKNOWN";
         log.info("Twilio voice status sid={} status={} to={}", callSid, normalized, to);
 
-        Optional<VoiceCall> found =
-                voiceCallRepository.findByProviderAndProviderCallId(TwilioVoiceProvider.NAME, callSid);
-        if (found.isEmpty()) {
-            log.debug("No voice_call row for Twilio sid={}", callSid);
+        VoiceCall voiceCall = new TransactionTemplate(transactionManager).execute(status -> {
+            Optional<VoiceCall> found =
+                    voiceCallRepository.findByProviderAndProviderCallId(TwilioVoiceProvider.NAME, callSid);
+            if (found.isEmpty()) {
+                log.debug("No voice_call row for Twilio sid={}", callSid);
+                return null;
+            }
+            VoiceCall call = found.get();
+            call.setStatus(normalized);
+            call.setUpdatedAt(Instant.now());
+            return voiceCallRepository.save(call);
+        });
+
+        if (voiceCall == null) {
             return;
         }
-
-        VoiceCall voiceCall = found.get();
-        voiceCall.setStatus(normalized);
-        voiceCall.setUpdatedAt(Instant.now());
-        voiceCallRepository.save(voiceCall);
 
         TenantContext.setTenantId(voiceCall.getTenantId().toString());
         TenantContext.setUserId("twilio-voice");

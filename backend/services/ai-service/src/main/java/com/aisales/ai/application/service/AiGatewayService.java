@@ -83,6 +83,8 @@ public class AiGatewayService {
                 request.getLanguageCode(),
                 request.getCapability());
 
+        promptVariableSanitizer.rejectIfInjection(request.getVariables());
+        promptVariableSanitizer.rejectIfInjection(request.getRetrievalQuery());
         Map<String, String> variables = new HashMap<>(
                 promptVariableSanitizer.sanitizeVariables(request.getVariables()));
 

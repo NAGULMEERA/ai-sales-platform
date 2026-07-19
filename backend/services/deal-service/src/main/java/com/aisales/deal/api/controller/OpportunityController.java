@@ -109,7 +109,7 @@ public class OpportunityController {
     @PostMapping("/{id}/close-won")
     @Operation(summary = "Close opportunity as won")
     public ApiResponse<OpportunityDto> closeWon(
-            @PathVariable UUID id, @RequestBody(required = false) CloseOpportunityRequest request) {
+            @PathVariable UUID id, @Valid @RequestBody(required = false) CloseOpportunityRequest request) {
         return ApiResponse.ok(opportunityService.closeWon(
                 id, request != null ? request : CloseOpportunityRequest.builder().build()));
     }
@@ -117,7 +117,7 @@ public class OpportunityController {
     @PostMapping("/{id}/close-lost")
     @Operation(summary = "Close opportunity as lost")
     public ApiResponse<OpportunityDto> closeLost(
-            @PathVariable UUID id, @RequestBody(required = false) CloseOpportunityRequest request) {
+            @PathVariable UUID id, @Valid @RequestBody(required = false) CloseOpportunityRequest request) {
         return ApiResponse.ok(opportunityService.closeLost(
                 id, request != null ? request : CloseOpportunityRequest.builder().build()));
     }
@@ -125,7 +125,7 @@ public class OpportunityController {
     @PostMapping("/{id}/reopen")
     @Operation(summary = "Reopen a terminal opportunity")
     public ApiResponse<OpportunityDto> reopen(
-            @PathVariable UUID id, @RequestBody(required = false) ReopenOpportunityRequest request) {
+            @PathVariable UUID id, @Valid @RequestBody(required = false) ReopenOpportunityRequest request) {
         return ApiResponse.ok(opportunityService.reopen(
                 id, request != null ? request : ReopenOpportunityRequest.builder().build()));
     }

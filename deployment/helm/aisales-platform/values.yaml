@@ -1,0 +1,318 @@
+global:
+  namespace: aisales
+  imageRegistry: aisales
+  imageTag: latest
+  imagePullPolicy: IfNotPresent
+  # Blue/Green: activeColor selects which Deployment color the Service targets.
+  # Deploy inactive color first, smoke-test, then flip activeColor and upgrade.
+  deploymentStrategy: rolling # rolling | blueGreen
+  activeColor: blue
+  inactiveColor: green
+  # Optional per-color tags for blue/green (fallback: imageTag).
+  # Example: colorImageTags: { blue: v1.2.3, green: v1.2.4 }
+  colorImageTags: {}
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - api.aisales.local
+    - api.aisales.example.com
+  tls:
+    enabled: true
+    secretName: aisales-tls
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+config:
+  springProfilesActive: prod
+  environment: prod
+  tracingSampleRate: "0.1"
+  jwksUri: http://identity-service:8081/.well-known/jwks.json
+
+secrets:
+  # Prefer External Secrets Operator in production.
+  create: true
+  existingSecret: aisales-secrets
+
+networkPolicy:
+  enabled: true
+
+defaultProbes:
+  startup:
+    path: /actuator/health/readiness
+    failureThreshold: 30
+    periodSeconds: 5
+  liveness:
+    path: /actuator/health/liveness
+    initialDelaySeconds: 20
+    periodSeconds: 15
+    failureThreshold: 3
+  readiness:
+    path: /actuator/health/readiness
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 3
+
+defaultResources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1536Mi
+
+rollingUpdate:
+  maxUnavailable: 0
+  maxSurge: 1
+
+services:
+  api-gateway:
+    enabled: true
+    image: api-gateway
+    port: 8080
+    replicas: 2
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      cpu: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+  service-registry:
+    enabled: true
+    image: service-registry
+    port: 8761
+    replicas: 1
+    hpa:
+      enabled: false
+    pdb:
+      enabled: false
+  config-server:
+    enabled: true
+    image: config-server
+    port: 8888
+    replicas: 1
+    hpa:
+      enabled: false
+    pdb:
+      enabled: false
+  identity-service:
+    enabled: true
+    image: identity-service
+    port: 8081
+    replicas: 2
+    database: aisales_identity
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      cpu: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+  tenant-service:
+    enabled: true
+    image: tenant-service
+    port: 8082
+    replicas: 1
+    database: aisales_tenant
+    hpa:
+      enabled: false
+    pdb:
+      enabled: true
+      minAvailable: 1
+  lead-service:
+    enabled: true
+    image: lead-service
+    port: 8083
+    replicas: 2
+    database: lead_db
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 12
+      cpu: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+  customer-service:
+    enabled: true
+    image: customer-service
+    port: 8084
+    replicas: 2
+    database: customer_db
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      cpu: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+  catalog-service:
+    enabled: true
+    image: catalog-service
+    port: 8085
+    replicas: 1
+    database: catalog_db
+    hpa:
+      enabled: false
+    pdb:
+      enabled: true
+      minAvailable: 1
+  conversation-service:
+    enabled: true
+    image: conversation-service
+    port: 8086
+    replicas: 1
+    database: conversation_db
+    hpa:
+      enabled: false
+    pdb:
+      enabled: true
+      minAvailable: 1
+  appointment-service:
+    enabled: false # scaffold — enable when domain ships
+    image: appointment-service
+    port: 8087
+    replicas: 1
+    hpa:
+      enabled: false
+    pdb:
+      enabled: false
+  ai-service:
+    enabled: true
+    image: ai-service
+    port: 8088
+    replicas: 2
+    database: ai_db
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      cpu: 65
+    pdb:
+      enabled: true
+      minAvailable: 1
+  workflow-service:
+    enabled: true
+    image: workflow-service
+    port: 8089
+    replicas: 1
+    database: aisales_workflow
+    hpa:
+      enabled: false
+    pdb:
+      enabled: true
+      minAvailable: 1
+  notification-service:
+    enabled: true
+    image: notification-service
+    port: 8090
+    replicas: 1
+    database: aisales_notification
+    hpa:
+      enabled: false
+    pdb:
+      enabled: true
+      minAvailable: 1
+  billing-service:
+    enabled: true
+    image: billing-service
+    port: 8091
+    replicas: 1
+    database: billing_db
+    hpa:
+      enabled: false
+    pdb:
+      enabled: true
+      minAvailable: 1
+  integration-service:
+    enabled: true
+    image: integration-service
+    port: 8092
+    replicas: 1
+    database: integration_db
+    hpa:
+      enabled: false
+    pdb:
+      enabled: true
+      minAvailable: 1
+  analytics-service:
+    enabled: true
+    image: analytics-service
+    port: 8093
+    replicas: 1
+    database: analytics_db
+    hpa:
+      enabled: false
+    pdb:
+      enabled: true
+      minAvailable: 1
+  search-service:
+    enabled: true
+    image: search-service
+    port: 8094
+    replicas: 2
+    database: search_db
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      cpu: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+  media-service:
+    enabled: true
+    image: media-service
+    port: 8095
+    replicas: 1
+    database: media_db
+    hpa:
+      enabled: false
+    pdb:
+      enabled: true
+      minAvailable: 1
+  audit-service:
+    enabled: false # scaffold
+    image: audit-service
+    port: 8096
+    replicas: 1
+    hpa:
+      enabled: false
+    pdb:
+      enabled: false
+  deal-service:
+    enabled: true
+    image: deal-service
+    port: 8097
+    replicas: 1
+    database: deal_db
+    hpa:
+      enabled: false
+    pdb:
+      enabled: true
+      minAvailable: 1
+  marketplace-service:
+    enabled: true
+    image: marketplace-service
+    port: 8098
+    replicas: 1
+    database: marketplace_db
+    hpa:
+      enabled: false
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+flyway:
+  # Optional pre-upgrade Job using flyway/flyway image against each service DB.
+  # Prefer migrate-on-boot for most services; enable for gated production cutovers.
+  enabled: false
+  image: flyway/flyway:10.17.0
+  jdbcHost: postgres
+  jdbcPort: 5432

@@ -3,6 +3,7 @@ package com.aisales.deal.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,6 +26,7 @@ import com.aisales.deal.infrastructure.persistence.QuoteRepository;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -46,6 +48,7 @@ class QuoteServiceTest {
     @Mock private OpportunityService opportunityService;
     @Mock private CatalogQuoteGateway catalogQuoteGateway;
     @Mock private EventPublisher eventPublisher;
+    @Mock private QuoteIdempotencyService quoteIdempotencyService;
 
     private QuoteService quoteService;
     private UUID tenantId;
@@ -63,7 +66,8 @@ class QuoteServiceTest {
                 catalogQuoteGateway,
                 new DealMapper(),
                 eventPublisher,
-                noopTxManager(), org.mockito.Mockito.mock(QuoteIdempotencyService.class));
+                noopTxManager(),
+                quoteIdempotencyService);
     }
 
     private static PlatformTransactionManager noopTxManager() {
@@ -91,14 +95,15 @@ class QuoteServiceTest {
 
         UUID offerId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
-        when(catalogQuoteGateway.requireOffer(offerId)).thenReturn(CatalogOfferDto.builder()
+        CatalogOfferDto offer = CatalogOfferDto.builder()
                 .id(offerId)
                 .productId(productId)
                 .code("OFFER-1")
                 .name("Studio Plan")
                 .currency("INR")
                 .unitPrice(new BigDecimal("2500000.0000"))
-                .build());
+                .build();
+        when(catalogQuoteGateway.requireOffers(List.of(offerId))).thenReturn(Map.of(offerId, offer));
         when(quoteRepository.saveAndFlush(any(Quote.class))).thenAnswer(inv -> {
             Quote q = inv.getArgument(0);
             q.setId(UUID.randomUUID());
@@ -121,6 +126,78 @@ class QuoteServiceTest {
         ArgumentCaptor<QuoteCreatedEvent> captor = ArgumentCaptor.forClass(QuoteCreatedEvent.class);
         verify(eventPublisher).publish(captor.capture());
         assertThat(captor.getValue().getEventType()).isEqualTo("QuoteCreated");
+    }
+
+    @Test
+    void shouldCreateMultiLineQuoteWithSingleBatchOfferLookup() {
+        Opportunity opportunity = openOpportunity();
+        when(opportunityService.requireOpportunity(opportunityId)).thenReturn(opportunity);
+        when(quoteRepository.findByTenantIdAndOpportunityIdAndDeletedAtIsNullOrderByQuoteVersionDesc(
+                        tenantId, opportunityId))
+                .thenReturn(Collections.emptyList());
+        when(quoteRepository.findMaxVersion(tenantId, opportunityId)).thenReturn(0);
+
+        UUID offerA = UUID.randomUUID();
+        UUID offerB = UUID.randomUUID();
+        CatalogOfferDto dtoA = CatalogOfferDto.builder()
+                .id(offerA)
+                .productId(UUID.randomUUID())
+                .code("A")
+                .name("Offer A")
+                .currency("INR")
+                .unitPrice(new BigDecimal("100.0000"))
+                .build();
+        CatalogOfferDto dtoB = CatalogOfferDto.builder()
+                .id(offerB)
+                .productId(UUID.randomUUID())
+                .code("B")
+                .name("Offer B")
+                .currency("INR")
+                .unitPrice(new BigDecimal("200.0000"))
+                .build();
+        when(catalogQuoteGateway.requireOffers(List.of(offerA, offerB)))
+                .thenReturn(Map.of(offerA, dtoA, offerB, dtoB));
+        when(quoteRepository.saveAndFlush(any(Quote.class))).thenAnswer(inv -> {
+            Quote q = inv.getArgument(0);
+            q.setId(UUID.randomUUID());
+            return q;
+        });
+
+        QuoteDto dto = quoteService.create(CreateQuoteRequest.builder()
+                .opportunityId(opportunityId)
+                .lineItems(List.of(
+                        QuoteLineItemRequest.builder().offerId(offerA).quantity(BigDecimal.ONE).build(),
+                        QuoteLineItemRequest.builder().offerId(offerB).quantity(BigDecimal.TWO).build()))
+                .build());
+
+        assertThat(dto.getLineItems()).hasSize(2);
+        assertThat(dto.getTotalAmount()).isEqualByComparingTo("500.0000");
+        verify(catalogQuoteGateway).requireOffers(List.of(offerA, offerB));
+        verify(catalogQuoteGateway, never()).requireOffer(any());
+    }
+
+    @Test
+    void shouldReturnCachedQuoteForIdempotencyKey() {
+        QuoteDto cached = QuoteDto.builder()
+                .id(UUID.randomUUID())
+                .status(QuoteStatus.DRAFT)
+                .totalAmount(new BigDecimal("1.0000"))
+                .build();
+        when(quoteIdempotencyService.findCachedCreateResponse("key-1")).thenReturn(Optional.of(cached));
+
+        QuoteDto result = quoteService.create(
+                CreateQuoteRequest.builder()
+                        .opportunityId(opportunityId)
+                        .lineItems(List.of(QuoteLineItemRequest.builder()
+                                .offerId(UUID.randomUUID())
+                                .quantity(BigDecimal.ONE)
+                                .build()))
+                        .build(),
+                "key-1");
+
+        assertThat(result).isSameAs(cached);
+        verify(opportunityService, never()).requireOpportunity(any());
+        verify(catalogQuoteGateway, never()).requireOffers(any());
     }
 
     @Test

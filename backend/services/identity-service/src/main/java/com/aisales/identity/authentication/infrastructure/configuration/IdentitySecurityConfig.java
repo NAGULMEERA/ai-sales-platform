@@ -1,6 +1,7 @@
 package com.aisales.identity.authentication.infrastructure.configuration;
 
 import com.aisales.common.core.constant.SecurityConstants;
+import com.aisales.common.security.config.SecurityHeadersCustomizer;
 import com.aisales.common.security.filter.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -51,6 +52,7 @@ public class IdentitySecurityConfig {
                         .tokenEndpoint(token -> token.accessTokenResponseClient(authorizationCodeTokenResponseClient))
                         .userInfoEndpoint(userInfo -> userInfo.oidcUserService(oidcUserService)))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        SecurityHeadersCustomizer.apply(http);
         return http.build();
     }
 

@@ -93,9 +93,9 @@ public class DocumentEmbeddingPipeline {
                 knowledgeChunkRepository.flush();
 
                 Instant now = Instant.now();
-                List<KnowledgeChunk> savedChunks = new ArrayList<>(chunks.size());
+                List<KnowledgeChunk> toSave = new ArrayList<>(chunks.size());
                 for (int i = 0; i < chunks.size(); i++) {
-                    savedChunks.add(knowledgeChunkRepository.save(KnowledgeChunk.builder()
+                    toSave.add(KnowledgeChunk.builder()
                             .tenantId(tenantId)
                             .knowledgeBaseId(knowledgeBaseId)
                             .documentId(managed.getId())
@@ -104,13 +104,13 @@ public class DocumentEmbeddingPipeline {
                             .tokenEstimate(Math.max(1, chunks.get(i).length() / 4))
                             .embeddingModel(modelName)
                             .createdAt(now)
-                            .build()));
+                            .build());
                 }
+                List<KnowledgeChunk> savedChunks = knowledgeChunkRepository.saveAll(toSave);
                 knowledgeChunkRepository.flush();
 
-                for (int i = 0; i < savedChunks.size(); i++) {
-                    knowledgeChunkVectorRepository.updateEmbedding(savedChunks.get(i).getId(), vectors.get(i));
-                }
+                List<UUID> chunkIds = savedChunks.stream().map(KnowledgeChunk::getId).toList();
+                knowledgeChunkVectorRepository.updateEmbeddings(chunkIds, vectors);
 
                 tokenUsageService.recordEmbeddingUsage(
                         tenantId,

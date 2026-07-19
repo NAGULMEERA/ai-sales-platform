@@ -98,13 +98,6 @@ public class EmailDeliveryService {
 
     /** Redacts local-part for structured logs (keeps domain for ops diagnosis). */
     static String redactEmail(String email) {
-        if (email == null || email.isBlank()) {
-            return "(none)";
-        }
-        int at = email.indexOf('@');
-        if (at <= 0 || at == email.length() - 1) {
-            return "***";
-        }
-        return "***@" + email.substring(at + 1);
+        return com.aisales.common.core.util.SensitiveDataRedactor.redactEmail(email);
     }
 }

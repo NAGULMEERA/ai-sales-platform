@@ -24,6 +24,7 @@ import com.aisales.deal.infrastructure.persistence.QuoteRepository;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,7 +110,7 @@ class IndustryOpportunityQuoteFlowTest {
         assertThat(quote.getLineItems().getFirst().getCode()).isEqualTo("RE-OFFER-3BHK");
         assertThat(quote.getLineItems().getFirst().getName()).contains("Whitefield");
         assertThat(quote.getTotalAmount()).isEqualByComparingTo("7500000.0000");
-        verify(catalogQuoteGateway).requireOffer(propertyOffer.getId());
+        verify(catalogQuoteGateway).requireOffers(List.of(propertyOffer.getId()));
     }
 
     @Test
@@ -131,7 +132,7 @@ class IndustryOpportunityQuoteFlowTest {
         assertThat(quote.getLineItems().getFirst().getCode()).isEqualTo("AUTO-OFFER-CAMRY");
         assertThat(quote.getLineItems().getFirst().getName()).contains("Camry");
         assertThat(quote.getTotalAmount()).isEqualByComparingTo("1800000.0000");
-        verify(catalogQuoteGateway).requireOffer(vehicleOffer.getId());
+        verify(catalogQuoteGateway).requireOffers(List.of(vehicleOffer.getId()));
     }
 
     private OpportunityDto createOpportunity(String name) {
@@ -168,7 +169,7 @@ class IndustryOpportunityQuoteFlowTest {
                         tenantId, opportunityId))
                 .thenReturn(Collections.emptyList());
         when(quoteRepository.findMaxVersion(tenantId, opportunityId)).thenReturn(0);
-        when(catalogQuoteGateway.requireOffer(offer.getId())).thenReturn(offer);
+        when(catalogQuoteGateway.requireOffers(List.of(offer.getId()))).thenReturn(Map.of(offer.getId(), offer));
         when(quoteRepository.saveAndFlush(any(Quote.class))).thenAnswer(inv -> {
             Quote q = inv.getArgument(0);
             q.setId(UUID.randomUUID());

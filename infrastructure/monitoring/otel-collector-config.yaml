@@ -1,6 +1,4 @@
-# OpenTelemetry Collector — receives OTLP from services, exports to Prometheus/Jaeger.
-# Run: docker run -p 4317:4317 -p 4318:4318 -v $(pwd)/otel-collector-config.yaml:/etc/otelcol/config.yaml otel/opentelemetry-collector
-
+# OpenTelemetry Collector — OTLP in, Prometheus metrics + Tempo traces + logging.
 receivers:
   otlp:
     protocols:
@@ -11,20 +9,29 @@ receivers:
 
 processors:
   batch:
+    timeout: 5s
+    send_batch_size: 1024
+  memory_limiter:
+    check_interval: 2s
+    limit_mib: 512
 
 exporters:
   logging:
     verbosity: basic
   prometheus:
     endpoint: 0.0.0.0:8889
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [logging]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo, logging]
     metrics:
       receivers: [otlp]
-      processors: [batch]
+      processors: [memory_limiter, batch]
       exporters: [prometheus, logging]

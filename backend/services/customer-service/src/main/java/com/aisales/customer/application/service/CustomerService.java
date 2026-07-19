@@ -54,6 +54,7 @@ import com.aisales.customer.infrastructure.persistence.CustomerInteractionReposi
 import com.aisales.customer.infrastructure.persistence.CustomerRepository;
 import com.aisales.customer.infrastructure.persistence.CustomerTimelineRepository;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -453,20 +454,24 @@ public class CustomerService {
         customerRepository.save(loser);
 
         Instant now = Instant.now();
+        List<CustomerDuplicate> resolvedDuplicates = new ArrayList<>();
         duplicateRepository.findByTenantIdAndCustomerIdAndResolvedFalse(tenantId, survivorId).forEach(dup -> {
             if (dup.getDuplicateOfCustomerId().equals(loser.getId())) {
                 dup.setResolved(true);
                 dup.setResolvedAt(now);
                 dup.setMergedIntoCustomerId(survivorId);
-                duplicateRepository.save(dup);
+                resolvedDuplicates.add(dup);
             }
         });
         duplicateRepository.findByTenantIdAndCustomerIdAndResolvedFalse(tenantId, loser.getId()).forEach(dup -> {
             dup.setResolved(true);
             dup.setResolvedAt(now);
             dup.setMergedIntoCustomerId(survivorId);
-            duplicateRepository.save(dup);
+            resolvedDuplicates.add(dup);
         });
+        if (!resolvedDuplicates.isEmpty()) {
+            duplicateRepository.saveAll(resolvedDuplicates);
+        }
 
         timelineRecorder.record(
                 tenantId, survivor.getId(), "CUSTOMER_MERGED",

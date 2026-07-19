@@ -198,6 +198,28 @@ public class CatalogService {
         return mapper.toOfferDto(requireOffer(offerId));
     }
 
+    /**
+     * Batch resolve offers by id (tenant-scoped). Missing ids are omitted from the result;
+     * callers decide whether absence is an error.
+     */
+    @Transactional(readOnly = true)
+    public List<CatalogOfferDto> getOffersByIds(List<UUID> offerIds) {
+        if (offerIds == null || offerIds.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> distinct = offerIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
+        if (distinct.isEmpty()) {
+            return List.of();
+        }
+        if (distinct.size() > 100) {
+            throw new ValidationException("At most 100 offer ids per lookup");
+        }
+        return offerRepository.findByTenantIdAndIdInAndDeletedAtIsNull(requireTenantId(), distinct)
+                .stream()
+                .map(mapper::toOfferDto)
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public PageResponse<CatalogOfferDto> listOffers(
             int page, int size, UUID productId, CatalogItemStatus status) {

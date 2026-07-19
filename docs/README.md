@@ -12,21 +12,25 @@
 | [08-api](08-api/) | [API surface](08-api/api-surface.md) and OpenAPI specs |
 | [09-frontend](09-frontend/) | Frontend architecture and UX |
 | [10-security](10-security/) | Security architecture and policies |
-| [11-devops](11-devops/) | [Deployment guide](11-devops/deployment-guide.md), CI/CD, K8s |
+| [11-devops](11-devops/) | [Deployment guide](11-devops/deployment-guide.md), [Production runbook](11-devops/production-deployment.md), Helm, blue/green |
 | [12-operations](12-operations/) | [Runbook](12-operations/runbook.md), [ops](12-operations/operational-guide.md), [DR](12-operations/disaster-recovery-guide.md) |
 | [13-quality](13-quality/) | Testing strategy and quality gates |
 | [14-developer-guide](14-developer-guide/) | [Onboarding](14-developer-guide/developer-onboarding.md), coding standards |
 | [15-adr](15-adr/) | Architecture Decision Records |
 | [16-roadmap](16-roadmap/) | Product and engineering roadmap |
-| [17-reference](17-reference/) | [Event catalog](17-reference/event-catalog.md), error codes, gap summary |
+| [17-reference](17-reference/) | [Event catalog](17-reference/event-catalog.md), [CTO final audit](17-reference/cto-final-platform-audit.md), error codes |
 | [18-templates](18-templates/) | Document and code templates |
+| [19-pilot-delivery](19-pilot-delivery/) | **Pilot go-live pack**: checklists, onboarding, admin, limitations |
 
 ## Quick links (implementation-backed)
 
 | Need | Doc |
 |------|-----|
+| **CTO go / no-go** | [17-reference/cto-final-platform-audit.md](17-reference/cto-final-platform-audit.md) |
+| **Pilot go-live** | [19-pilot-delivery/go-live-checklist.md](19-pilot-delivery/go-live-checklist.md) |
 | New engineer setup | [14-developer-guide/developer-onboarding.md](14-developer-guide/developer-onboarding.md) |
 | What talks to what | [03-architecture/c4-containers.md](03-architecture/c4-containers.md) |
 | Event types | [17-reference/event-catalog.md](17-reference/event-catalog.md) |
 | AI execute / RAG | [06-ai-platform/ai-architecture.md](06-ai-platform/ai-architecture.md) |
 | Deploy locally / K8s | [11-devops/deployment-guide.md](11-devops/deployment-guide.md) |
+| Production deploy | [11-devops/production-deployment.md](11-devops/production-deployment.md) |

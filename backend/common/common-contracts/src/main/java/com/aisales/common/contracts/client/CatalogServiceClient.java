@@ -3,11 +3,13 @@ package com.aisales.common.contracts.client;
 import com.aisales.common.contracts.catalog.CatalogMatchRequest;
 import com.aisales.common.contracts.catalog.CatalogMatchResultDto;
 import com.aisales.common.contracts.catalog.CatalogOfferDto;
+import com.aisales.common.contracts.catalog.CatalogOfferLookupRequest;
 import com.aisales.common.contracts.catalog.CatalogProductDto;
 import com.aisales.common.contracts.catalog.CatalogRecommendationRequest;
 import com.aisales.common.contracts.catalog.CatalogRecommendationResultDto;
 import com.aisales.common.core.dto.ApiResponse;
 import com.aisales.common.core.dto.PageResponse;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +34,9 @@ public interface CatalogServiceClient {
 
     @GetMapping("/offers/{id}")
     ApiResponse<CatalogOfferDto> getOffer(@PathVariable UUID id);
+
+    @PostMapping("/offers/lookup")
+    ApiResponse<List<CatalogOfferDto>> lookupOffers(@RequestBody CatalogOfferLookupRequest request);
 
     @PostMapping("/matches")
     ApiResponse<CatalogMatchResultDto> match(@RequestBody CatalogMatchRequest request);

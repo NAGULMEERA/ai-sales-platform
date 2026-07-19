@@ -25,6 +25,7 @@ public class MediaApplicationService {
 
     private final MediaObjectRepository mediaObjectRepository;
     private final ObjectStorageRegistry objectStorageRegistry;
+    private final MediaContentValidator mediaContentValidator;
 
     @Transactional
     public MediaDto upload(MultipartFile file) {
@@ -38,12 +39,14 @@ public class MediaApplicationService {
         } catch (Exception ex) {
             throw new ValidationException("Unable to read uploaded file");
         }
+        mediaContentValidator.validate(file, bytes);
 
         ObjectStorage storage = objectStorageRegistry.resolveDefault();
         UUID mediaId = UUID.randomUUID();
         String objectKey = tenantId + "/" + mediaId + "/" + sanitizeFilename(file.getOriginalFilename());
+        String contentType = MediaContentValidator.normalizeContentType(file.getContentType());
         ObjectStorage.StoredObject stored =
-                storage.put(objectKey, bytes, file.getContentType());
+                storage.put(objectKey, bytes, contentType);
 
         Instant now = Instant.now();
         String actor = StringUtils.hasText(TenantContext.getUserId())
@@ -54,7 +57,7 @@ public class MediaApplicationService {
                 .tenantId(tenantId)
                 .organizationId(parseUuidOrNull(TenantContext.getOrganizationId()))
                 .originalFilename(file.getOriginalFilename())
-                .contentType(file.getContentType())
+                .contentType(contentType)
                 .sizeBytes((long) bytes.length)
                 .checksumSha256(sha256(bytes))
                 .bucketName(stored.bucketName())

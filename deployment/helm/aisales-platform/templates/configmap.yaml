@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aisales-config
+  namespace: {{ include "aisales.namespace" . }}
+  labels:
+    {{- include "aisales.labels" . | nindent 4 }}
+data:
+  SPRING_PROFILES_ACTIVE: {{ .Values.config.springProfilesActive | quote }}
+  ENVIRONMENT: {{ .Values.config.environment | quote }}
+  TRACING_SAMPLE_RATE: {{ .Values.config.tracingSampleRate | quote }}

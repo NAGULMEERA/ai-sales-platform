@@ -12,6 +12,9 @@ Primary incident and operational runbooks for on-call engineers.
 | Outbox / inbox / DLT ownership | [eventing-ops-matrix.md](eventing-ops-matrix.md) |
 | K8s production checklist | [../11-devops/kubernetes-production-checklist.md](../11-devops/kubernetes-production-checklist.md) |
 | Rolling deploy + Flyway | [../11-devops/rolling-deploy-and-flyway.md](../11-devops/rolling-deploy-and-flyway.md) |
+| Pilot go-live pack | [../19-pilot-delivery/README.md](../19-pilot-delivery/README.md) |
+| Pilot ops fast path | [../19-pilot-delivery/operational-runbook.md](../19-pilot-delivery/operational-runbook.md) |
+| Pilot incident entry | [../19-pilot-delivery/incident-response-guide.md](../19-pilot-delivery/incident-response-guide.md) |
 
 ## Fast path — service down
 

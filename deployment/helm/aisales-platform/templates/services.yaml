@@ -1,0 +1,23 @@
+{{- range $name, $svc := .Values.services }}
+{{- if $svc.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "aisales.namespace" $ }}
+  labels:
+    app: {{ $name }}
+    {{- include "aisales.labels" $ | nindent 4 }}
+spec:
+  selector:
+    app: {{ $name }}
+    {{- if eq $.Values.global.deploymentStrategy "blueGreen" }}
+    color: {{ $.Values.global.activeColor | quote }}
+    {{- end }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: {{ $svc.port }}
+{{- end }}
+{{- end }}

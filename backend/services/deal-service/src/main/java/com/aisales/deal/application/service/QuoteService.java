@@ -22,6 +22,8 @@ import com.aisales.deal.infrastructure.persistence.QuoteRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -67,9 +69,17 @@ public class QuoteService {
                 ? request.getCurrency().trim().toUpperCase()
                 : opportunity.getCurrency();
 
+        List<UUID> offerIds = request.getLineItems().stream()
+                .map(QuoteLineItemRequest::getOfferId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<UUID, CatalogOfferDto> offersById =
+                Objects.requireNonNullElse(catalogQuoteGateway.requireOffers(offerIds), Map.of());
+
         List<QuoteLineItem> lineItems = new ArrayList<>();
         for (QuoteLineItemRequest lineRequest : request.getLineItems()) {
-            lineItems.add(resolveLineItem(lineRequest, currency));
+            lineItems.add(resolveLineItem(lineRequest, currency, offersById));
         }
 
         return new TransactionTemplate(transactionManager).execute(status -> {
@@ -104,11 +114,15 @@ public class QuoteService {
         List<Quote> existing = quoteRepository
                 .findByTenantIdAndOpportunityIdAndDeletedAtIsNullOrderByQuoteVersionDesc(
                         tenantId, opportunity.getId());
+        List<Quote> superseded = new ArrayList<>();
         for (Quote prior : existing) {
             if (prior.getStatus() == QuoteStatus.DRAFT || prior.getStatus() == QuoteStatus.SENT) {
                 prior.supersede(actor);
-                quoteRepository.save(prior);
+                superseded.add(prior);
             }
+        }
+        if (!superseded.isEmpty()) {
+            quoteRepository.saveAll(superseded);
         }
 
         int nextVersion = quoteRepository.findMaxVersion(tenantId, opportunity.getId()) + 1;
@@ -191,13 +205,19 @@ public class QuoteService {
         return mapper.toDto(saved);
     }
 
-    private QuoteLineItem resolveLineItem(QuoteLineItemRequest request, String defaultCurrency) {
+    private QuoteLineItem resolveLineItem(
+            QuoteLineItemRequest request,
+            String defaultCurrency,
+            Map<UUID, CatalogOfferDto> offersById) {
         if (request.getOfferId() == null && request.getProductId() == null) {
             throw new ValidationException("Each line item requires productId or offerId");
         }
 
         if (request.getOfferId() != null) {
-            CatalogOfferDto offer = catalogQuoteGateway.requireOffer(request.getOfferId());
+            CatalogOfferDto offer = offersById.get(request.getOfferId());
+            if (offer == null) {
+                throw new ValidationException("Catalog offer not found: " + request.getOfferId());
+            }
             UUID productId = request.getProductId() != null ? request.getProductId() : offer.getProductId();
             return QuoteLineItem.of(
                     productId,

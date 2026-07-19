@@ -39,8 +39,9 @@ No new public core APIs unless both industries require the same change.
 1. Deepen plugin metadata (pipeline/form/prompt/catalog schema config surfaces).
 2. Marketplace as products (Premium SKUs) — still config install, not core rewrite.
 3. Richer Prompt / Knowledge registries (plugins reference IDs).
-4. Additional industries (Healthcare, Education, Insurance) **without** Platform Core changes.
-5. Party / Sales Process only if two industries force them.
+4. Additional industries **without** Platform Core changes — **Natural Farming shipped** as third vertical ([natural-farming-vertical.md](./natural-farming-vertical.md), ADR-034).
+5. Healthcare, Education, Insurance next using the same metadata pattern.
+6. Party / Sales Process only if two industries force them.
 
 ## Explicit non-goals during validation
 

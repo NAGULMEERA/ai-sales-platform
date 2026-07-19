@@ -1,30 +1,44 @@
 # Test Strategy
 
 ## Unit Tests
-- Service and mapper logic with JUnit 5 + Mockito
-- Extend `BaseUnitTest` from common-testing
-- Kafka consumers: stub `IntegrationEventListener.handleIfType` (see consumer tests in workflow/search/analytics)
+- Service and mapper logic with JUnit 5 + Mockito + AssertJ
+- Prefer extending existing `*Test` classes over new parallel suites
+- Kafka consumers: stub `IntegrationEventListener.handleIfType`
 
 ## Integration Tests
-- Extend `BaseIntegrationTest` with Testcontainers (PostgreSQL)
-- Annotate with `@IntegrationTest`
-- Prefer `PlatformTestcontainers.postgres(...)` and assert table presence (not brittle migration counts)
-- `@Testcontainers(disabledWithoutDocker = true)` so local runs without Docker still pass unit suites
+- Prefer `PlatformTestcontainers.postgres(...)` / `kafka()`
+- Annotate with `@Testcontainers(disabledWithoutDocker = true)`
+- Assert table presence after Flyway migrate (not brittle version counts)
+- Identity critical paths remain the SpringBootTest reference (`IdentityIntegrationTestBase`)
 
-## Contract Tests
-- OpenAPI specs in `docs/api/` as source of truth
-
-## Performance / Concurrency
-- Tag with `@Tag("performance")` or `@Tag("concurrency")`
-- Keep budgets loose enough for CI variance
-
-## Architecture
+## Architecture Tests
 - `LayeredArchitectureRules` via each service `ArchitectureTest`
 - Disable ArchUnit on JDK 26+ where required
 
-## Coverage matrix
-- See [coverage-matrix.md](./coverage-matrix.md) for gaps, new tests, and follow-up backlog
+## Security / JWT / Tenant
+- common-security servlet filter + aspect tests
+- api-gateway reactive JWT filter tests (token issuance via common-security test dependency)
+- Service-level tenant isolation (Lead, Catalog, Knowledge retrieval)
+
+## Contract Tests
+- Lightweight Jakarta Validation contracts for additive DTOs until OpenAPI suite lands in `docs/api/`
+
+## Performance / Concurrency / Load
+- Tag with `@Tag("performance")`, `@Tag("concurrency")`, or `@Tag("load")`
+- Keep budgets loose enough for CI variance; full soak is out-of-band (k6)
+
+## AI / Workflow / Events
+- AI: gateway, prompts, RAG, sanitizer, tenant isolation
+- Workflow: automation engine + lifecycle consumers
+- Events: unit publishers/listeners + `OutboxToInboxIntegrationIT`
+
+## Coverage
+- Goal: **85% line coverage** platform-wide
+- Default: JaCoCo reports on `mvn test` (`target/site/jacoco/`)
+- Optional gate: `mvn -Pcoverage-gate verify` (fails modules under 85%)
+- See [coverage-matrix.md](./coverage-matrix.md)
 
 ## CI
-- All tests run on PR via GitHub Actions (`.github/workflows/test.yml`)
-- Minimum 70% coverage target for business services
+- PR tests: `.github/workflows/test.yml` → `./mvnw test -B`
+- Full verify: `.github/workflows/ci.yml`
+- Script: `./scripts/run-tests.sh`

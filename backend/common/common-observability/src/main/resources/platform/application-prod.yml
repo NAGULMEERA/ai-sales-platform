@@ -22,6 +22,9 @@ aisales:
   security:
     jwt:
       require-issuer-audience: ${JWT_REQUIRE_ISS_AUD:true}
+    cors:
+      # Comma-separated browser origins. Empty disables CORS (API clients / gateway only).
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:}
   startup-validation:
     enabled: true
 

@@ -109,6 +109,29 @@ class IndustryPluginEnableFlowTest {
     }
 
     @Test
+    void shouldEnableNaturalFarmingIndustryPluginOnSameApi() {
+        PluginInstallationDto dto = enableIndustryPlugin(
+                "natural-farming",
+                "NATURAL_FARMING",
+                Map.of(
+                        "defaultPipelineCode", "NATURAL_FARMING_SALES_V1",
+                        "defaultFollowupType", "DELIVERY_FOLLOWUP",
+                        "qualificationPromptCode", "LEAD_QUALIFY_NATURAL_FARMING"));
+
+        assertThat(dto.getPluginKey()).isEqualTo("natural-farming");
+        assertThat(dto.getStatus()).isEqualTo(PluginInstallationStatus.ENABLED);
+        assertThat(dto.getConfig())
+                .containsEntry("defaultPipelineCode", "NATURAL_FARMING_SALES_V1")
+                .containsEntry("defaultFollowupType", "DELIVERY_FOLLOWUP")
+                .containsEntry("qualificationPromptCode", "LEAD_QUALIFY_NATURAL_FARMING");
+
+        ArgumentCaptor<PluginEnabledEvent> captor = ArgumentCaptor.forClass(PluginEnabledEvent.class);
+        verify(eventPublisher).publish(captor.capture());
+        assertThat(captor.getValue().getPluginKey()).isEqualTo("natural-farming");
+        assertThat(captor.getValue().getPluginType()).isEqualTo("INDUSTRY");
+    }
+
+    @Test
     void shouldEnableBothIndustryPluginsIndependentlyForSameTenant() {
         stubCatalogAndInstall("real-estate", "REAL_ESTATE", Map.of("defaultFollowupType", "VISIT_FOLLOWUP"));
         PluginInstallationDto re = service.enable("real-estate", EnablePluginRequest.builder().build());

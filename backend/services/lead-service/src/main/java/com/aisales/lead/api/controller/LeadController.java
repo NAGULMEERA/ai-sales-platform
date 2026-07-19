@@ -220,7 +220,7 @@ public class LeadController {
     @Operation(summary = "Qualified lead → catalog match → recommendation → opportunity")
     public ApiResponse<LeadOpportunityConversionResultDto> convertToOpportunity(
             @PathVariable UUID id,
-            @RequestBody(required = false) ConvertLeadToOpportunityRequest request) {
+            @Valid @RequestBody(required = false) ConvertLeadToOpportunityRequest request) {
         return ok(
                 "Lead converted to opportunity",
                 opportunityConversionService.convertToOpportunity(id, request));
@@ -236,7 +236,7 @@ public class LeadController {
     @PostMapping("/{id}/schedule-visit")
     @Operation(summary = "Schedule site visit (journey command)")
     public ApiResponse<LeadDto> scheduleVisit(
-            @PathVariable UUID id, @RequestBody(required = false) ScheduleLeadVisitRequest request) {
+            @PathVariable UUID id, @Valid @RequestBody(required = false) ScheduleLeadVisitRequest request) {
         ScheduleLeadVisitRequest body = request != null ? request : new ScheduleLeadVisitRequest();
         return ok("Visit scheduled", journeyService.scheduleVisit(id, body));
     }
@@ -251,7 +251,7 @@ public class LeadController {
     @PostMapping("/{id}/cancel-visit")
     @Operation(summary = "Cancel scheduled visit (journey command)")
     public ApiResponse<LeadDto> cancelVisit(
-            @PathVariable UUID id, @RequestBody(required = false) CancelLeadVisitRequest request) {
+            @PathVariable UUID id, @Valid @RequestBody(required = false) CancelLeadVisitRequest request) {
         CancelLeadVisitRequest body = request != null ? request : new CancelLeadVisitRequest();
         return ok("Visit cancelled", journeyService.cancelVisit(id, body));
     }
@@ -259,7 +259,7 @@ public class LeadController {
     @PostMapping("/{id}/archive")
     @Operation(summary = "Archive closed lead (WON/LOST → ARCHIVED)")
     public ApiResponse<LeadDto> archive(
-            @PathVariable UUID id, @RequestBody(required = false) ArchiveLeadRequest request) {
+            @PathVariable UUID id, @Valid @RequestBody(required = false) ArchiveLeadRequest request) {
         ArchiveLeadRequest body = request != null ? request : new ArchiveLeadRequest();
         return ok("Lead archived", journeyService.archiveLead(id, body));
     }

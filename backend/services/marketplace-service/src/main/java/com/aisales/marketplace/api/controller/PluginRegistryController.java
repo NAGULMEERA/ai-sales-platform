@@ -56,7 +56,7 @@ public class PluginRegistryController {
     @Operation(summary = "Enable a plugin for the current tenant")
     public ApiResponse<PluginInstallationDto> enable(
             @PathVariable String pluginKey,
-            @RequestBody(required = false) EnablePluginRequest request) {
+            @Valid @RequestBody(required = false) EnablePluginRequest request) {
         return ApiResponse.ok(pluginRegistryService.enable(
                 pluginKey, request != null ? request : EnablePluginRequest.builder().build()));
     }

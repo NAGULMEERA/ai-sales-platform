@@ -65,11 +65,21 @@ kubectl apply -f deployment/kubernetes/
 
 Production hardening notes:
 
+- [production-deployment.md](production-deployment.md) — full production runbook (Helm, scanning, observability)
+- [blue-green-deployment.md](blue-green-deployment.md)
 - [kubernetes-production-checklist.md](kubernetes-production-checklist.md)
 - [rolling-deploy-and-flyway.md](rolling-deploy-and-flyway.md)
 - [production-readiness-review.md](production-readiness-review.md)
 
-Deployments use health probes (`/actuator/health/liveness`, readiness) and graceful shutdown settings from shared prod/observability YAML.
+Deployments use health probes (`/actuator/health/liveness`, readiness), startup probes, RollingUpdate strategy, HPA/PDB/NetworkPolicy (see `deployment/kubernetes/`), and graceful shutdown from shared prod/observability YAML.
+
+Helm (preferred for prod):
+
+```bash
+helm upgrade --install aisales deployment/helm/aisales-platform \
+  --namespace aisales --create-namespace \
+  --set global.imageTag=v1.0.0
+```
 
 ## Gateway entry
 
@@ -93,6 +103,9 @@ Each service owns `src/main/resources/db/migration/`. Apply by starting the serv
 
 ## Related
 
+- [production-deployment.md](production-deployment.md)
+- [blue-green-deployment.md](blue-green-deployment.md)
 - [deployment-strategy.md](deployment-strategy.md)
 - [../12-operations/operational-guide.md](../12-operations/operational-guide.md)
+- [../12-operations/disaster-recovery-guide.md](../12-operations/disaster-recovery-guide.md)
 - [../14-developer-guide/developer-onboarding.md](../14-developer-guide/developer-onboarding.md)

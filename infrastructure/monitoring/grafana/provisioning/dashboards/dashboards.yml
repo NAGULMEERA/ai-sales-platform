@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: aisales
+    orgId: 1
+    folder: AI Sales
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

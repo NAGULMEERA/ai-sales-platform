@@ -1,115 +1,300 @@
-version: '3.8'
+# Application services for local development.
+# Requires: docker compose -f deployment/docker-compose-infra.yml up -d
+# Or use umbrella: docker compose -f deployment/docker-compose.yml up -d --build
+#
+# Images build from repository root (multi-stage Dockerfiles).
+
+x-jvm-service: &jvm-service
+  networks:
+    - aisales-network
+  restart: unless-stopped
+  environment: &jvm-env
+    SPRING_PROFILES_ACTIVE: docker
+    SPRING_DATA_REDIS_HOST: redis
+    SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    MANAGEMENT_OTLP_TRACING_ENDPOINT: http://otel-collector:4318/v1/traces
 
 services:
   service-registry:
+    <<: *jvm-service
     build:
-      context: ../infrastructure/service-registry
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: infrastructure/service-registry/Dockerfile
+    image: aisales/service-registry:local
     container_name: aisales-service-registry
     ports:
       - "8761:8761"
-    networks:
-      - aisales-network
-    depends_on:
-      - postgres
 
   config-server:
+    <<: *jvm-service
     build:
-      context: ../infrastructure/config-server
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: infrastructure/config-server/Dockerfile
+    image: aisales/config-server:local
     container_name: aisales-config-server
     ports:
       - "8888:8888"
     environment:
-      SPRING_PROFILES_ACTIVE: native
-    networks:
-      - aisales-network
+      <<: *jvm-env
+      SPRING_PROFILES_ACTIVE: native,docker
     depends_on:
       - service-registry
 
   api-gateway:
+    <<: *jvm-service
     build:
-      context: ../infrastructure/api-gateway
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: infrastructure/api-gateway/Dockerfile
+    image: aisales/api-gateway:local
     container_name: aisales-api-gateway
     ports:
       - "8080:8080"
-    networks:
-      - aisales-network
     depends_on:
       - service-registry
       - config-server
 
   identity-service:
+    <<: *jvm-service
     build:
-      context: ../backend/services/identity-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: backend/services/identity-service/Dockerfile
+    image: aisales/identity-service:local
     container_name: aisales-identity-service
     ports:
       - "8081:8081"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-    networks:
-      - aisales-network
     depends_on:
-      - postgres
       - service-registry
       - config-server
 
   tenant-service:
+    <<: *jvm-service
     build:
-      context: ../backend/services/tenant-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: backend/services/tenant-service/Dockerfile
+    image: aisales/tenant-service:local
     container_name: aisales-tenant-service
     ports:
       - "8082:8082"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-    networks:
-      - aisales-network
     depends_on:
-      - postgres
-      - redis
-      - kafka
       - service-registry
       - config-server
 
   lead-service:
+    <<: *jvm-service
     build:
-      context: ../backend/services/lead-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: backend/services/lead-service/Dockerfile
+    image: aisales/lead-service:local
     container_name: aisales-lead-service
     ports:
       - "8083:8083"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-    networks:
-      - aisales-network
     depends_on:
-      - postgres
-      - redis
-      - kafka
+      - service-registry
+      - config-server
+
+  customer-service:
+    <<: *jvm-service
+    build:
+      context: ..
+      dockerfile: backend/services/customer-service/Dockerfile
+    image: aisales/customer-service:local
+    container_name: aisales-customer-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - service-registry
+      - config-server
+
+  catalog-service:
+    <<: *jvm-service
+    build:
+      context: ..
+      dockerfile: backend/services/catalog-service/Dockerfile
+    image: aisales/catalog-service:local
+    container_name: aisales-catalog-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      - service-registry
+      - config-server
+
+  conversation-service:
+    <<: *jvm-service
+    build:
+      context: ..
+      dockerfile: backend/services/conversation-service/Dockerfile
+    image: aisales/conversation-service:local
+    container_name: aisales-conversation-service
+    ports:
+      - "8086:8086"
+    depends_on:
+      - service-registry
+      - config-server
+
+  appointment-service:
+    <<: *jvm-service
+    profiles: ["full", "stubs"]
+    build:
+      context: ..
+      dockerfile: backend/services/appointment-service/Dockerfile
+    image: aisales/appointment-service:local
+    container_name: aisales-appointment-service
+    ports:
+      - "8087:8087"
+    depends_on:
       - service-registry
       - config-server
 
   ai-service:
+    <<: *jvm-service
     build:
-      context: ../backend/services/ai-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: backend/services/ai-service/Dockerfile
+    image: aisales/ai-service:local
     container_name: aisales-ai-service
     ports:
       - "8088:8088"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-    networks:
-      - aisales-network
     depends_on:
-      - postgres
-      - redis
-      - kafka
+      - service-registry
+      - config-server
+
+  workflow-service:
+    <<: *jvm-service
+    build:
+      context: ..
+      dockerfile: backend/services/workflow-service/Dockerfile
+    image: aisales/workflow-service:local
+    container_name: aisales-workflow-service
+    ports:
+      - "8089:8089"
+    depends_on:
+      - service-registry
+      - config-server
+
+  notification-service:
+    <<: *jvm-service
+    build:
+      context: ..
+      dockerfile: backend/services/notification-service/Dockerfile
+    image: aisales/notification-service:local
+    container_name: aisales-notification-service
+    ports:
+      - "8090:8090"
+    environment:
+      <<: *jvm-env
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: "1025"
+      NOTIFICATION_DELIVERY_MODE: smtp
+    depends_on:
+      - service-registry
+      - config-server
+
+  billing-service:
+    <<: *jvm-service
+    build:
+      context: ..
+      dockerfile: backend/services/billing-service/Dockerfile
+    image: aisales/billing-service:local
+    container_name: aisales-billing-service
+    ports:
+      - "8091:8091"
+    depends_on:
+      - service-registry
+      - config-server
+
+  integration-service:
+    <<: *jvm-service
+    build:
+      context: ..
+      dockerfile: backend/services/integration-service/Dockerfile
+    image: aisales/integration-service:local
+    container_name: aisales-integration-service
+    ports:
+      - "8092:8092"
+    depends_on:
+      - service-registry
+      - config-server
+
+  analytics-service:
+    <<: *jvm-service
+    build:
+      context: ..
+      dockerfile: backend/services/analytics-service/Dockerfile
+    image: aisales/analytics-service:local
+    container_name: aisales-analytics-service
+    ports:
+      - "8093:8093"
+    depends_on:
+      - service-registry
+      - config-server
+
+  search-service:
+    <<: *jvm-service
+    build:
+      context: ..
+      dockerfile: backend/services/search-service/Dockerfile
+    image: aisales/search-service:local
+    container_name: aisales-search-service
+    ports:
+      - "8094:8094"
+    depends_on:
+      - service-registry
+      - config-server
+
+  media-service:
+    <<: *jvm-service
+    build:
+      context: ..
+      dockerfile: backend/services/media-service/Dockerfile
+    image: aisales/media-service:local
+    container_name: aisales-media-service
+    ports:
+      - "8095:8095"
+    depends_on:
+      - service-registry
+      - config-server
+
+  audit-service:
+    <<: *jvm-service
+    profiles: ["full", "stubs"]
+    build:
+      context: ..
+      dockerfile: backend/services/audit-service/Dockerfile
+    image: aisales/audit-service:local
+    container_name: aisales-audit-service
+    ports:
+      - "8096:8096"
+    depends_on:
+      - service-registry
+      - config-server
+
+  deal-service:
+    <<: *jvm-service
+    build:
+      context: ..
+      dockerfile: backend/services/deal-service/Dockerfile
+    image: aisales/deal-service:local
+    container_name: aisales-deal-service
+    ports:
+      - "8097:8097"
+    depends_on:
+      - service-registry
+      - config-server
+
+  marketplace-service:
+    <<: *jvm-service
+    build:
+      context: ..
+      dockerfile: backend/services/marketplace-service/Dockerfile
+    image: aisales/marketplace-service:local
+    container_name: aisales-marketplace-service
+    ports:
+      - "8098:8098"
+    depends_on:
       - service-registry
       - config-server
 
 networks:
   aisales-network:
-    external: true
+    name: aisales-network
+    driver: bridge
