@@ -4,7 +4,7 @@
 #   docker build -f services/customer-service/Dockerfile -t aisales/customer-service:latest .
 # (For backend modules use: -f backend/services/customer-service/Dockerfile with context = repo root)
 
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:25-jdk-alpine AS builder
 WORKDIR /workspace
 
 RUN apk add --no-cache bash git
@@ -21,7 +21,7 @@ RUN chmod +x mvnw \
  && ./mvnw -pl services/customer-service -am package -DskipTests -B \
  && cp services/customer-service/target/customer-service-*.jar /workspace/app.jar
 
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM eclipse-temurin:25-jre-alpine AS runtime
 WORKDIR /app
 
 RUN addgroup -S aisales && adduser -S -G aisales aisales \
