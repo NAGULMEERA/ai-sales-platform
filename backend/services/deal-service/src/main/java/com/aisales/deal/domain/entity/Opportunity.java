@@ -22,6 +22,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.util.StringUtils;
 
 @Entity
 @Table(name = "opportunity")
@@ -33,6 +34,9 @@ import lombok.Setter;
 public class Opportunity {
 
     private static final Set<OpportunityStatus> TERMINAL =
+            EnumSet.of(OpportunityStatus.WON, OpportunityStatus.LOST, OpportunityStatus.CANCELLED);
+
+    private static final Set<OpportunityStatus> REOPENABLE =
             EnumSet.of(OpportunityStatus.WON, OpportunityStatus.LOST, OpportunityStatus.CANCELLED);
 
     @Id
@@ -68,11 +72,25 @@ public class Opportunity {
 
     private Integer probability;
 
+    private Integer score;
+
     @Column(name = "expected_close_date")
     private LocalDate expectedCloseDate;
 
     @Column(name = "assigned_to")
     private UUID assignedTo;
+
+    @Column(name = "catalog_product_id")
+    private UUID catalogProductId;
+
+    @Column(name = "catalog_offer_id")
+    private UUID catalogOfferId;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
+    @Column(name = "close_reason", length = 2000)
+    private String closeReason;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -147,12 +165,67 @@ public class Opportunity {
         touch(actor);
     }
 
+    public void addNote(String note, UUID actor) {
+        assertActive();
+        if (!StringUtils.hasText(note)) {
+            throw new ValidationException("note is required");
+        }
+        String trimmed = note.trim();
+        if (!StringUtils.hasText(this.notes)) {
+            this.notes = trimmed;
+        } else {
+            this.notes = this.notes + "\n---\n" + trimmed;
+        }
+        touch(actor);
+    }
+
+    public void updateScore(Integer scoreValue, UUID actor) {
+        assertActive();
+        if (scoreValue == null) {
+            throw new ValidationException("score is required");
+        }
+        if (scoreValue < 0 || scoreValue > 100) {
+            throw new ValidationException("Score must be between 0 and 100");
+        }
+        this.score = scoreValue;
+        touch(actor);
+    }
+
     public void markQuoted(UUID actor) {
-        if (status == OpportunityStatus.OPEN) {
+        if (status == OpportunityStatus.OPEN || status == OpportunityStatus.QUALIFIED) {
             transitionTo(OpportunityStatus.QUOTED, actor);
         } else {
             touch(actor);
         }
+    }
+
+    public void closeWon(String reason, UUID actor) {
+        transitionTo(OpportunityStatus.WON, actor);
+        this.closeReason = StringUtils.hasText(reason) ? reason.trim() : "won";
+        this.probability = 100;
+    }
+
+    public void closeLost(String reason, UUID actor) {
+        transitionTo(OpportunityStatus.LOST, actor);
+        this.closeReason = StringUtils.hasText(reason) ? reason.trim() : "lost";
+        this.probability = 0;
+    }
+
+    public void reopen(OpportunityStatus target, UUID actor) {
+        assertActive();
+        if (!REOPENABLE.contains(status)) {
+            throw new ValidationException("Only won/lost/cancelled opportunities can be reopened");
+        }
+        OpportunityStatus destination = target != null ? target : OpportunityStatus.OPEN;
+        if (destination != OpportunityStatus.OPEN && destination != OpportunityStatus.QUALIFIED) {
+            throw new ValidationException("Reopen target must be OPEN or QUALIFIED");
+        }
+        this.status = destination;
+        this.closeReason = null;
+        if (this.probability != null && this.probability >= 100) {
+            this.probability = 50;
+        }
+        touch(actor);
     }
 
     public void transitionTo(OpportunityStatus target, UUID actor) {
@@ -164,17 +237,36 @@ public class Opportunity {
         if (isTerminal()) {
             throw new ValidationException("Cannot transition from terminal status: " + status);
         }
-        if (target == OpportunityStatus.QUOTED
-                && status != OpportunityStatus.OPEN
-                && status != OpportunityStatus.QUOTED) {
-            throw new ValidationException("Invalid status transition: " + status + " -> " + target);
-        }
-        if ((target == OpportunityStatus.WON || target == OpportunityStatus.LOST)
-                && status == OpportunityStatus.CANCELLED) {
+        if (!isAllowedTransition(status, target)) {
             throw new ValidationException("Invalid status transition: " + status + " -> " + target);
         }
         this.status = target;
         touch(actor);
+    }
+
+    static boolean isAllowedTransition(OpportunityStatus from, OpportunityStatus to) {
+        return switch (from) {
+            case OPEN -> to == OpportunityStatus.QUALIFIED
+                    || to == OpportunityStatus.QUOTED
+                    || to == OpportunityStatus.NEGOTIATION
+                    || to == OpportunityStatus.WON
+                    || to == OpportunityStatus.LOST
+                    || to == OpportunityStatus.CANCELLED;
+            case QUALIFIED -> to == OpportunityStatus.QUOTED
+                    || to == OpportunityStatus.NEGOTIATION
+                    || to == OpportunityStatus.LOST
+                    || to == OpportunityStatus.CANCELLED
+                    || to == OpportunityStatus.WON;
+            case QUOTED -> to == OpportunityStatus.NEGOTIATION
+                    || to == OpportunityStatus.WON
+                    || to == OpportunityStatus.LOST
+                    || to == OpportunityStatus.CANCELLED;
+            case NEGOTIATION -> to == OpportunityStatus.QUOTED
+                    || to == OpportunityStatus.WON
+                    || to == OpportunityStatus.LOST
+                    || to == OpportunityStatus.CANCELLED;
+            case WON, LOST, CANCELLED -> false;
+        };
     }
 
     public boolean isTerminal() {

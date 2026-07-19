@@ -4,6 +4,8 @@ import com.aisales.common.contracts.catalog.CatalogMatchRequest;
 import com.aisales.common.contracts.catalog.CatalogMatchResultDto;
 import com.aisales.common.contracts.catalog.CatalogOfferDto;
 import com.aisales.common.contracts.catalog.CatalogProductDto;
+import com.aisales.common.contracts.catalog.CatalogRecommendationRequest;
+import com.aisales.common.contracts.catalog.CatalogRecommendationResultDto;
 import com.aisales.common.core.dto.ApiResponse;
 import com.aisales.common.core.dto.PageResponse;
 import java.util.UUID;
@@ -33,4 +35,7 @@ public interface CatalogServiceClient {
 
     @PostMapping("/matches")
     ApiResponse<CatalogMatchResultDto> match(@RequestBody CatalogMatchRequest request);
+
+    @PostMapping("/recommendations")
+    ApiResponse<CatalogRecommendationResultDto> recommend(@RequestBody CatalogRecommendationRequest request);
 }

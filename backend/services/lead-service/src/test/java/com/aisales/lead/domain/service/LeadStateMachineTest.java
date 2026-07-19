@@ -22,6 +22,15 @@ class LeadStateMachineTest {
     }
 
     @Test
+    void shouldAllowReopenFromLostToQualified() {
+        LeadStateMachine machine = new LeadStateMachine();
+        assertThatCode(() -> machine.assertTransition(LeadStatus.LOST, LeadStatus.QUALIFIED))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> machine.assertTransition(LeadStatus.LOST, LeadStatus.CONTACTED))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     void pipelineSourceCanRestrictTransitions() {
         UUID pipelineId = UUID.randomUUID();
         PipelineTransitionSource source = (id, from) -> {

@@ -51,7 +51,7 @@ class LoginLockoutServiceTest {
                 .failedLoginAttempts(2)
                 .build();
         user.setId(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
         loginLockoutService.recordFailedPasswordAttempt(userId, "127.0.0.1", "JUnit");

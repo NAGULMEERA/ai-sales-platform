@@ -38,26 +38,26 @@ public class IndustryQualificationConfigResolver {
             return new Resolved(promptCode, variableKeys);
         }
 
-        PluginInstallationDto industry = findEnabledIndustryWithQualificationConfig();
-        if (industry == null) {
-            if (promptCode == null) {
-                throw new ValidationException(
-                        "promptCode is required when no enabled industry plugin provides qualificationPromptCode");
-            }
+        // Caller supplied promptCode only — do not invent variableKeys from an unrelated plugin.
+        if (promptCode != null) {
             return new Resolved(promptCode, variableKeys);
         }
 
-        Map<String, Object> config = industry.getConfig() != null ? industry.getConfig() : Map.of();
-        if (promptCode == null) {
-            promptCode = stringConfig(config, "qualificationPromptCode");
-            if (!StringUtils.hasText(promptCode)) {
-                throw new ValidationException(
-                        "Enabled industry plugin "
-                                + industry.getPluginKey()
-                                + " is missing qualificationPromptCode");
-            }
-            promptCode = promptCode.trim().toUpperCase(Locale.ROOT);
+        PluginInstallationDto industry = findEnabledIndustryWithQualificationConfig();
+        if (industry == null) {
+            throw new ValidationException(
+                    "promptCode is required when no enabled industry plugin provides qualificationPromptCode");
         }
+
+        Map<String, Object> config = industry.getConfig() != null ? industry.getConfig() : Map.of();
+        promptCode = stringConfig(config, "qualificationPromptCode");
+        if (!StringUtils.hasText(promptCode)) {
+            throw new ValidationException(
+                    "Enabled industry plugin "
+                            + industry.getPluginKey()
+                            + " is missing qualificationPromptCode");
+        }
+        promptCode = promptCode.trim().toUpperCase(Locale.ROOT);
         if (variableKeys.isEmpty()) {
             variableKeys.addAll(stringListConfig(config, "qualificationVariableKeys"));
         }
@@ -71,7 +71,7 @@ public class IndustryQualificationConfigResolver {
 
         List<PluginInstallationDto> candidates = installations.stream()
                 .filter(i -> i.getStatus() == PluginInstallationStatus.ENABLED)
-                .filter(i -> i.getPluginType() == null || i.getPluginType() == PluginTypeDto.INDUSTRY)
+                .filter(i -> i.getPluginType() == PluginTypeDto.INDUSTRY)
                 .filter(i -> i.getConfig() != null
                         && StringUtils.hasText(stringConfig(i.getConfig(), "qualificationPromptCode")))
                 .toList();
@@ -80,11 +80,8 @@ public class IndustryQualificationConfigResolver {
             return null;
         }
         if (candidates.size() > 1) {
-            // Prefer an explicit INDUSTRY type when multiple installs expose the key.
-            return candidates.stream()
-                    .filter(i -> i.getPluginType() == PluginTypeDto.INDUSTRY)
-                    .findFirst()
-                    .orElse(candidates.getFirst());
+            throw new ValidationException(
+                    "Multiple enabled industry plugins expose qualificationPromptCode; pass promptCode explicitly");
         }
         return candidates.getFirst();
     }

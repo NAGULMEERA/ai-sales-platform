@@ -4,12 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.aisales.ai.application.rag.KnowledgeContextAssembler;
+import com.aisales.ai.application.rag.Retriever;
+import com.aisales.ai.application.rag.RetrieverRegistry;
 import com.aisales.ai.domain.cache.CachedLlmResponse;
 import com.aisales.ai.domain.entity.PromptTemplate;
 import com.aisales.ai.domain.entity.PromptVersionEntity;
@@ -21,6 +24,7 @@ import com.aisales.common.contracts.ai.AiExecuteResponse;
 import com.aisales.common.contracts.ai.PromptStatus;
 import com.aisales.common.contracts.ai.RetrievedKnowledgeChunkDto;
 import com.aisales.common.core.util.TenantContext;
+import com.aisales.common.events.model.BaseEvent;
 import com.aisales.common.events.model.PromptExecutedEvent;
 import com.aisales.common.events.publisher.EventPublisher;
 import java.util.LinkedHashMap;
@@ -35,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
@@ -45,10 +50,13 @@ class AiGatewayServiceTest {
     @Mock private LlmProvider llmProvider;
     @Mock private EventPublisher eventPublisher;
     @Mock private KnowledgeRetrievalService knowledgeRetrievalService;
+    @Mock private RetrieverRegistry retrieverRegistry;
+    @Mock private Retriever retriever;
     @Mock private AiQuotaService aiQuotaService;
     @Mock private TokenUsageService tokenUsageService;
     @Mock private SemanticCacheService semanticCacheService;
     @Mock private PlatformTransactionManager transactionManager;
+    @Mock private ObjectProvider<?> platformMetrics;
 
     private AiGatewayService aiGatewayService;
     private UUID tenantId;
@@ -64,18 +72,22 @@ class AiGatewayServiceTest {
                 .thenReturn(Optional.empty());
         lenient().when(aiQuotaService.reserveExecute(any())).thenReturn(4096L);
         lenient().when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+        lenient().when(retrieverRegistry.resolveDefault()).thenReturn(retriever);
+        lenient().when(platformMetrics.getIfAvailable()).thenReturn(null);
         aiGatewayService = new AiGatewayService(
                 promptService,
                 new PromptRenderer(),
                 llmProvider,
                 eventPublisher,
                 knowledgeRetrievalService,
+                retrieverRegistry,
                 new KnowledgeContextAssembler(),
                 aiQuotaService,
                 tokenUsageService,
                 semanticCacheService,
                 llmProperties,
-                transactionManager);
+                transactionManager,
+                (ObjectProvider) platformMetrics);
     }
 
     @AfterEach
@@ -108,7 +120,7 @@ class AiGatewayServiceTest {
                 .status(PromptStatus.ACTIVE)
                 .createdAt(java.time.Instant.now())
                 .build();
-        when(promptService.resolveForExecution("LEAD_QUALIFY", null, null))
+        when(promptService.resolveForExecution("LEAD_QUALIFY", null, null, null, null, null))
                 .thenReturn(new PromptService.ResolvedPrompt(template, version));
 
         Map<String, Object> structured = new LinkedHashMap<>();
@@ -129,13 +141,19 @@ class AiGatewayServiceTest {
         assertThat(response.getStructuredOutput()).containsEntry("recommendation", "REVIEW");
         assertThat(response.getConfidence()).isEqualTo(0.85);
 
-        ArgumentCaptor<PromptExecutedEvent> captor = ArgumentCaptor.forClass(PromptExecutedEvent.class);
-        verify(eventPublisher).publish(captor.capture());
-        assertThat(captor.getValue().getEventType()).isEqualTo("PromptExecuted");
-        assertThat(captor.getValue().getBusinessReference()).isEqualTo("lead-1");
-        assertThat(captor.getValue().getPromptTokens()).isEqualTo(10);
-        assertThat(captor.getValue().getCompletionTokens()).isEqualTo(5);
-        assertThat(captor.getValue().getTotalTokens()).isEqualTo(15);
+        ArgumentCaptor<BaseEvent> captor = ArgumentCaptor.forClass(BaseEvent.class);
+        verify(eventPublisher, atLeastOnce()).publish(captor.capture());
+        PromptExecutedEvent executed = captor.getAllValues().stream()
+                .filter(PromptExecutedEvent.class::isInstance)
+                .map(PromptExecutedEvent.class::cast)
+                .findFirst()
+                .orElseThrow();
+        assertThat(executed.getEventType()).isEqualTo("PromptExecuted");
+        assertThat(executed.getBusinessReference()).isEqualTo("lead-1");
+        assertThat(executed.getPromptTokens()).isEqualTo(10);
+        assertThat(executed.getCompletionTokens()).isEqualTo(5);
+        assertThat(executed.getTotalTokens()).isEqualTo(15);
+        assertThat(response.isCacheHit()).isFalse();
         verify(aiQuotaService).reserveExecute(tenantId);
         verify(aiQuotaService).release(eq(tenantId), eq(AiQuotaService.OPERATION_EXECUTE), eq(4096L));
         verify(tokenUsageService).recordExecuteUsage(
@@ -181,7 +199,7 @@ class AiGatewayServiceTest {
 
         when(knowledgeRetrievalService.resolveQuery(eq("warranty policy"), any()))
                 .thenReturn("warranty policy");
-        when(knowledgeRetrievalService.retrieve(eq(knowledgeBaseId), eq("warranty policy"), eq(3)))
+        when(retriever.retrieve(eq(knowledgeBaseId), eq("warranty policy"), eq(3)))
                 .thenReturn(List.of(RetrievedKnowledgeChunkDto.builder()
                         .chunkId(UUID.randomUUID())
                         .documentId(UUID.randomUUID())
@@ -298,7 +316,7 @@ class AiGatewayServiceTest {
                 .status(PromptStatus.ACTIVE)
                 .createdAt(java.time.Instant.now())
                 .build();
-        when(promptService.resolveForExecution(code, null, null))
+        when(promptService.resolveForExecution(eq(code), eq(null), eq(null), eq(null), eq(null), eq(null)))
                 .thenReturn(new PromptService.ResolvedPrompt(template, version));
     }
 }

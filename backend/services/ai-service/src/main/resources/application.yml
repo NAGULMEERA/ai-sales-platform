@@ -117,6 +117,8 @@ aisales:
     rag:
       default-top-k: 5
       max-cosine-distance: 0.45
+      # Plug/flag: VECTOR | KEYWORD | HYBRID
+      retriever: VECTOR
       # Plug/flag: CHAR | TOKEN (TOKEN recommended for RAG quality; free/local)
       chunker: TOKEN
       # Plug/flag: AUTO | TEXT | PDF (AUTO picks from content-type / filename)

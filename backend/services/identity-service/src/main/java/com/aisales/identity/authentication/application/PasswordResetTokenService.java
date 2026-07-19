@@ -30,23 +30,24 @@ public class PasswordResetTokenService {
         enforceRequestLimits(userId);
         Instant now = Instant.now();
         tokenRepository.invalidatePendingForUser(userId, now);
-        String token = UUID.randomUUID().toString();
+        String rawToken = UUID.randomUUID().toString();
         tokenRepository.save(PasswordResetToken.builder()
                 .userId(userId)
-                .token(token)
+                .token(RefreshTokenHasher.sha256Hex(rawToken))
                 .expiresAt(now.plusSeconds(authProperties.getPasswordResetExpirationHours() * 3600))
                 .createdAt(now)
                 .build());
 
-        String resetLink = authProperties.getPasswordResetLinkBaseUrl() + "?token=" + token;
+        String resetLink = authProperties.getPasswordResetLinkBaseUrl() + "?token=" + rawToken;
         String correlationId = CorrelationIdUtils.get()
                 .orElseGet(CorrelationIdUtils::generate);
+        // Raw token is required for the email link only; DB stores SHA-256 digest.
         eventPublisher.publish(PasswordResetRequestedEvent.of(
                 tenantId != null ? tenantId.toString() : null,
                 userId.toString(),
                 email,
                 firstName,
-                token,
+                rawToken,
                 resetLink,
                 correlationId));
 

@@ -34,4 +34,6 @@ public class AiExecuteResponse {
     private UUID knowledgeBaseId;
     @Builder.Default
     private List<RetrievedKnowledgeChunkDto> retrievedChunks = new ArrayList<>();
+    /** True when response was served from semantic cache. */
+    private boolean cacheHit;
 }

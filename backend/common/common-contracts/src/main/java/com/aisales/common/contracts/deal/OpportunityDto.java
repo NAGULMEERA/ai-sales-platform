@@ -25,8 +25,13 @@ public class OpportunityDto {
     private String currency;
     private OpportunityStatus status;
     private Integer probability;
+    private Integer score;
     private LocalDate expectedCloseDate;
     private UUID assignedTo;
+    private UUID catalogProductId;
+    private UUID catalogOfferId;
+    private String notes;
+    private String closeReason;
     private Instant createdAt;
     private Instant updatedAt;
     private Long version;

@@ -16,6 +16,7 @@ import com.aisales.common.contracts.lead.LeadStatus;
 import com.aisales.common.contracts.lead.LeadStatusHistoryDto;
 import com.aisales.common.contracts.lead.LoseLeadRequest;
 import com.aisales.common.contracts.lead.QualifyLeadRequest;
+import com.aisales.common.contracts.lead.ReopenLeadRequest;
 import com.aisales.common.contracts.lead.ScoreLeadRequest;
 import com.aisales.common.contracts.lead.UpdateLeadRequest;
 import com.aisales.common.core.dto.PageResponse;
@@ -26,13 +27,18 @@ import com.aisales.common.events.model.LeadContactedEvent;
 import com.aisales.common.events.model.LeadConvertedEvent;
 import com.aisales.common.events.model.LeadCreatedEvent;
 import com.aisales.common.events.model.LeadLostEvent;
+import com.aisales.common.events.model.LeadMergedEvent;
 import com.aisales.common.events.model.LeadQualifiedEvent;
+import com.aisales.common.events.model.LeadReopenedEvent;
 import com.aisales.common.events.model.LeadScoredEvent;
 import com.aisales.common.events.model.LeadStatusChangedEvent;
+import com.aisales.common.events.model.LeadUnassignedEvent;
 import com.aisales.common.events.model.LeadValidatedEvent;
 import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.NotFoundException;
 import com.aisales.common.exception.exception.ValidationException;
+import com.aisales.common.observability.metrics.MetricNames;
+import com.aisales.common.observability.metrics.PlatformMetrics;
 import com.aisales.lead.application.mapper.LeadMapper;
 import com.aisales.lead.domain.entity.Lead;
 import com.aisales.lead.domain.entity.LeadAssignment;
@@ -40,7 +46,10 @@ import com.aisales.lead.domain.entity.LeadDuplicate;
 import com.aisales.lead.domain.entity.LeadFollowup;
 import com.aisales.lead.domain.entity.LeadNote;
 import com.aisales.lead.domain.entity.LeadScoreRecord;
+import com.aisales.lead.domain.service.LeadAiAssigneeResolver;
 import com.aisales.lead.domain.service.LeadStateMachine;
+import io.micrometer.core.instrument.Timer;
+import org.springframework.beans.factory.ObjectProvider;
 import com.aisales.lead.infrastructure.persistence.LeadActivityRepository;
 import com.aisales.lead.infrastructure.persistence.LeadAssignmentRepository;
 import com.aisales.lead.infrastructure.persistence.LeadDuplicateRepository;
@@ -83,6 +92,8 @@ public class LeadService {
     private final LeadCustomerConversionGateway customerConversionGateway;
     private final PlatformTransactionManager transactionManager;
     private final LeadIdempotencyService leadIdempotencyService;
+    private final ObjectProvider<PlatformMetrics> platformMetrics;
+    private final ObjectProvider<LeadAiAssigneeResolver> aiAssigneeResolver;
 
     @Transactional
     public LeadDto createLead(CreateLeadRequest request) {
@@ -138,6 +149,7 @@ public class LeadService {
         eventPublisher.publish(LeadCreatedEvent.of(
                 tenantId.toString(), saved.getId().toString(), saved.getCustomerName(),
                 saved.getSourceType(), saved.getStatus().name(), correlationId()));
+        incrementMetric(MetricNames.LEAD_CREATED, tenantId);
         LeadDto response = leadMapper.toDto(saved);
         if (StringUtils.hasText(idempotencyKey)) {
             leadIdempotencyService.storeCreateResponse(idempotencyKey, saved.getId(), response);
@@ -173,7 +185,9 @@ public class LeadService {
                 request.getSourceType(), request.getSourceId(), request.getCampaign(),
                 request.getAttributes(), actor);
         sideEffects.recordActivity(lead.getId(), "UPDATED", "Lead details updated", actor);
-        return leadMapper.toDto(leadRepository.save(lead));
+        LeadDto dto = leadMapper.toDto(leadRepository.save(lead));
+        incrementMetric(MetricNames.LEAD_UPDATED, lead.getTenantId());
+        return dto;
     }
 
     @Transactional
@@ -204,36 +218,84 @@ public class LeadService {
         AssignmentStrategy strategy = request.getStrategy() != null
                 ? request.getStrategy()
                 : AssignmentStrategy.MANUAL;
-        UUID assignee = resolveAssignee(lead.getTenantId(), strategy, request.getAssignedTo());
-        String reason = request.getAssignmentReason() != null
-                ? request.getAssignmentReason()
-                : strategy.name();
+        PlatformMetrics metrics = platformMetrics.getIfAvailable();
+        Timer.Sample sample = metrics != null ? metrics.startTimer() : null;
+        try {
+            UUID assignee = resolveAssignee(lead.getTenantId(), strategy, request.getAssignedTo(), lead);
+            String reason = request.getAssignmentReason() != null
+                    ? request.getAssignmentReason()
+                    : strategy.name();
 
+            assignmentRepository.findFirstByLeadIdAndUnassignedAtIsNullOrderByAssignedAtDesc(leadId)
+                    .ifPresent(current -> {
+                        current.setUnassignedAt(Instant.now());
+                        assignmentRepository.save(current);
+                    });
+            lead.assign(assignee, actor, stateMachine);
+            leadRepository.save(lead);
+            assignmentRepository.save(LeadAssignment.builder()
+                    .leadId(leadId)
+                    .assignedTo(assignee)
+                    .assignedAt(Instant.now())
+                    .assignmentReason(reason)
+                    .createdBy(actor)
+                    .build());
+            sideEffects.recordActivity(leadId, "ASSIGNED",
+                    "Assigned to " + assignee + " via " + strategy, actor);
+            eventPublisher.publish(LeadAssignedEvent.of(
+                    lead.getTenantId().toString(), leadId.toString(), lead.getCustomerName(),
+                    assignee.toString(), reason, correlationId()));
+            incrementMetric(MetricNames.LEAD_ASSIGNED, lead.getTenantId());
+            return leadMapper.toDto(lead);
+        } finally {
+            if (metrics != null && sample != null) {
+                metrics.recordTimer(
+                        sample,
+                        MetricNames.LEAD_ASSIGNMENT_DURATION,
+                        "strategy",
+                        strategy.name());
+            }
+        }
+    }
+
+    @Transactional
+    public LeadDto unassignLead(UUID leadId, String reason) {
+        Lead lead = requireLead(leadId);
+        UUID actor = actorId();
+        UUID previous = lead.getAssignedTo();
+        lead.unassign(actor, stateMachine);
         assignmentRepository.findFirstByLeadIdAndUnassignedAtIsNullOrderByAssignedAtDesc(leadId)
                 .ifPresent(current -> {
                     current.setUnassignedAt(Instant.now());
                     assignmentRepository.save(current);
                 });
-        lead.assign(assignee, actor, stateMachine);
         leadRepository.save(lead);
-        assignmentRepository.save(LeadAssignment.builder()
-                .leadId(leadId)
-                .assignedTo(assignee)
-                .assignedAt(Instant.now())
-                .assignmentReason(reason)
-                .createdBy(actor)
-                .build());
-        sideEffects.recordActivity(leadId, "ASSIGNED",
-                "Assigned to " + assignee + " via " + strategy, actor);
-        eventPublisher.publish(LeadAssignedEvent.of(
-                lead.getTenantId().toString(), leadId.toString(), lead.getCustomerName(),
-                assignee.toString(), reason, correlationId()));
+        sideEffects.recordActivity(leadId, "UNASSIGNED",
+                StringUtils.hasText(reason) ? reason : "Lead released", actor);
+        eventPublisher.publish(LeadUnassignedEvent.of(
+                lead.getTenantId().toString(),
+                leadId.toString(),
+                lead.getCustomerName(),
+                previous != null ? previous.toString() : null,
+                reason,
+                correlationId()));
+        incrementMetric(MetricNames.LEAD_UNASSIGNED, lead.getTenantId());
         return leadMapper.toDto(lead);
     }
 
-    private UUID resolveAssignee(UUID tenantId, AssignmentStrategy strategy, UUID assignedTo) {
+    private UUID resolveAssignee(
+            UUID tenantId, AssignmentStrategy strategy, UUID assignedTo, Lead lead) {
         if (strategy == AssignmentStrategy.ROUND_ROBIN) {
             return assignmentPoolService.nextRoundRobinAssignee(tenantId);
+        }
+        if (strategy == AssignmentStrategy.AI) {
+            LeadAiAssigneeResolver resolver = aiAssigneeResolver.getIfAvailable();
+            if (resolver != null) {
+                return resolver.suggestAssignee(tenantId, lead)
+                        .orElseThrow(() -> new ValidationException(
+                                "AI assignment resolver returned no assignee"));
+            }
+            throw new ValidationException("AI assignment is not configured for this tenant");
         }
         if (assignedTo == null) {
             throw new ValidationException("assignedTo is required for MANUAL assignment");
@@ -262,6 +324,7 @@ public class LeadService {
         eventPublisher.publish(LeadQualifiedEvent.of(
                 lead.getTenantId().toString(), leadId.toString(), lead.getCustomerName(),
                 lead.getScore(), lead.getStatus().name(), correlationId()));
+        incrementMetric(MetricNames.LEAD_QUALIFIED, lead.getTenantId());
         return leadMapper.toDto(lead);
     }
 
@@ -377,6 +440,7 @@ public class LeadService {
                 lead.getTenantId().toString(), leadId.toString(), lead.getCustomerName(),
                 customerId.toString(),
                 correlationId()));
+        incrementMetric(MetricNames.LEAD_CONVERTED, lead.getTenantId());
         return leadMapper.toDto(lead);
     }
 
@@ -391,6 +455,42 @@ public class LeadService {
         eventPublisher.publish(LeadLostEvent.of(
                 lead.getTenantId().toString(), leadId.toString(), lead.getCustomerName(),
                 request.getReason(), correlationId()));
+        incrementMetric(MetricNames.LEAD_LOST, lead.getTenantId());
+        return leadMapper.toDto(lead);
+    }
+
+    @Transactional
+    public LeadDto reopenLead(UUID leadId, ReopenLeadRequest request) {
+        Lead lead = requireLead(leadId);
+        UUID actor = actorId();
+        LeadStatus old = lead.getStatus();
+        LeadStatus target = request != null ? request.getStatus() : null;
+        lead.reopen(target, actor, stateMachine);
+        leadRepository.save(lead);
+        String reason = request != null ? request.getReason() : null;
+        sideEffects.recordStatusChange(leadId, old, lead.getStatus(), reason, actor);
+        eventPublisher.publish(LeadReopenedEvent.of(
+                lead.getTenantId().toString(),
+                leadId.toString(),
+                lead.getCustomerName(),
+                old.name(),
+                lead.getStatus().name(),
+                reason,
+                correlationId()));
+        incrementMetric(MetricNames.LEAD_REOPENED, lead.getTenantId());
+        return leadMapper.toDto(lead);
+    }
+
+    @Transactional
+    public LeadDto restoreLead(UUID leadId) {
+        UUID tenantId = requireTenantId();
+        Lead lead = leadRepository
+                .findByTenantIdAndId(tenantId, leadId)
+                .orElseThrow(() -> new NotFoundException("Lead not found: " + leadId));
+        UUID actor = actorId();
+        lead.restore(actor);
+        leadRepository.save(lead);
+        sideEffects.recordActivity(leadId, "RESTORED", "Lead restored from soft-delete", actor);
         return leadMapper.toDto(lead);
     }
 
@@ -416,6 +516,16 @@ public class LeadService {
         requireLead(leadId);
         return noteRepository.findByLeadIdOrderByCreatedAtDesc(leadId).stream()
                 .map(leadMapper::toNoteDto).toList();
+    }
+
+    @Transactional
+    public void removeNote(UUID leadId, UUID noteId) {
+        requireLead(leadId);
+        LeadNote note = noteRepository
+                .findByIdAndLeadId(noteId, leadId)
+                .orElseThrow(() -> new NotFoundException("Note not found: " + noteId));
+        noteRepository.delete(note);
+        sideEffects.recordActivity(leadId, "NOTE_REMOVED", "Note removed", actorId());
     }
 
     @Transactional(readOnly = true)
@@ -452,6 +562,24 @@ public class LeadService {
                 .map(leadMapper::toFollowupDto).toList();
     }
 
+    @Transactional
+    public LeadFollowupDto completeFollowup(UUID leadId, UUID followupId) {
+        requireLead(leadId);
+        LeadFollowup followup = followupRepository
+                .findByIdAndLeadId(followupId, leadId)
+                .orElseThrow(() -> new NotFoundException("Follow-up not found: " + followupId));
+        if (followup.getCompletedAt() != null) {
+            throw new ValidationException("Follow-up already completed");
+        }
+        Instant now = Instant.now();
+        followup.setCompletedAt(now);
+        followup.setUpdatedAt(now);
+        LeadFollowup saved = followupRepository.save(followup);
+        sideEffects.recordActivity(leadId, "FOLLOWUP_COMPLETED",
+                "Follow-up " + followup.getFollowupType() + " completed", actorId());
+        return leadMapper.toFollowupDto(saved);
+    }
+
     @Transactional(readOnly = true)
     public List<LeadStatusHistoryDto> listHistory(UUID leadId) {
         requireLead(leadId);
@@ -469,6 +597,16 @@ public class LeadService {
 
     @Transactional
     public LeadDuplicateDto resolveDuplicate(UUID leadId, UUID duplicateId, UUID mergeIntoLeadId) {
+        return resolveDuplicate(leadId, duplicateId, mergeIntoLeadId, false);
+    }
+
+    /**
+     * Resolves a duplicate pair. When {@code merge} is true, absorbs the loser into the survivor
+     * and soft-deletes the loser.
+     */
+    @Transactional
+    public LeadDuplicateDto resolveDuplicate(
+            UUID leadId, UUID duplicateId, UUID mergeIntoLeadId, boolean merge) {
         UUID tenantId = requireTenantId();
         requireLead(leadId);
         LeadDuplicate duplicate = duplicateRepository.findByTenantIdAndId(tenantId, duplicateId)
@@ -476,9 +614,43 @@ public class LeadService {
         if (!duplicate.getLeadId().equals(leadId) && !duplicate.getDuplicateOfLeadId().equals(leadId)) {
             throw new ValidationException("Duplicate does not belong to lead");
         }
+        if (duplicate.isResolved()) {
+            throw new ValidationException("Duplicate already resolved");
+        }
+
+        UUID survivorId = mergeIntoLeadId != null ? mergeIntoLeadId : leadId;
+        UUID loserId = survivorId.equals(duplicate.getLeadId())
+                ? duplicate.getDuplicateOfLeadId()
+                : duplicate.getLeadId();
+        if (!survivorId.equals(duplicate.getLeadId()) && !survivorId.equals(duplicate.getDuplicateOfLeadId())) {
+            throw new ValidationException("mergeIntoLeadId must be one of the duplicate pair");
+        }
+
+        UUID actor = actorId();
+        Instant now = Instant.now();
+        if (merge) {
+            Lead survivor = requireLead(survivorId);
+            Lead loser = requireLead(loserId);
+            survivor.absorbFrom(loser, actor);
+            leadRepository.save(survivor);
+            loser.softDelete(actor);
+            leadRepository.save(loser);
+            sideEffects.recordActivity(
+                    survivorId, "MERGED", "Merged duplicate lead " + loserId, actor);
+            sideEffects.recordActivity(
+                    loserId, "MERGED_AWAY", "Merged into lead " + survivorId, actor);
+            eventPublisher.publish(LeadMergedEvent.of(
+                    tenantId.toString(),
+                    survivorId.toString(),
+                    survivor.getCustomerName(),
+                    loserId.toString(),
+                    correlationId()));
+            incrementMetric(MetricNames.LEAD_MERGED, tenantId);
+        }
+
         duplicate.setResolved(true);
-        duplicate.setMergedIntoLeadId(mergeIntoLeadId != null ? mergeIntoLeadId : leadId);
-        duplicate.setMergedAt(Instant.now());
+        duplicate.setMergedIntoLeadId(survivorId);
+        duplicate.setMergedAt(now);
         return leadMapper.toDuplicateDto(duplicateRepository.save(duplicate));
     }
 
@@ -518,6 +690,13 @@ public class LeadService {
 
     private String correlationId() {
         return CorrelationIdUtils.get().orElseGet(CorrelationIdUtils::generate);
+    }
+
+    private void incrementMetric(String name, UUID tenantId) {
+        PlatformMetrics metrics = platformMetrics.getIfAvailable();
+        if (metrics != null) {
+            metrics.incrementForTenant(name, tenantId != null ? tenantId.toString() : null);
+        }
     }
 
     private static UUID parseUuidOrNull(String value) {

@@ -1,6 +1,7 @@
 package com.aisales.ai.application.service;
 
 import com.aisales.ai.application.rag.KnowledgeContextAssembler;
+import com.aisales.ai.application.rag.RetrieverRegistry;
 import com.aisales.ai.domain.cache.CachedLlmResponse;
 import com.aisales.ai.domain.llm.LlmCompletionRequest;
 import com.aisales.ai.domain.llm.LlmCompletionResult;
@@ -11,10 +12,19 @@ import com.aisales.common.contracts.ai.AiExecuteResponse;
 import com.aisales.common.contracts.ai.RetrievedKnowledgeChunkDto;
 import com.aisales.common.core.util.CorrelationIdUtils;
 import com.aisales.common.core.util.TenantContext;
+import com.aisales.common.events.model.KnowledgeRetrievedEvent;
 import com.aisales.common.events.model.PromptExecutedEvent;
+import com.aisales.common.events.model.SemanticCacheHitEvent;
+import com.aisales.common.events.model.SemanticCacheMissEvent;
 import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.ValidationException;
+import com.aisales.common.observability.metrics.MetricNames;
+import com.aisales.common.observability.metrics.PlatformMetrics;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -23,6 +33,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -43,18 +54,25 @@ public class AiGatewayService {
     private final LlmProvider llmProvider;
     private final EventPublisher eventPublisher;
     private final KnowledgeRetrievalService knowledgeRetrievalService;
+    private final RetrieverRegistry retrieverRegistry;
     private final KnowledgeContextAssembler knowledgeContextAssembler;
     private final AiQuotaService aiQuotaService;
     private final TokenUsageService tokenUsageService;
     private final SemanticCacheService semanticCacheService;
     private final LlmProperties llmProperties;
     private final PlatformTransactionManager transactionManager;
+    private final ObjectProvider<PlatformMetrics> platformMetrics;
 
     public AiExecuteResponse execute(AiExecuteRequest request) {
         UUID tenantId = requireTenantId();
 
         PromptService.ResolvedPrompt resolved = promptService.resolveForExecution(
-                request.getPromptCode(), request.getPromptId(), request.getPromptVersion());
+                request.getPromptCode(),
+                request.getPromptId(),
+                request.getPromptVersion(),
+                request.getIndustryCode(),
+                request.getLanguageCode(),
+                request.getCapability());
 
         Map<String, String> variables = new HashMap<>();
         if (request.getVariables() != null) {
@@ -66,12 +84,15 @@ public class AiGatewayService {
         if (request.getKnowledgeBaseId() != null) {
             String query = knowledgeRetrievalService.resolveQuery(
                     request.getRetrievalQuery(), variables);
-            retrieved = knowledgeRetrievalService.retrieve(
+            var retriever = retrieverRegistry.resolveDefault();
+            retrieved = retriever.retrieve(
                     request.getKnowledgeBaseId(), query, request.getRetrievalTopK());
             assembledContext = knowledgeContextAssembler.assemble(retrieved);
             variables.put(
                     "knowledge_context",
                     StringUtils.hasText(assembledContext) ? assembledContext : "(no knowledge retrieved)");
+            publishKnowledgeRetrieved(
+                    tenantId, request.getKnowledgeBaseId(), retriever.name(), retrieved.size(), query);
         }
 
         String system = promptRenderer.render(
@@ -104,8 +125,13 @@ public class AiGatewayService {
                     tenantId,
                     resolved.template().getCode(),
                     cacheModel);
+            incrementMetric(MetricNames.AI_CACHE_HIT, tenantId);
+            publishCacheEvent(true, tenantId, promptScope, cacheModel);
             return buildCachedResponse(tenantId, request, resolved, system, user, retrieved, cached.get());
         }
+
+        incrementMetric(MetricNames.AI_CACHE_MISS, tenantId);
+        publishCacheEvent(false, tenantId, promptScope, cacheModel);
 
         long reserved = aiQuotaService.reserveExecute(tenantId);
         try {
@@ -158,6 +184,7 @@ public class AiGatewayService {
                     .businessReference(request.getBusinessReference())
                     .knowledgeBaseId(request.getKnowledgeBaseId())
                     .retrievedChunks(retrieved)
+                    .cacheHit(false)
                     .build();
         } finally {
             aiQuotaService.release(tenantId, AiQuotaService.OPERATION_EXECUTE, reserved);
@@ -210,7 +237,54 @@ public class AiGatewayService {
                 .businessReference(request.getBusinessReference())
                 .knowledgeBaseId(request.getKnowledgeBaseId())
                 .retrievedChunks(retrieved)
+                .cacheHit(true)
                 .build();
+    }
+
+    private void publishKnowledgeRetrieved(
+            UUID tenantId, UUID knowledgeBaseId, String retriever, int chunkCount, String query) {
+        incrementMetric(MetricNames.AI_KNOWLEDGE_RETRIEVED, tenantId);
+        incrementMetric(MetricNames.RAG_REQUEST, tenantId);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                eventPublisher.publish(KnowledgeRetrievedEvent.of(
+                        tenantId.toString(),
+                        knowledgeBaseId.toString(),
+                        retriever,
+                        String.valueOf(chunkCount),
+                        sha256Prefix(query),
+                        correlationId())));
+    }
+
+    private void publishCacheEvent(boolean hit, UUID tenantId, String promptScope, String model) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            if (hit) {
+                eventPublisher.publish(SemanticCacheHitEvent.of(
+                        tenantId.toString(), promptScope, model, correlationId()));
+            } else {
+                eventPublisher.publish(SemanticCacheMissEvent.of(
+                        tenantId.toString(), promptScope, model, correlationId()));
+            }
+        });
+    }
+
+    private void incrementMetric(String name, UUID tenantId) {
+        PlatformMetrics metrics = platformMetrics.getIfAvailable();
+        if (metrics != null) {
+            metrics.incrementForTenant(name, tenantId.toString());
+        }
+    }
+
+    private static String sha256Prefix(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(value.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest).substring(0, 16);
+        } catch (NoSuchAlgorithmException ex) {
+            return Integer.toHexString(value.hashCode());
+        }
     }
 
     /**

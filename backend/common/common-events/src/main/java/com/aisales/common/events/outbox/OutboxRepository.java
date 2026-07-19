@@ -16,7 +16,8 @@ public interface OutboxRepository extends JpaRepository<OutboxEvent, UUID> {
      * so multiple dispatcher instances can run safely.
      *
      * <p>Per-aggregate ordering: event N+1 is not claimed while any earlier event for the
-     * same aggregate is still PENDING, DISPATCHING, or FAILED. PENDING rows with
+     * same aggregate is still PENDING or DISPATCHING. FAILED is terminal and does not
+     * block later events (operators can replay FAILED separately). PENDING rows with
      * {@code claimed_at} in the future are backoff-gated after a failed send.
      */
     @Query(value = """
@@ -33,7 +34,7 @@ public interface OutboxRepository extends JpaRepository<OutboxEvent, UUID> {
                     WHERE earlier.aggregate_type = o.aggregate_type
                       AND earlier.aggregate_id = o.aggregate_id
                       AND earlier.created_at < o.created_at
-                      AND earlier.status IN ('PENDING', 'DISPATCHING', 'FAILED')
+                      AND earlier.status IN ('PENDING', 'DISPATCHING')
                 )
             ORDER BY o.created_at ASC
             LIMIT :batchSize

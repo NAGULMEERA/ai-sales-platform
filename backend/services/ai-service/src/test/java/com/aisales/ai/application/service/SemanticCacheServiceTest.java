@@ -1,62 +1,63 @@
 package com.aisales.ai.application.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.aisales.ai.domain.cache.CachedLlmResponse;
+import com.aisales.ai.domain.embedding.EmbeddingBatchResult;
 import com.aisales.ai.domain.embedding.EmbeddingProvider;
 import com.aisales.ai.infrastructure.configuration.SemanticCacheProperties;
 import com.aisales.ai.infrastructure.embedding.EmbeddingProviderRegistry;
 import com.aisales.ai.infrastructure.persistence.SemanticCacheEntry;
 import com.aisales.ai.infrastructure.persistence.SemanticCacheJpaRepository;
 import com.aisales.ai.infrastructure.persistence.SemanticCacheVectorRepository;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 @ExtendWith(MockitoExtension.class)
 class SemanticCacheServiceTest {
 
-    @Mock
-    private SemanticCacheJpaRepository cacheRepository;
-
-    @Mock
-    private SemanticCacheVectorRepository vectorRepository;
-
-    @Mock
-    private EmbeddingProviderRegistry providerRegistry;
-
-    @Mock
-    private EmbeddingProvider embeddingProvider;
-
-    @Mock
-    private ObjectProvider<com.aisales.common.cache.PlatformCacheService> platformCacheService;
+    @Mock private SemanticCacheJpaRepository cacheRepository;
+    @Mock private SemanticCacheVectorRepository vectorRepository;
+    @Mock private EmbeddingProviderRegistry providerRegistry;
+    @Mock private EmbeddingProvider embeddingProvider;
+    @Mock private ObjectProvider<com.aisales.common.cache.PlatformCacheService> platformCacheService;
+    @Mock private PlatformTransactionManager transactionManager;
+    @Mock private AiQuotaService aiQuotaService;
+    @Mock private TokenUsageService tokenUsageService;
 
     private SemanticCacheService semanticCacheService;
-
     private final UUID tenantId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
         SemanticCacheProperties cacheProperties = new SemanticCacheProperties();
+        lenient().when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+        lenient().when(aiQuotaService.reserveEmbed(any())).thenReturn(8192L);
         semanticCacheService = new SemanticCacheService(
                 cacheRepository,
                 vectorRepository,
                 providerRegistry,
                 cacheProperties,
-                platformCacheService);
+                platformCacheService,
+                transactionManager,
+                aiQuotaService,
+                tokenUsageService);
     }
 
     @Test
@@ -84,9 +85,12 @@ class SemanticCacheServiceTest {
     }
 
     @Test
-    void shouldStoreResponseWithEmbedding() {
+    void shouldStoreResponseWithEmbeddingAndReserveQuota() {
         when(providerRegistry.resolveDefault()).thenReturn(embeddingProvider);
-        when(embeddingProvider.embed(List.of("query"))).thenReturn(List.of(new float[] {0.1f, 0.2f}));
+        when(embeddingProvider.name()).thenReturn("STUB");
+        when(embeddingProvider.modelName()).thenReturn("stub-embedding-1024");
+        when(embeddingProvider.embedWithUsage(List.of("query")))
+                .thenReturn(new EmbeddingBatchResult(List.of(new float[] {0.1f, 0.2f}), 4));
         when(cacheRepository.findByTenantIdAndPromptScopeAndQueryHashAndModelUsed(
                         eq(tenantId), eq("LEAD_QUALIFY|v1"), any(), eq("BAAI/bge-m3")))
                 .thenReturn(Optional.empty());
@@ -104,5 +108,15 @@ class SemanticCacheServiceTest {
                 "BAAI/bge-m3");
 
         verify(vectorRepository).updateEmbedding(any(), any());
+        verify(aiQuotaService).reserveEmbed(tenantId);
+        verify(aiQuotaService).release(eq(tenantId), eq(AiQuotaService.OPERATION_EMBED), eq(8192L));
+        verify(tokenUsageService).recordEmbeddingUsage(
+                eq(tenantId),
+                eq("stub"),
+                eq("stub-embedding-1024"),
+                eq(List.of("query")),
+                eq("SEMANTIC_CACHE_PUT"),
+                eq("SEMANTIC_CACHE_PUT"),
+                eq(4));
     }
 }

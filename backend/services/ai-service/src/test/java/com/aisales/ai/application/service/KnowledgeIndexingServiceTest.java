@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.aisales.ai.application.mapper.AiMapper;
 import com.aisales.ai.application.rag.CharWindowChunker;
+import com.aisales.ai.application.rag.DocumentEmbeddingPipeline;
 import com.aisales.ai.application.rag.TextChunker;
 import com.aisales.ai.application.rag.TokenWindowChunker;
 import com.aisales.ai.domain.embedding.EmbeddingBatchResult;
@@ -69,7 +70,7 @@ class KnowledgeIndexingServiceTest {
         TextChunker textChunker = new TextChunker(
                 List.of(new CharWindowChunker(ragProperties), new TokenWindowChunker(ragProperties)),
                 ragProperties);
-        service = new KnowledgeIndexingService(
+        DocumentEmbeddingPipeline pipeline = new DocumentEmbeddingPipeline(
                 knowledgeDocumentRepository,
                 knowledgeChunkRepository,
                 knowledgeChunkVectorRepository,
@@ -79,6 +80,7 @@ class KnowledgeIndexingServiceTest {
                 transactionManager,
                 aiQuotaService,
                 tokenUsageService);
+        service = new KnowledgeIndexingService(knowledgeDocumentRepository, pipeline);
     }
 
     @AfterEach
@@ -98,6 +100,8 @@ class KnowledgeIndexingServiceTest {
                 .updatedAt(Instant.now())
                 .build();
         when(knowledgeDocumentRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, documentId))
+                .thenReturn(Optional.of(document));
+        when(knowledgeDocumentRepository.findByTenantIdAndIdForUpdate(tenantId, documentId))
                 .thenReturn(Optional.of(document));
         when(embeddingProviderRegistry.resolveDefault()).thenReturn(embeddingProvider);
         when(embeddingProvider.name()).thenReturn("STUB");
@@ -131,6 +135,8 @@ class KnowledgeIndexingServiceTest {
                 .createdAt(Instant.now())
                 .build();
         when(knowledgeDocumentRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, documentId))
+                .thenReturn(Optional.of(document));
+        when(knowledgeDocumentRepository.findByTenantIdAndIdForUpdate(tenantId, documentId))
                 .thenReturn(Optional.of(document));
         when(embeddingProviderRegistry.resolveDefault()).thenReturn(embeddingProvider);
         when(embeddingProvider.embedWithUsage(anyList())).thenThrow(new RuntimeException("embed down"));

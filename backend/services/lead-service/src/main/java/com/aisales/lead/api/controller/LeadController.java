@@ -1,17 +1,23 @@
 package com.aisales.lead.api.controller;
 
+import com.aisales.common.contracts.lead.AddLeadTagRequest;
 import com.aisales.common.contracts.lead.ArchiveLeadRequest;
 import com.aisales.common.contracts.lead.AssignLeadRequest;
 import com.aisales.common.contracts.lead.AssignmentPoolMemberDto;
 import com.aisales.common.contracts.lead.CancelLeadVisitRequest;
 import com.aisales.common.contracts.lead.ChangeLeadStatusRequest;
 import com.aisales.common.contracts.lead.ConvertLeadRequest;
+import com.aisales.common.contracts.lead.ConvertLeadToOpportunityRequest;
+import com.aisales.common.contracts.lead.LeadOpportunityConversionResultDto;
 import com.aisales.common.contracts.lead.CreateLeadAttachmentRequest;
 import com.aisales.common.contracts.lead.CreateLeadAttributionRequest;
 import com.aisales.common.contracts.lead.CreateLeadCustomFieldRequest;
 import com.aisales.common.contracts.lead.CreateLeadFollowupRequest;
 import com.aisales.common.contracts.lead.CreateLeadNoteRequest;
 import com.aisales.common.contracts.lead.CreateLeadRequest;
+import com.aisales.common.contracts.lead.LeadTagDto;
+import com.aisales.common.contracts.lead.ReopenLeadRequest;
+import com.aisales.common.security.annotation.PreAuthorizeTenant;
 import com.aisales.common.contracts.lead.LeadActivityDto;
 import com.aisales.common.contracts.lead.LeadAttachmentDto;
 import com.aisales.common.contracts.lead.LeadAttributionDto;
@@ -41,7 +47,9 @@ import com.aisales.lead.application.service.LeadAiQualificationService;
 import com.aisales.lead.application.service.LeadAssignmentPoolService;
 import com.aisales.lead.application.service.LeadExtensionService;
 import com.aisales.lead.application.service.LeadJourneyService;
+import com.aisales.lead.application.service.LeadOpportunityConversionService;
 import com.aisales.lead.application.service.LeadService;
+import com.aisales.lead.application.service.LeadTagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -64,6 +72,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/leads")
 @RequiredArgsConstructor
+@PreAuthorizeTenant
 @Tag(name = "Leads", description = "Lead lifecycle management")
 public class LeadController {
 
@@ -72,6 +81,8 @@ public class LeadController {
     private final LeadAssignmentPoolService assignmentPoolService;
     private final LeadJourneyService journeyService;
     private final LeadAiQualificationService aiQualificationService;
+    private final LeadOpportunityConversionService opportunityConversionService;
+    private final LeadTagService leadTagService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -135,6 +146,27 @@ public class LeadController {
         return ok("Lead assigned", leadService.assignLead(id, request));
     }
 
+    @PostMapping("/{id}/unassign")
+    @Operation(summary = "Release lead assignment")
+    public ApiResponse<LeadDto> unassign(
+            @PathVariable UUID id, @RequestParam(required = false) String reason) {
+        return ok("Lead unassigned", leadService.unassignLead(id, reason));
+    }
+
+    @PostMapping("/{id}/reopen")
+    @Operation(summary = "Reopen a LOST lead into an active stage")
+    public ApiResponse<LeadDto> reopen(
+            @PathVariable UUID id, @RequestBody(required = false) ReopenLeadRequest request) {
+        ReopenLeadRequest body = request != null ? request : new ReopenLeadRequest();
+        return ok("Lead reopened", leadService.reopenLead(id, body));
+    }
+
+    @PostMapping("/{id}/restore")
+    @Operation(summary = "Restore a soft-deleted lead")
+    public ApiResponse<LeadDto> restore(@PathVariable UUID id) {
+        return ok("Lead restored", leadService.restoreLead(id));
+    }
+
     @PostMapping("/{id}/qualify")
     @Operation(summary = "Qualify lead")
     public ApiResponse<LeadDto> qualify(
@@ -176,6 +208,16 @@ public class LeadController {
             @PathVariable UUID id, @RequestBody(required = false) ConvertLeadRequest request) {
         ConvertLeadRequest body = request != null ? request : new ConvertLeadRequest();
         return ok("Lead converted", leadService.convertLead(id, body));
+    }
+
+    @PostMapping("/{id}/convert-to-opportunity")
+    @Operation(summary = "Qualified lead → catalog match → recommendation → opportunity")
+    public ApiResponse<LeadOpportunityConversionResultDto> convertToOpportunity(
+            @PathVariable UUID id,
+            @RequestBody(required = false) ConvertLeadToOpportunityRequest request) {
+        return ok(
+                "Lead converted to opportunity",
+                opportunityConversionService.convertToOpportunity(id, request));
     }
 
     @PostMapping("/{id}/lose")
@@ -236,6 +278,34 @@ public class LeadController {
         return ok(leadService.listNotes(id));
     }
 
+    @DeleteMapping("/{id}/notes/{noteId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Remove note")
+    public void removeNote(@PathVariable UUID id, @PathVariable UUID noteId) {
+        leadService.removeNote(id, noteId);
+    }
+
+    @PostMapping("/{id}/tags")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Add tag to lead")
+    public ApiResponse<LeadTagDto> addTag(
+            @PathVariable UUID id, @Valid @RequestBody AddLeadTagRequest request) {
+        return ok("Tag added", leadTagService.addTag(id, request));
+    }
+
+    @GetMapping("/{id}/tags")
+    @Operation(summary = "List lead tags")
+    public ApiResponse<List<LeadTagDto>> listTags(@PathVariable UUID id) {
+        return ok(leadTagService.listTags(id));
+    }
+
+    @DeleteMapping("/{id}/tags/{tag}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Remove tag from lead")
+    public void removeTag(@PathVariable UUID id, @PathVariable String tag) {
+        leadTagService.removeTag(id, tag);
+    }
+
     @GetMapping("/{id}/activities")
     @Operation(summary = "List activities")
     public ApiResponse<List<LeadActivityDto>> listActivities(@PathVariable UUID id) {
@@ -256,6 +326,13 @@ public class LeadController {
         return ok(leadService.listFollowups(id));
     }
 
+    @PostMapping("/{id}/followups/{followupId}/complete")
+    @Operation(summary = "Complete a scheduled follow-up")
+    public ApiResponse<LeadFollowupDto> completeFollowup(
+            @PathVariable UUID id, @PathVariable UUID followupId) {
+        return ok("Follow-up completed", leadService.completeFollowup(id, followupId));
+    }
+
     @GetMapping("/{id}/history")
     @Operation(summary = "Status history")
     public ApiResponse<List<LeadStatusHistoryDto>> history(@PathVariable UUID id) {
@@ -263,12 +340,15 @@ public class LeadController {
     }
 
     @PostMapping("/{id}/duplicates/{duplicateId}/resolve")
-    @Operation(summary = "Resolve duplicate detection")
+    @Operation(summary = "Resolve duplicate detection (optional merge absorbs loser into survivor)")
     public ApiResponse<LeadDuplicateDto> resolveDuplicate(
             @PathVariable UUID id,
             @PathVariable UUID duplicateId,
-            @RequestParam(required = false) UUID mergeIntoLeadId) {
-        return ok("Duplicate resolved", leadService.resolveDuplicate(id, duplicateId, mergeIntoLeadId));
+            @RequestParam(required = false) UUID mergeIntoLeadId,
+            @RequestParam(defaultValue = "false") boolean merge) {
+        return ok(
+                merge ? "Duplicate merged" : "Duplicate resolved",
+                leadService.resolveDuplicate(id, duplicateId, mergeIntoLeadId, merge));
     }
 
     @PostMapping("/{id}/attachments")

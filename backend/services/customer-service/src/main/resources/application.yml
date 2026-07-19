@@ -26,6 +26,14 @@ spring:
     bootstrap-servers: localhost:9092
 
 aisales:
+  customer:
+    matching:
+      match-phone: true
+      match-email: true
+      match-whatsapp: true
+      match-external-crm-id: true
+      match-government-id: false
+      weak-match-threshold: 2
   security:
     use-platform-defaults: true
   events:

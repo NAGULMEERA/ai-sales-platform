@@ -79,6 +79,13 @@ public class RateLimiterConfig {
         return new RedisRateLimiter(search.getReplenishRate(), search.getBurstCapacity());
     }
 
+    @Bean("analyticsRedisRateLimiter")
+    @ConditionalOnProperty(name = "aisales.gateway.rate-limit.enabled", havingValue = "true", matchIfMissing = true)
+    public RedisRateLimiter analyticsRedisRateLimiter(GatewayRateLimitProperties properties) {
+        GatewayRateLimitProperties.Limit analytics = properties.getAnalytics();
+        return new RedisRateLimiter(analytics.getReplenishRate(), analytics.getBurstCapacity());
+    }
+
     @Bean("webhookRedisRateLimiter")
     @ConditionalOnProperty(name = "aisales.gateway.rate-limit.enabled", havingValue = "true", matchIfMissing = true)
     public RedisRateLimiter webhookRedisRateLimiter(GatewayRateLimitProperties properties) {

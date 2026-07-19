@@ -19,6 +19,10 @@ public class PromptDto {
     private String code;
     private String name;
     private String purpose;
+    private String industryCode;
+    private String languageCode;
+    private String capability;
+    private String preferredModel;
     private PromptStatus status;
     private Integer activeVersion;
     private PromptVersionDto latestVersion;

@@ -95,7 +95,7 @@ class LeadLifecycleServiceTest {
                 followupRepository, scoreRepository, statusHistoryRepository, duplicateRepository,
                 mapper, eventPublisher, stateMachine, sideEffects, duplicateDetection,
                 assignmentPoolService, org.mockito.Mockito.mock(PipelineService.class),
-                customerConversionGateway, noopTxManager(), org.mockito.Mockito.mock(LeadIdempotencyService.class));
+                customerConversionGateway, noopTxManager(), org.mockito.Mockito.mock(LeadIdempotencyService.class), org.mockito.Mockito.mock(org.springframework.beans.factory.ObjectProvider.class), org.mockito.Mockito.mock(org.springframework.beans.factory.ObjectProvider.class));
 
         when(leadRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, leadId))
                 .thenReturn(Optional.of(lead));

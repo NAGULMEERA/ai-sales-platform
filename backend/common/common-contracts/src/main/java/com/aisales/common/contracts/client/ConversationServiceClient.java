@@ -1,6 +1,8 @@
 package com.aisales.common.contracts.client;
 
 import com.aisales.common.contracts.conversation.AddMessageRequest;
+import com.aisales.common.contracts.conversation.ConversationAiInsightsDto;
+import com.aisales.common.contracts.conversation.ConversationContextDto;
 import com.aisales.common.contracts.conversation.ConversationDto;
 import com.aisales.common.contracts.conversation.ConversationMessageDto;
 import com.aisales.common.contracts.conversation.CreateConversationRequest;
@@ -39,4 +41,16 @@ public interface ConversationServiceClient {
 
     @GetMapping("/{id}/messages")
     ApiResponse<List<ConversationMessageDto>> listMessages(@PathVariable UUID id);
+
+    @GetMapping("/{id}/context")
+    ApiResponse<ConversationContextDto> getContext(@PathVariable UUID id);
+
+    @PostMapping("/{id}/ai/insights")
+    ApiResponse<ConversationAiInsightsDto> generateInsights(@PathVariable UUID id);
+
+    @PostMapping("/{id}/ai/reply")
+    ApiResponse<ConversationMessageDto> suggestReply(@PathVariable UUID id);
+
+    @PostMapping("/{id}/close")
+    ApiResponse<ConversationDto> close(@PathVariable UUID id);
 }

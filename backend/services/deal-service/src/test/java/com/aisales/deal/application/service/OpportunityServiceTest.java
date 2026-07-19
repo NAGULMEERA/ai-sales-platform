@@ -20,6 +20,7 @@ import com.aisales.common.exception.exception.ValidationException;
 import com.aisales.deal.application.mapper.DealMapper;
 import com.aisales.deal.domain.entity.Opportunity;
 import com.aisales.deal.infrastructure.persistence.OpportunityRepository;
+import com.aisales.deal.infrastructure.persistence.OpportunityTimelineRepository;
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,12 +31,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 @ExtendWith(MockitoExtension.class)
 class OpportunityServiceTest {
 
     @Mock private OpportunityRepository opportunityRepository;
+    @Mock private OpportunityTimelineRepository timelineRepository;
     @Mock private EventPublisher eventPublisher;
+    @Mock private ObjectProvider<?> platformMetrics;
 
     private OpportunityService opportunityService;
     private UUID tenantId;
@@ -47,8 +51,17 @@ class OpportunityServiceTest {
         actorId = UUID.randomUUID();
         TenantContext.setTenantId(tenantId.toString());
         TenantContext.setUserId(actorId.toString());
+        org.mockito.Mockito.lenient().when(platformMetrics.getIfAvailable()).thenReturn(null);
+        org.mockito.Mockito.lenient()
+                .when(timelineRepository.save(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(inv -> inv.getArgument(0));
         opportunityService = new OpportunityService(
-                opportunityRepository, new DealMapper(), eventPublisher);
+                opportunityRepository,
+                timelineRepository,
+                new OpportunityTimelineRecorder(timelineRepository),
+                new DealMapper(),
+                eventPublisher,
+                (ObjectProvider) platformMetrics);
     }
 
     @AfterEach
@@ -140,6 +153,33 @@ class OpportunityServiceTest {
         verify(eventPublisher).publish(captor.capture());
         assertThat(captor.getValue().getPreviousStatus()).isEqualTo("OPEN");
         assertThat(captor.getValue().getStatus()).isEqualTo("LOST");
+    }
+
+    @Test
+    void shouldCloseWonAndPublishWonEvent() {
+        UUID opportunityId = UUID.randomUUID();
+        Opportunity opportunity = Opportunity.builder()
+                .id(opportunityId)
+                .tenantId(tenantId)
+                .customerId(UUID.randomUUID())
+                .name("Deal")
+                .currency("INR")
+                .status(OpportunityStatus.NEGOTIATION)
+                .createdAt(java.time.Instant.now())
+                .updatedAt(java.time.Instant.now())
+                .build();
+        when(opportunityRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, opportunityId))
+                .thenReturn(Optional.of(opportunity));
+        when(opportunityRepository.save(any(Opportunity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OpportunityDto dto = opportunityService.closeWon(
+                opportunityId,
+                com.aisales.common.contracts.deal.CloseOpportunityRequest.builder()
+                        .reason("contract signed")
+                        .build());
+
+        assertThat(dto.getStatus()).isEqualTo(OpportunityStatus.WON);
+        verify(eventPublisher).publish(any(com.aisales.common.events.model.OpportunityWonEvent.class));
     }
 
     @Test

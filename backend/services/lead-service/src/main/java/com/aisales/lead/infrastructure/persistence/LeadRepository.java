@@ -15,6 +15,8 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
 
     Optional<Lead> findByTenantIdAndIdAndDeletedAtIsNull(UUID tenantId, UUID id);
 
+    Optional<Lead> findByTenantIdAndId(UUID tenantId, UUID id);
+
     Page<Lead> findByTenantIdAndDeletedAtIsNullOrderByCreatedAtDesc(UUID tenantId, Pageable pageable);
 
     @Query("""
@@ -41,18 +43,27 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
             Pageable pageable);
 
     @Query("""
-            SELECT l FROM Lead l
+            SELECT DISTINCT l FROM Lead l
             WHERE l.tenantId = :tenantId
               AND l.deletedAt IS NULL
               AND l.id <> :leadId
               AND (
                     (:phone IS NOT NULL AND l.phone = :phone)
                     OR (:email IS NOT NULL AND LOWER(l.email) = LOWER(:email))
+                    OR (:whatsapp IS NOT NULL AND l.phone = :whatsapp)
+                    OR (
+                         :sourceType IS NOT NULL AND :sourceId IS NOT NULL
+                         AND l.sourceType = :sourceType
+                         AND l.sourceId = :sourceId
+                       )
                   )
             """)
     List<Lead> findPotentialDuplicates(
             @Param("tenantId") UUID tenantId,
             @Param("leadId") UUID leadId,
             @Param("phone") String phone,
-            @Param("email") String email);
+            @Param("email") String email,
+            @Param("whatsapp") String whatsapp,
+            @Param("sourceType") String sourceType,
+            @Param("sourceId") String sourceId);
 }

@@ -43,4 +43,11 @@ public class CreateOpportunityRequest {
 
     /** Opportunity owner. Defaults from request context actor when omitted. */
     private UUID assignedTo;
+
+    private UUID catalogProductId;
+
+    private UUID catalogOfferId;
+
+    @Size(max = 4000)
+    private String notes;
 }

@@ -10,6 +10,9 @@ class GatewayPublicPathMatcherTest {
     void shouldAllowAuthPaths() {
         assertThat(GatewayPublicPathMatcher.isPublicPath("/api/v1/auth/login")).isTrue();
         assertThat(GatewayPublicPathMatcher.isPublicPath("/api/v1/auth/register")).isTrue();
+        assertThat(GatewayPublicPathMatcher.isPublicPath("/api/v1/auth/refresh")).isTrue();
+        assertThat(GatewayPublicPathMatcher.isPublicPath("/api/v1/auth/logout")).isFalse();
+        assertThat(GatewayPublicPathMatcher.isPublicPath("/api/v1/auth/sessions")).isFalse();
     }
 
     @Test

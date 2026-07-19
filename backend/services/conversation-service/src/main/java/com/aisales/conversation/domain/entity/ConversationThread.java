@@ -13,12 +13,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "conversation_thread")
@@ -45,6 +49,9 @@ public class ConversationThread {
     @Column(name = "customer_id")
     private UUID customerId;
 
+    @Column(name = "opportunity_id")
+    private UUID opportunityId;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 40)
@@ -57,6 +64,32 @@ public class ConversationThread {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private ConversationStatus status = ConversationStatus.OPEN;
+
+    @Column(columnDefinition = "TEXT")
+    private String summary;
+
+    @Column(name = "ai_summary", columnDefinition = "TEXT")
+    private String aiSummary;
+
+    @Column(length = 40)
+    private String sentiment;
+
+    @Column(length = 100)
+    private String intent;
+
+    @Column(length = 100)
+    private String classification;
+
+    @Column(name = "next_best_action", length = 255)
+    private String nextBestAction;
+
+    @Column(name = "last_message_at")
+    private Instant lastMessageAt;
+
+    @Builder.Default
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(nullable = false, columnDefinition = "jsonb")
+    private Map<String, Object> metadata = new HashMap<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -101,6 +134,32 @@ public class ConversationThread {
         }
         this.status = ConversationStatus.CLOSED;
         this.closedAt = Instant.now();
+        touch(actor);
+    }
+
+    public void recordMessage(UUID actor) {
+        this.lastMessageAt = Instant.now();
+        touch(actor);
+    }
+
+    public void applyAiInsights(
+            String aiSummary,
+            String sentiment,
+            String intent,
+            String classification,
+            String nextBestAction,
+            UUID actor) {
+        this.aiSummary = aiSummary;
+        this.summary = aiSummary;
+        this.sentiment = sentiment;
+        this.intent = intent;
+        this.classification = classification;
+        this.nextBestAction = nextBestAction;
+        touch(actor);
+    }
+
+    public void replaceMetadata(Map<String, Object> newMetadata, UUID actor) {
+        this.metadata = newMetadata == null ? new HashMap<>() : new HashMap<>(newMetadata);
         touch(actor);
     }
 

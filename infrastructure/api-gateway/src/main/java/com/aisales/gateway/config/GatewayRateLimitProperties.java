@@ -33,6 +33,7 @@ public class GatewayRateLimitProperties {
     private Limit write = new Limit(30, 60);
     private Limit mediaUpload = new Limit(10, 20);
     private Limit search = new Limit(40, 80);
+    private Limit analytics = new Limit(30, 60);
 
     /** AI execute limits for FREE-tier tenants. */
     private Limit aiExecute = new Limit(10, 20);

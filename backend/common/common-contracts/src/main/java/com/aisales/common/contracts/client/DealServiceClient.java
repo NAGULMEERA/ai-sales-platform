@@ -1,12 +1,17 @@
 package com.aisales.common.contracts.client;
 
+import com.aisales.common.contracts.deal.AddOpportunityNoteRequest;
 import com.aisales.common.contracts.deal.AssignOpportunityRequest;
+import com.aisales.common.contracts.deal.CloseOpportunityRequest;
 import com.aisales.common.contracts.deal.CreateOpportunityRequest;
 import com.aisales.common.contracts.deal.CreateQuoteRequest;
 import com.aisales.common.contracts.deal.OpportunityDto;
 import com.aisales.common.contracts.deal.OpportunityStatus;
 import com.aisales.common.contracts.deal.QuoteDto;
+import com.aisales.common.contracts.deal.ReopenOpportunityRequest;
+import com.aisales.common.contracts.deal.ScoreOpportunityRequest;
 import com.aisales.common.contracts.deal.UpdateOpportunityRequest;
+import com.aisales.common.contracts.deal.UpdateOpportunityStageRequest;
 import com.aisales.common.core.dto.ApiResponse;
 import com.aisales.common.core.dto.PageResponse;
 import java.util.UUID;
@@ -45,6 +50,33 @@ public interface DealServiceClient {
     @PostMapping("/opportunities/{id}/assign")
     ApiResponse<OpportunityDto> assignOpportunity(
             @PathVariable UUID id, @RequestBody AssignOpportunityRequest request);
+
+    @PostMapping("/opportunities/{id}/stage")
+    ApiResponse<OpportunityDto> updateOpportunityStage(
+            @PathVariable UUID id, @RequestBody UpdateOpportunityStageRequest request);
+
+    @PostMapping("/opportunities/{id}/notes")
+    ApiResponse<OpportunityDto> addOpportunityNote(
+            @PathVariable UUID id, @RequestBody AddOpportunityNoteRequest request);
+
+    @PostMapping("/opportunities/{id}/score")
+    ApiResponse<OpportunityDto> scoreOpportunity(
+            @PathVariable UUID id, @RequestBody ScoreOpportunityRequest request);
+
+    @PostMapping("/opportunities/{id}/close-won")
+    ApiResponse<OpportunityDto> closeOpportunityWon(
+            @PathVariable UUID id, @RequestBody CloseOpportunityRequest request);
+
+    @PostMapping("/opportunities/{id}/close-lost")
+    ApiResponse<OpportunityDto> closeOpportunityLost(
+            @PathVariable UUID id, @RequestBody CloseOpportunityRequest request);
+
+    @PostMapping("/opportunities/{id}/reopen")
+    ApiResponse<OpportunityDto> reopenOpportunity(
+            @PathVariable UUID id, @RequestBody ReopenOpportunityRequest request);
+
+    @PostMapping("/opportunities/{id}/archive")
+    ApiResponse<Void> archiveOpportunity(@PathVariable UUID id);
 
     @PostMapping("/quotes")
     ApiResponse<QuoteDto> createQuote(@RequestBody CreateQuoteRequest request);

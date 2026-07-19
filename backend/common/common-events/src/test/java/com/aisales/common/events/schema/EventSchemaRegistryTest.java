@@ -1,14 +1,32 @@
 package com.aisales.common.events.schema;
 
+import com.aisales.common.events.model.AiQualificationCompletedEvent;
+import com.aisales.common.events.model.AiRecommendationGeneratedEvent;
 import com.aisales.common.events.model.BaseEvent;
+import com.aisales.common.events.model.CatalogMatchedEvent;
 import com.aisales.common.events.model.CatalogOfferCreatedEvent;
 import com.aisales.common.events.model.CatalogProductCreatedEvent;
+import com.aisales.common.events.model.CatalogProductUpdatedEvent;
+import com.aisales.common.events.model.CatalogRecommendationGeneratedEvent;
+import com.aisales.common.events.model.AiReplyGeneratedEvent;
 import com.aisales.common.events.model.ConversationClosedEvent;
 import com.aisales.common.events.model.ConversationMessageAddedEvent;
 import com.aisales.common.events.model.ConversationStartedEvent;
+import com.aisales.common.events.model.ConversationSummarizedEvent;
+import com.aisales.common.events.model.MessageReceivedEvent;
+import com.aisales.common.events.model.MessageSentEvent;
+import com.aisales.common.events.model.WorkflowTriggeredEvent;
 import com.aisales.common.events.model.CustomerArchivedEvent;
 import com.aisales.common.events.model.CustomerCreatedEvent;
+import com.aisales.common.events.model.CustomerDeactivatedEvent;
+import com.aisales.common.events.model.CustomerMergedEvent;
 import com.aisales.common.events.model.CustomerUpdatedEvent;
+import com.aisales.common.events.model.CustomerVerifiedEvent;
+import com.aisales.common.events.model.LeadConvertedToCustomerEvent;
+import com.aisales.common.events.model.LeadMergedEvent;
+import com.aisales.common.events.model.LeadReopenedEvent;
+import com.aisales.common.events.model.LeadUnassignedEvent;
+import com.aisales.common.events.model.SubscriptionPlanChangedEvent;
 import com.aisales.common.events.model.EmailVerificationRequestedEvent;
 import com.aisales.common.events.model.EmailVerifiedEvent;
 import com.aisales.common.events.model.LeadArchivedEvent;
@@ -25,11 +43,16 @@ import com.aisales.common.events.model.LeadVisitCancelledEvent;
 import com.aisales.common.events.model.LeadVisitCompletedEvent;
 import com.aisales.common.events.model.KnowledgeBaseCreatedEvent;
 import com.aisales.common.events.model.KnowledgeDocumentRegisteredEvent;
+import com.aisales.common.events.model.KnowledgeRetrievedEvent;
 import com.aisales.common.events.model.LeadVisitScheduledEvent;
 import com.aisales.common.events.model.NotificationSentEvent;
 import com.aisales.common.events.model.OpportunityAssignedEvent;
+import com.aisales.common.events.model.OpportunityLostEvent;
+import com.aisales.common.events.model.OpportunityWonEvent;
 import com.aisales.common.events.model.PromptExecutedEvent;
 import com.aisales.common.events.model.OpportunityCreatedEvent;
+import com.aisales.common.events.model.SemanticCacheHitEvent;
+import com.aisales.common.events.model.SemanticCacheMissEvent;
 import com.aisales.common.events.model.OpportunityStatusChangedEvent;
 import com.aisales.common.events.model.PasswordResetRequestedEvent;
 import com.aisales.common.events.model.PluginDisabledEvent;
@@ -122,18 +145,41 @@ class EventSchemaRegistryTest {
                 LeadVisitCompletedEvent.of("tenant-1", "lead-1", "Jane Lead", "liked the view", "corr-1"),
                 LeadVisitCancelledEvent.of("tenant-1", "lead-1", "Jane Lead", "reschedule", "corr-1"),
                 LeadArchivedEvent.of("tenant-1", "lead-1", "Jane Lead", "retention policy", "corr-1"),
+                LeadMergedEvent.of("tenant-1", "lead-1", "Jane Lead", "lead-2", "corr-1"),
+                LeadReopenedEvent.of("tenant-1", "lead-1", "Jane Lead", "LOST", "QUALIFIED", "new interest", "corr-1"),
+                LeadUnassignedEvent.of("tenant-1", "lead-1", "Jane Lead", "user-2", "released", "corr-1"),
                 CustomerCreatedEvent.of("tenant-1", "customer-1", "Jane Customer",
                         "customer@example.com", "corr-1"),
                 CustomerUpdatedEvent.of("tenant-1", "customer-1", "Jane Customer", "ACTIVE", "corr-1"),
                 CustomerArchivedEvent.of("tenant-1", "customer-1", "Jane Customer", "churn", "corr-1"),
+                CustomerMergedEvent.of("tenant-1", "customer-1", "Jane Customer", "customer-2", "corr-1"),
+                CustomerVerifiedEvent.of("tenant-1", "customer-1", "Jane Customer", "EMAIL",
+                        "customer@example.com", "corr-1"),
+                CustomerDeactivatedEvent.of("tenant-1", "customer-1", "Jane Customer", "pause", "corr-1"),
+                LeadConvertedToCustomerEvent.of("tenant-1", "customer-1", "Jane Customer",
+                        "lead-1", false, "corr-1"),
+                SubscriptionPlanChangedEvent.of("tenant-1", "FREE", "PREMIUM", "sub-1", "corr-1"),
                 CatalogProductCreatedEvent.of("tenant-1", "product-1", "SKU-1", "Studio Plan",
+                        "PRODUCT", "ACTIVE", "corr-1"),
+                CatalogProductUpdatedEvent.of("tenant-1", "product-1", "SKU-1", "Studio Plan",
                         "PRODUCT", "ACTIVE", "corr-1"),
                 CatalogOfferCreatedEvent.of("tenant-1", "offer-1", "product-1", "OFFER-1",
                         "INR", "2500000.0000", "ACTIVE", "corr-1"),
+                CatalogMatchedEvent.of("tenant-1", "lead-1", "3", "corr-1"),
+                CatalogRecommendationGeneratedEvent.of(
+                        "tenant-1", "lead-1", "lead-1", "2", "product-1", "0.88", "corr-1"),
                 ConversationStartedEvent.of("tenant-1", "conv-1", "lead-1", "customer-1",
                         "WEB", "OPEN", "corr-1"),
                 ConversationMessageAddedEvent.of("tenant-1", "conv-1", "lead-1", "msg-1",
                         "CUSTOMER", "corr-1"),
+                MessageReceivedEvent.of("tenant-1", "conv-1", "lead-1", "msg-1",
+                        "CUSTOMER", "WEB", "corr-key", "corr-1"),
+                MessageSentEvent.of("tenant-1", "conv-1", "lead-1", "msg-2",
+                        "AGENT", "WHATSAPP", "corr-key-2", "corr-1"),
+                AiReplyGeneratedEvent.of("tenant-1", "conv-1", "lead-1", "exec-1",
+                        "BUY_INTENT", "0.9", "FOLLOW_UP", "corr-1"),
+                ConversationSummarizedEvent.of("tenant-1", "conv-1", "lead-1", "exec-1",
+                        "POSITIVE", "BUY_INTENT", "corr-1"),
                 ConversationClosedEvent.of("tenant-1", "conv-1", "lead-1", "resolved", "corr-1"),
                 OpportunityCreatedEvent.of("tenant-1", "opp-1", "customer-1", "lead-1",
                         "Studio deal", "OPEN", "user-2", "corr-1"),
@@ -141,6 +187,8 @@ class EventSchemaRegistryTest {
                         "user-3", "user-2", "corr-1"),
                 OpportunityStatusChangedEvent.of("tenant-1", "opp-1", "customer-1",
                         "OPEN", "QUOTED", "quote sent", "corr-1"),
+                OpportunityWonEvent.of("tenant-1", "opp-1", "customer-1", "lead-1", "closed", "corr-1"),
+                OpportunityLostEvent.of("tenant-1", "opp-1", "customer-1", "lead-1", "budget", "corr-1"),
                 QuoteCreatedEvent.of("tenant-1", "quote-1", "opp-1", "DRAFT",
                         "INR", "2500000.00", "1", "corr-1"),
                 QuoteSentEvent.of("tenant-1", "quote-1", "opp-1", "SENT",
@@ -149,6 +197,31 @@ class EventSchemaRegistryTest {
                         "2500000.00", "corr-1"),
                 PromptExecutedEvent.of("tenant-1", "exec-1", "LEAD_QUALIFY_V1", "1",
                         "STUB", "stub-model", "0.85", "lead-1", "corr-1"),
+                AiQualificationCompletedEvent.of(
+                        "tenant-1",
+                        "exec-1",
+                        "LEAD_QUALIFY_REAL_ESTATE",
+                        "1",
+                        "STUB",
+                        "stub-model",
+                        "QUALIFY",
+                        "82",
+                        "90",
+                        "lead-1",
+                        false,
+                        "corr-1"),
+                AiRecommendationGeneratedEvent.of(
+                        "tenant-1",
+                        "exec-1",
+                        "LEAD_QUALIFICATION",
+                        "Schedule site visit",
+                        "0.9",
+                        "lead-1",
+                        "corr-1"),
+                KnowledgeRetrievedEvent.of(
+                        "tenant-1", "kb-1", "HYBRID", "3", "query-hash", "corr-1"),
+                SemanticCacheHitEvent.of("tenant-1", "LEAD_QUALIFY|v1", "stub-model", "corr-1"),
+                SemanticCacheMissEvent.of("tenant-1", "LEAD_QUALIFY|v1", "stub-model", "corr-1"),
                 KnowledgeBaseCreatedEvent.of("tenant-1", "kb-1", "DEFAULT",
                         "Default KB", "ACTIVE", "corr-1"),
                 KnowledgeDocumentRegisteredEvent.of("tenant-1", "doc-1", "kb-1",
@@ -164,7 +237,15 @@ class EventSchemaRegistryTest {
                 PasswordResetRequestedEvent.of("tenant-1", "user-1", "user@example.com", "Ada",
                         "token-2", "https://app.example/reset?token=token-2", "corr-1"),
                 EmailVerifiedEvent.of("tenant-1", "user-1", "user@example.com", "corr-1"),
-                WorkflowCompletedEvent.of("tenant-1", "wf-1", "ONBOARDING_V1", "user-1", "corr-1")
+                WorkflowCompletedEvent.of("tenant-1", "wf-1", "ONBOARDING_V1", "user-1", "corr-1"),
+                WorkflowTriggeredEvent.of(
+                        "tenant-1",
+                        "wf-2",
+                        "AUTOMATION_RULE_V1",
+                        "FOLLOWUP_ON_MESSAGE",
+                        "MESSAGE_RECEIVED",
+                        "conv-1",
+                        "corr-1")
         );
     }
 
@@ -204,6 +285,7 @@ class EventSchemaRegistryTest {
         switch (type) {
             case "string" -> assertThat(value.isTextual()).as("string field %s", field).isTrue();
             case "integer" -> assertThat(value.isIntegralNumber()).as("integer field %s", field).isTrue();
+            case "boolean" -> assertThat(value.isBoolean()).as("boolean field %s", field).isTrue();
             case "array" -> assertThat(value.isArray()).as("array field %s", field).isTrue();
             case "object" -> assertThat(value.isObject()).as("object field %s", field).isTrue();
             default -> throw new IllegalArgumentException("Unsupported schema type in test: " + type);

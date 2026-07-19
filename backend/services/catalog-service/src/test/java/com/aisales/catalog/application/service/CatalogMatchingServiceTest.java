@@ -24,16 +24,23 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.aisales.common.events.publisher.EventPublisher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 @ExtendWith(MockitoExtension.class)
 class CatalogMatchingServiceTest {
 
     @Mock private CatalogProductRepository productRepository;
     @Mock private CatalogOfferRepository offerRepository;
+    @Mock private EventPublisher eventPublisher;
+    @Mock private PlatformTransactionManager transactionManager;
+    @Mock private ObjectProvider<?> platformMetrics;
 
     private CatalogMatchingService matchingService;
     private UUID tenantId;
@@ -42,7 +49,16 @@ class CatalogMatchingServiceTest {
     void setUp() {
         tenantId = UUID.randomUUID();
         TenantContext.setTenantId(tenantId.toString());
-        matchingService = new CatalogMatchingService(productRepository, offerRepository);
+        org.mockito.Mockito.lenient()
+                .when(transactionManager.getTransaction(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new SimpleTransactionStatus());
+        org.mockito.Mockito.lenient().when(platformMetrics.getIfAvailable()).thenReturn(null);
+        matchingService = new CatalogMatchingService(
+                productRepository,
+                offerRepository,
+                eventPublisher,
+                transactionManager,
+                (ObjectProvider) platformMetrics);
     }
 
     @AfterEach
