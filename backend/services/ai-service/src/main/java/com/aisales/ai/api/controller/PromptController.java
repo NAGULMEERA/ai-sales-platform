@@ -7,6 +7,7 @@ import com.aisales.common.contracts.ai.PromptDto;
 import com.aisales.common.contracts.ai.PromptVersionDto;
 import com.aisales.common.core.dto.ApiResponse;
 import com.aisales.common.core.dto.PageResponse;
+import com.aisales.common.security.annotation.PreAuthorizeTenant;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/prompts")
 @RequiredArgsConstructor
+@PreAuthorizeTenant
+@PreAuthorize("hasAuthority('prompt:manage') or hasAuthority('tenant:admin') or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')")
 @Tag(name = "Prompts", description = "Versioned prompt registry")
 public class PromptController {
 

@@ -1,5 +1,34 @@
-# Platform Infrastructure Epic — Phase 2 observability defaults.
+# Platform Infrastructure Epic — Phase 2 observability + production-ops defaults.
 # Import from services: spring.config.import: optional:classpath:platform/application-observability.yml
+# Also import for prod profile extras: optional:classpath:platform/application-prod.yml
+
+server:
+  shutdown: graceful
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: ${SHUTDOWN_TIMEOUT:30s}
+  datasource:
+    hikari:
+      maximum-pool-size: ${HIKARI_MAX_POOL:20}
+      minimum-idle: ${HIKARI_MIN_IDLE:5}
+      connection-timeout: ${HIKARI_CONNECTION_TIMEOUT_MS:3000}
+      idle-timeout: ${HIKARI_IDLE_TIMEOUT_MS:600000}
+      max-lifetime: ${HIKARI_MAX_LIFETIME_MS:1800000}
+      leak-detection-threshold: ${HIKARI_LEAK_DETECTION_MS:60000}
+  jpa:
+    open-in-view: false
+  kafka:
+    producer:
+      acks: all
+      properties:
+        linger.ms: ${KAFKA_LINGER_MS:5}
+        batch.size: ${KAFKA_BATCH_SIZE:32768}
+        compression.type: ${KAFKA_COMPRESSION:snappy}
+    consumer:
+      max-poll-records: ${KAFKA_MAX_POLL_RECORDS:100}
+      fetch-min-size: ${KAFKA_FETCH_MIN_BYTES:1024}
+      fetch-max-wait: ${KAFKA_FETCH_MAX_WAIT_MS:500ms}
 
 aisales:
   observability:
@@ -16,6 +45,14 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+      probes:
+        enabled: true
+      group:
+        # Kubernetes probe paths: /actuator/health/liveness and /actuator/health/readiness
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db
   metrics:
     export:
       prometheus:
@@ -35,6 +72,31 @@ logging:
 
 # Shared Resilience4j defaults for platform outbound paths (services may override).
 resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 5
+        automatic-transition-from-open-to-half-open-enabled: true
+    instances:
+      outboxKafka:
+        base-config: default
+      smtpEmail:
+        base-config: default
+  retry:
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+    instances:
+      outboxKafka:
+        base-config: default
+      smtpEmail:
+        base-config: default
   bulkhead:
     instances:
       outboxKafka:
@@ -43,4 +105,3 @@ resilience4j:
       smtpEmail:
         max-concurrent-calls: 10
         max-wait-duration: 0ms
-

@@ -12,10 +12,14 @@ import java.net.http.HttpResponse;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -27,7 +31,10 @@ import org.springframework.util.StringUtils;
 @EnableConfigurationProperties(JwtRsaProperties.class)
 public class PlatformRsaKeyProvider {
 
+    private static final Set<String> LOCAL_PROFILES = Set.of("local", "test", "default");
+
     private final JwtRsaProperties properties;
+    private final Environment environment;
 
     @Getter
     private RSAPublicKey publicKey;
@@ -47,7 +54,31 @@ public class PlatformRsaKeyProvider {
                 throw new IllegalStateException(
                         "aisales.security.jwt.private-key-location is required when signing is enabled");
             }
+            rejectClasspathDevPrivateKeyOutsideLocal(properties.getPrivateKeyLocation());
             this.privateKey = PemKeyLoader.loadPrivateKey(properties.getPrivateKeyLocation());
+        }
+    }
+
+    /**
+     * Committed {@code local-private.pem} is for local/test only. Non-local profiles must inject
+     * keys via env/secret manager.
+     */
+    private void rejectClasspathDevPrivateKeyOutsideLocal(String location) {
+        String normalized = location.toLowerCase(Locale.ROOT);
+        if (!normalized.contains("local-private.pem") && !normalized.contains("classpath:jwt/local-private")) {
+            return;
+        }
+        boolean localProfile = Arrays.stream(environment.getActiveProfiles())
+                .map(p -> p.toLowerCase(Locale.ROOT))
+                .anyMatch(LOCAL_PROFILES::contains);
+        if (!localProfile && environment.getActiveProfiles().length == 0) {
+            // No active profile often means default/local boot; allow for developer convenience.
+            return;
+        }
+        if (!localProfile) {
+            throw new IllegalStateException(
+                    "Classpath JWT private key (local-private.pem) is not allowed outside local/test profiles. "
+                            + "Set JWT_PRIVATE_KEY_PEM / aisales.security.jwt.private-key-location from a secret store.");
         }
     }
 

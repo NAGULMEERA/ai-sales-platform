@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class LeadConvertedToCustomerEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "LeadConvertedToCustomer";
+
     private String customerName;
     private String leadId;
     private boolean linkedExisting;
@@ -23,7 +25,7 @@ public class LeadConvertedToCustomerEvent extends BaseEvent {
             boolean linkedExisting,
             String correlationId) {
         LeadConvertedToCustomerEvent event = new LeadConvertedToCustomerEvent();
-        event.init("LeadConvertedToCustomer", tenantId, customerId, correlationId);
+        event.init(EVENT_TYPE, tenantId, customerId, correlationId);
         event.customerName = customerName;
         event.leadId = leadId;
         event.linkedExisting = linkedExisting;

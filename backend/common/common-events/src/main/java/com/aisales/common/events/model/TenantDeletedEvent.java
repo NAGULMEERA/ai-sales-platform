@@ -11,9 +11,11 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class TenantDeletedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "TenantDeleted";
+
     public static TenantDeletedEvent of(String tenantId, String correlationId) {
         TenantDeletedEvent event = new TenantDeletedEvent();
-        event.init("TenantDeleted", tenantId, tenantId, correlationId);
+        event.init(EVENT_TYPE, tenantId, tenantId, correlationId);
         return event;
     }
 }

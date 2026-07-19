@@ -3,6 +3,8 @@ package com.aisales.workflow.application.engine;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -21,9 +23,12 @@ import com.aisales.workflow.domain.entity.WorkflowRule;
 import com.aisales.workflow.infrastructure.persistence.WorkflowAutomationExecutionRepository;
 import com.aisales.workflow.infrastructure.persistence.WorkflowExecutionHistoryRepository;
 import com.aisales.workflow.infrastructure.persistence.WorkflowRuleRepository;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +36,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @ExtendWith(MockitoExtension.class)
 class WorkflowAutomationEngineTest {
@@ -41,6 +49,7 @@ class WorkflowAutomationEngineTest {
     @Mock private WorkflowActionExecutor actionExecutor;
     @Mock private EventPublisher eventPublisher;
     @Mock private ObjectProvider<com.aisales.common.observability.metrics.PlatformMetrics> platformMetrics;
+    @Mock private TransactionTemplate transactionTemplate;
 
     private WorkflowAutomationEngine engine;
     private UUID tenantId;
@@ -48,6 +57,20 @@ class WorkflowAutomationEngineTest {
     @BeforeEach
     void setUp() {
         tenantId = UUID.randomUUID();
+        doAnswer(invocation -> {
+                    TransactionCallback<?> callback = invocation.getArgument(0);
+                    return callback.doInTransaction(mock(TransactionStatus.class));
+                })
+                .when(transactionTemplate)
+                .execute(any());
+        doAnswer(invocation -> {
+                    @SuppressWarnings("unchecked")
+                    Consumer<TransactionStatus> action = invocation.getArgument(0);
+                    action.accept(mock(TransactionStatus.class));
+                    return null;
+                })
+                .when(transactionTemplate)
+                .executeWithoutResult(any());
         engine = new WorkflowAutomationEngine(
                 ruleRepository,
                 executionRepository,
@@ -55,7 +78,8 @@ class WorkflowAutomationEngineTest {
                 new WorkflowConditionEvaluator(),
                 actionExecutor,
                 eventPublisher,
-                platformMetrics);
+                platformMetrics,
+                transactionTemplate);
     }
 
     @Test
@@ -78,6 +102,7 @@ class WorkflowAutomationEngineTest {
                 .enabled(true)
                 .build();
 
+        Map<UUID, WorkflowAutomationExecution> executions = new HashMap<>();
         when(ruleRepository.findByTenantIdAndTriggerTypeAndEnabledTrueAndDeletedAtIsNull(
                         tenantId, WorkflowTriggerType.MESSAGE_RECEIVED))
                 .thenReturn(List.of(rule));
@@ -86,8 +111,11 @@ class WorkflowAutomationEngineTest {
             if (e.getId() == null) {
                 e.setId(UUID.randomUUID());
             }
+            executions.put(e.getId(), e);
             return e;
         });
+        when(executionRepository.findById(any())).thenAnswer(inv ->
+                Optional.ofNullable(executions.get(inv.getArgument(0))));
         when(historyRepository.save(any(WorkflowExecutionHistory.class))).thenAnswer(inv -> inv.getArgument(0));
         when(actionExecutor.execute(any(), eq(tenantId.toString()), eq("conv-1"), any()))
                 .thenReturn(Map.of("sent", true));
@@ -127,14 +155,18 @@ class WorkflowAutomationEngineTest {
                 .enabled(true)
                 .build();
 
+        Map<UUID, WorkflowAutomationExecution> executions = new HashMap<>();
         when(ruleRepository.findByTenantIdAndTriggerTypeAndEnabledTrueAndDeletedAtIsNull(
                         tenantId, WorkflowTriggerType.LEAD_QUALIFIED))
                 .thenReturn(List.of(rule));
         when(executionRepository.save(any(WorkflowAutomationExecution.class))).thenAnswer(inv -> {
             WorkflowAutomationExecution e = inv.getArgument(0);
             e.setId(UUID.randomUUID());
+            executions.put(e.getId(), e);
             return e;
         });
+        when(executionRepository.findById(any())).thenAnswer(inv ->
+                Optional.ofNullable(executions.get(inv.getArgument(0))));
         when(historyRepository.save(any(WorkflowExecutionHistory.class))).thenAnswer(inv -> inv.getArgument(0));
 
         engine.onTrigger(

@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class QuoteAcceptedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "QuoteAccepted";
+
     private String opportunityId;
     private String status;
     private String totalAmount;
@@ -18,7 +20,7 @@ public class QuoteAcceptedEvent extends BaseEvent {
     public static QuoteAcceptedEvent of(String tenantId, String quoteId, String opportunityId,
                                         String status, String totalAmount, String correlationId) {
         QuoteAcceptedEvent event = new QuoteAcceptedEvent();
-        event.init("QuoteAccepted", tenantId, quoteId, correlationId);
+        event.init(EVENT_TYPE, tenantId, quoteId, correlationId);
         event.opportunityId = opportunityId;
         event.status = status;
         event.totalAmount = totalAmount;

@@ -10,6 +10,7 @@ spring:
     import:
       - optional:configserver:http://localhost:8888
       - optional:classpath:platform/application-observability.yml
+      - optional:classpath:platform/application-prod.yml
       - optional:classpath:platform/application-cache.yml
   datasource:
     url: jdbc:postgresql://localhost:5432/marketplace_db

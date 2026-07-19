@@ -12,7 +12,7 @@ class KnowledgeContextAssemblerTest {
     private final KnowledgeContextAssembler assembler = new KnowledgeContextAssembler();
 
     @Test
-    void shouldAssembleNumberedChunks() {
+    void shouldAssembleNumberedChunksAsUntrustedData() {
         String text = assembler.assemble(List.of(
                 RetrievedKnowledgeChunkDto.builder()
                         .chunkId(UUID.randomUUID())
@@ -23,7 +23,12 @@ class KnowledgeContextAssemblerTest {
                         .content("Second fact")
                         .build()));
 
-        assertThat(text).isEqualTo("[1] First fact\n\n[2] Second fact");
+        assertThat(text)
+                .contains("untrusted document data")
+                .contains("<<<KNOWLEDGE_DATA>>>")
+                .contains("[1] First fact")
+                .contains("[2] Second fact")
+                .contains("<<<END_KNOWLEDGE_DATA>>>");
     }
 
     @Test

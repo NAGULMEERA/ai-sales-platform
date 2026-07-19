@@ -532,7 +532,7 @@ public class CustomerService {
         boolean primary = Boolean.TRUE.equals(request.getPrimary());
         if (primary) {
             contactMethodRepository.clearPrimaryFlags(tenantId, customerId, request.getMethodType());
-            customer.syncPrimaryContact(request.getMethodType().name(), request.getValue(), actor);
+            customer.syncPrimaryContact(request.getMethodType(), request.getValue(), actor);
             customerRepository.save(customer);
         }
         CustomerContactMethod method = contactMethodRepository.saveAndFlush(CustomerContactMethod.builder()

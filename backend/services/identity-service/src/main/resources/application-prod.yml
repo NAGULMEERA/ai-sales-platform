@@ -5,6 +5,9 @@ spring:
   datasource:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+  config:
+    import:
+      - optional:classpath:platform/application-prod.yml
 
 aisales:
   security:
@@ -12,10 +15,12 @@ aisales:
       signing-enabled: true
       # PKCS#8 PEM (inline) or file:/path/to/private.pem
       private-key-location: ${JWT_PRIVATE_KEY_PEM}
-      public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:jwt/local-public.pem}
+      public-key-location: ${JWT_PUBLIC_KEY_LOCATION}
       key-id: ${JWT_KEY_ID:aisales-1}
+      require-issuer-audience: true
   startup-validation:
     enabled: true
     required-config-values:
       - aisales.security.jwt.private-key-location
+      - aisales.security.jwt.public-key-location
       - spring.datasource.password

@@ -36,14 +36,12 @@ public class SubscriptionPlanEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 TENANT_CREATED_CONSUMER,
-                "TenantCreated",
-                TenantCreatedEvent.class,
+                TenantCreatedEvent.EVENT_TYPE, TenantCreatedEvent.class,
                 this::onTenantCreated);
         integrationEventListener.handleIfType(
                 record,
                 PLAN_CHANGED_CONSUMER,
-                "SubscriptionPlanChanged",
-                SubscriptionPlanChangedEvent.class,
+                SubscriptionPlanChangedEvent.EVENT_TYPE, SubscriptionPlanChangedEvent.class,
                 this::onPlanChanged);
     }
 

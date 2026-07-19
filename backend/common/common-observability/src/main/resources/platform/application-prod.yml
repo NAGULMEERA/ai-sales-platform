@@ -1,0 +1,37 @@
+# Shared production profile defaults.
+# Activate with SPRING_PROFILES_ACTIVE=prod (or include in spring.profiles.group.prod).
+# Import optionally: spring.config.import: optional:classpath:platform/application-prod.yml
+#
+# Secrets must come from env / Secret Manager — never commit production credentials.
+
+spring:
+  config:
+    activate:
+      on-profile: prod
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+server:
+  shutdown: graceful
+
+aisales:
+  observability:
+    environment: ${ENVIRONMENT:prod}
+  tracing:
+    sample-rate: ${TRACING_SAMPLE_RATE:0.1}
+  security:
+    jwt:
+      require-issuer-audience: ${JWT_REQUIRE_ISS_AUD:true}
+  startup-validation:
+    enabled: true
+
+management:
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

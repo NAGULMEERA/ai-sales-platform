@@ -48,16 +48,52 @@ public class SearchIndexingService {
                         .createdBy("system")
                         .build());
 
-        document.setOrganizationId(organizationId);
-        document.setTitle(StringUtils.hasText(title) ? title.trim() : entityType.name() + " " + entityId);
-        document.setBody(body == null ? "" : body);
-        document.setKeywords(keywords);
-        document.setStatus(status);
-        document.setSource(source);
-        document.setBusinessScore(businessScore == null ? 0d : businessScore);
-        document.setPopularity(popularity == null ? 0L : popularity);
-        document.setSourceUpdatedAt(sourceUpdatedAt == null ? now : sourceUpdatedAt);
-        document.setMetadata(metadata == null ? new HashMap<>() : new HashMap<>(metadata));
+        if (organizationId != null) {
+            document.setOrganizationId(organizationId);
+        }
+        if (StringUtils.hasText(title)) {
+            document.setTitle(title.trim());
+        } else if (!StringUtils.hasText(document.getTitle())) {
+            document.setTitle(entityType.name() + " " + entityId);
+        }
+        if (body != null) {
+            document.setBody(body);
+        } else if (document.getBody() == null) {
+            document.setBody("");
+        }
+        if (keywords != null) {
+            document.setKeywords(keywords);
+        }
+        if (status != null) {
+            document.setStatus(status);
+        }
+        if (source != null) {
+            document.setSource(source);
+        }
+        if (businessScore != null) {
+            document.setBusinessScore(businessScore);
+        } else if (document.getBusinessScore() == null) {
+            document.setBusinessScore(0d);
+        }
+        if (popularity != null) {
+            document.setPopularity(popularity);
+        } else if (document.getPopularity() == null) {
+            document.setPopularity(0L);
+        }
+        if (sourceUpdatedAt != null) {
+            document.setSourceUpdatedAt(sourceUpdatedAt);
+        } else if (document.getSourceUpdatedAt() == null) {
+            document.setSourceUpdatedAt(now);
+        }
+        if (metadata != null) {
+            Map<String, Object> merged = document.getMetadata() == null
+                    ? new HashMap<>()
+                    : new HashMap<>(document.getMetadata());
+            merged.putAll(metadata);
+            document.setMetadata(merged);
+        } else if (document.getMetadata() == null) {
+            document.setMetadata(new HashMap<>());
+        }
         document.setDeletedAt(null);
         document.setDeletedBy(null);
         document.touch("system");

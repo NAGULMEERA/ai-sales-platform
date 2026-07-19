@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class PasswordResetRequestedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "PasswordResetRequested";
+
     private String email;
     private String firstName;
     private String token;
@@ -20,7 +22,7 @@ public class PasswordResetRequestedEvent extends BaseEvent {
                                                  String firstName, String token, String resetLink,
                                                  String correlationId) {
         PasswordResetRequestedEvent event = new PasswordResetRequestedEvent();
-        event.init("PasswordResetRequested", tenantId, userId, correlationId);
+        event.init(EVENT_TYPE, tenantId, userId, correlationId);
         event.email = email;
         event.firstName = firstName;
         event.token = token;

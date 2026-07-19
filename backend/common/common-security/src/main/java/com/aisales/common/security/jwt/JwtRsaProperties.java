@@ -33,6 +33,18 @@ public class JwtRsaProperties {
 
     private String keyId = "aisales-1";
 
+    /** JWT {@code iss} claim minted by identity-service. */
+    private String issuer = "aisales-platform";
+
+    /** JWT {@code aud} claim minted by identity-service. */
+    private String audience = "aisales-api";
+
+    /**
+     * When true, access tokens must include matching issuer and audience.
+     * When false (default), claims are validated only if present (legacy tokens still work).
+     */
+    private boolean requireIssuerAudience = false;
+
     private long accessTokenExpirationMs = 3_600_000L;
 
     private long refreshTokenExpirationMs = 86_400_000L;

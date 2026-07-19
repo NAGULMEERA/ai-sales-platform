@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class AiReplyGeneratedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "AIReplyGenerated";
+
     private String conversationId;
     private String leadId;
     private String executionId;
@@ -28,7 +30,7 @@ public class AiReplyGeneratedEvent extends BaseEvent {
             String nextBestAction,
             String correlationId) {
         AiReplyGeneratedEvent event = new AiReplyGeneratedEvent();
-        event.init("AIReplyGenerated", tenantId, conversationId, correlationId);
+        event.init(EVENT_TYPE, tenantId, conversationId, correlationId);
         event.conversationId = conversationId;
         event.leadId = leadId;
         event.executionId = executionId;

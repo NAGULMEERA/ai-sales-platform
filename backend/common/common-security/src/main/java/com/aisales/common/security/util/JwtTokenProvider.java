@@ -22,12 +22,14 @@ import org.springframework.util.StringUtils;
 public class JwtTokenProvider {
 
     private final PlatformRsaKeyProvider keyProvider;
+    private final JwtRsaProperties properties;
     private final long accessTokenExpirationMs;
     private final long refreshTokenExpirationMs;
 
     public JwtTokenProvider(PlatformRsaKeyProvider keyProvider, JwtRsaProperties properties) {
         keyProvider.requirePrivateKey();
         this.keyProvider = keyProvider;
+        this.properties = properties;
         this.accessTokenExpirationMs = properties.getAccessTokenExpirationMs();
         this.refreshTokenExpirationMs = properties.getRefreshTokenExpirationMs();
     }
@@ -88,6 +90,8 @@ public class JwtTokenProvider {
         var builder = Jwts.builder()
                 .header().keyId(keyProvider.getKeyId()).and()
                 .subject(userId)
+                .issuer(properties.getIssuer())
+                .audience().add(properties.getAudience()).and()
                 .claim(SecurityConstants.TENANT_ID_CLAIM, tenantId)
                 .claim(SecurityConstants.EMAIL_CLAIM, email)
                 .claim(SecurityConstants.ROLES_CLAIM, roles)

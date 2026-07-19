@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TenantAuthorizationAspect {
 
-    @Before("@annotation(preAuthorizeTenant)")
+    @Before("@within(preAuthorizeTenant) || @annotation(preAuthorizeTenant)")
     public void verifyTenantAccess(PreAuthorizeTenant preAuthorizeTenant) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof UserPrincipal principal)) {

@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class LeadUnassignedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "LeadUnassigned";
+
     private String leadName;
     private String previousAssignee;
     private String reason;
@@ -23,7 +25,7 @@ public class LeadUnassignedEvent extends BaseEvent {
             String reason,
             String correlationId) {
         LeadUnassignedEvent event = new LeadUnassignedEvent();
-        event.init("LeadUnassigned", tenantId, leadId, correlationId);
+        event.init(EVENT_TYPE, tenantId, leadId, correlationId);
         event.leadName = leadName;
         event.previousAssignee = previousAssignee;
         event.reason = reason;

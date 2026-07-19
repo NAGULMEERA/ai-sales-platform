@@ -31,7 +31,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import com.aisales.common.security.model.UserPrincipal;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
@@ -74,9 +78,11 @@ class AiGatewayServiceTest {
         lenient().when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         lenient().when(retrieverRegistry.resolveDefault()).thenReturn(retriever);
         lenient().when(platformMetrics.getIfAvailable()).thenReturn(null);
+        PromptVariableSanitizer sanitizer = new PromptVariableSanitizer();
         aiGatewayService = new AiGatewayService(
                 promptService,
-                new PromptRenderer(),
+                new PromptRenderer(sanitizer),
+                sanitizer,
                 llmProvider,
                 eventPublisher,
                 knowledgeRetrievalService,
@@ -88,11 +94,22 @@ class AiGatewayServiceTest {
                 llmProperties,
                 transactionManager,
                 (ObjectProvider) platformMetrics);
+        UserPrincipal admin = UserPrincipal.builder()
+                .userId("admin")
+                .tenantId(tenantId.toString())
+                .email("admin@example.com")
+                .roles(Set.of("TENANT_ADMIN"))
+                .permissions(Set.of("ai:debug", "ai:execute"))
+                .enabled(true)
+                .build();
+        SecurityContextHolder.getContext()
+                .setAuthentication(new UsernamePasswordAuthenticationToken(admin, null, admin.getAuthorities()));
     }
 
     @AfterEach
     void tearDown() {
         TenantContext.clear();
+        SecurityContextHolder.clearContext();
     }
 
     @Test

@@ -27,7 +27,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -42,7 +41,10 @@ public class ConversationContextService {
     private final ObjectProvider<DealServiceClient> dealServiceClient;
     private final ObjectProvider<CatalogServiceClient> catalogServiceClient;
 
-    @Transactional(readOnly = true)
+    /**
+     * Loads local conversation state then enriches via Feign. No class-level transaction —
+     * repository methods use short TX boundaries so remote calls do not hold JDBC connections.
+     */
     public ConversationContextDto loadContext(UUID conversationId) {
         ConversationThread thread = conversationService.requireThread(conversationId);
         List<ConversationMessageDto> messages = messageRepository

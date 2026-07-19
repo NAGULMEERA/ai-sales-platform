@@ -1,6 +1,9 @@
 package com.aisales.notification.application.service;
 
 import com.aisales.common.contracts.notification.SendTransactionalEmailRequest;
+import com.aisales.common.core.util.TenantContext;
+import com.aisales.common.exception.exception.ForbiddenException;
+import com.aisales.common.exception.model.ErrorCode;
 import com.aisales.common.observability.http.OutboundCallDiagnostics;
 import com.aisales.notification.domain.enums.EmailTemplateCode;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
@@ -14,6 +17,7 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
 
@@ -31,6 +35,7 @@ public class EmailDeliveryService {
     @CircuitBreaker(name = "smtpEmail")
     @Retry(name = "smtpEmail")
     public void sendTransactionalEmail(SendTransactionalEmailRequest request) {
+        String tenantId = resolveTenantId(request);
         EmailTemplateCode templateCode = EmailTemplateCode.from(request.getTemplateCode());
         Map<String, String> variables = request.getVariables() == null ? Map.of() : request.getVariables();
         EmailTemplateRenderer.RenderedEmail rendered = templateRenderer.render(templateCode, variables);
@@ -55,7 +60,7 @@ public class EmailDeliveryService {
             }
             log.info("Email sent via SMTP template={} tenantId={} recipient={} {} {}",
                     request.getTemplateCode(),
-                    request.getTenantId(),
+                    tenantId,
                     redactEmail(request.getRecipientEmail()),
                     StructuredArguments.kv("target_service", targetService),
                     StructuredArguments.kv("elapsed_ms", OutboundCallDiagnostics.elapsedMillisSince(startedAtMs)));
@@ -67,10 +72,28 @@ public class EmailDeliveryService {
                 "Email rendered ({} mode) template={} tenantId={} recipient={} subject_len={} body_len={}",
                 notificationProperties.getDeliveryMode(),
                 request.getTemplateCode(),
-                request.getTenantId(),
+                tenantId,
                 redactEmail(request.getRecipientEmail()),
                 rendered.subject() != null ? rendered.subject().length() : 0,
                 rendered.body() != null ? rendered.body().length() : 0);
+    }
+
+    /**
+     * Prefer JWT/TenantContext tenant. Body tenantId is accepted only when it matches context
+     * (or when context is unset for internal event-driven calls).
+     */
+    private static String resolveTenantId(SendTransactionalEmailRequest request) {
+        String contextTenant = TenantContext.getTenantId();
+        String bodyTenant = request.getTenantId();
+        if (StringUtils.hasText(contextTenant)
+                && StringUtils.hasText(bodyTenant)
+                && !contextTenant.equals(bodyTenant)) {
+            throw new ForbiddenException(ErrorCode.TENANT_ACCESS_DENIED, "tenantId does not match authenticated tenant");
+        }
+        if (StringUtils.hasText(contextTenant)) {
+            return contextTenant;
+        }
+        return bodyTenant;
     }
 
     /** Redacts local-part for structured logs (keeps domain for ops diagnosis). */

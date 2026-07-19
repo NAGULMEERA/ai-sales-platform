@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class CatalogOfferCreatedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "CatalogOfferCreated";
+
     private String productId;
     private String code;
     private String currency;
@@ -21,7 +23,7 @@ public class CatalogOfferCreatedEvent extends BaseEvent {
                                               String code, String currency, String unitPrice,
                                               String status, String correlationId) {
         CatalogOfferCreatedEvent event = new CatalogOfferCreatedEvent();
-        event.init("CatalogOfferCreated", tenantId, offerId, correlationId);
+        event.init(EVENT_TYPE, tenantId, offerId, correlationId);
         event.productId = productId;
         event.code = code;
         event.currency = currency;

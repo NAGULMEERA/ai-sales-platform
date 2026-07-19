@@ -33,14 +33,12 @@ public class IdentityEmailEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 EMAIL_VERIFICATION_CONSUMER,
-                "EmailVerificationRequested",
-                EmailVerificationRequestedEvent.class,
+                EmailVerificationRequestedEvent.EVENT_TYPE, EmailVerificationRequestedEvent.class,
                 handler::onEmailVerificationRequested);
         integrationEventListener.handleIfType(
                 record,
                 PASSWORD_RESET_CONSUMER,
-                "PasswordResetRequested",
-                PasswordResetRequestedEvent.class,
+                PasswordResetRequestedEvent.EVENT_TYPE, PasswordResetRequestedEvent.class,
                 handler::onPasswordResetRequested);
     }
 }

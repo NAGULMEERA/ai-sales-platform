@@ -42,10 +42,12 @@ import com.aisales.conversation.infrastructure.persistence.ConversationParticipa
 import com.aisales.conversation.infrastructure.persistence.ConversationThreadRepository;
 import com.aisales.conversation.infrastructure.persistence.ConversationTimelineEntryRepository;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.Page;
@@ -157,13 +159,17 @@ public class ConversationService {
     public List<ConversationMessageDto> listMessages(UUID conversationId) {
         ConversationThread thread = requireThread(conversationId);
         UUID tenantId = thread.getTenantId();
-        return messageRepository
-                .findByTenantIdAndConversationIdOrderByCreatedAtAsc(tenantId, conversationId)
-                .stream()
+        List<ConversationMessage> messages =
+                messageRepository.findByTenantIdAndConversationIdOrderByCreatedAtAsc(tenantId, conversationId);
+        Map<UUID, List<ConversationAttachment>> attachmentsByMessage =
+                attachmentRepository
+                        .findByTenantIdAndConversationIdOrderByCreatedAtAsc(tenantId, conversationId)
+                        .stream()
+                        .collect(Collectors.groupingBy(ConversationAttachment::getMessageId));
+        return messages.stream()
                 .map(message -> mapper.toMessageDto(
                         message,
-                        attachmentRepository.findByTenantIdAndMessageIdOrderByCreatedAtAsc(
-                                tenantId, message.getId())))
+                        attachmentsByMessage.getOrDefault(message.getId(), List.of())))
                 .toList();
     }
 
@@ -281,7 +287,8 @@ public class ConversationService {
                 "sentiment", sentiment == null ? "" : sentiment));
     }
 
-    ConversationThread requireThread(UUID conversationId) {
+    @Transactional(readOnly = true)
+    public ConversationThread requireThread(UUID conversationId) {
         return threadRepository.findByTenantIdAndIdAndDeletedAtIsNull(requireTenantId(), conversationId)
                 .orElseThrow(() -> new NotFoundException("Conversation not found: " + conversationId));
     }
@@ -382,14 +389,16 @@ public class ConversationService {
             ConversationMessage message,
             AddMessageRequest request,
             UUID actor) {
+        List<ConversationAttachment> attachments = new ArrayList<>();
+        Instant now = Instant.now();
         if (request.getMediaId() != null) {
-            attachmentRepository.save(ConversationAttachment.builder()
+            attachments.add(ConversationAttachment.builder()
                     .tenantId(thread.getTenantId())
                     .conversationId(thread.getId())
                     .messageId(message.getId())
                     .mediaId(request.getMediaId())
                     .contentType(request.getMediaContentType())
-                    .createdAt(Instant.now())
+                    .createdAt(now)
                     .createdBy(actor)
                     .build());
         }
@@ -398,15 +407,18 @@ public class ConversationService {
                 if (mediaId == null || mediaId.equals(request.getMediaId())) {
                     continue;
                 }
-                attachmentRepository.save(ConversationAttachment.builder()
+                attachments.add(ConversationAttachment.builder()
                         .tenantId(thread.getTenantId())
                         .conversationId(thread.getId())
                         .messageId(message.getId())
                         .mediaId(mediaId)
-                        .createdAt(Instant.now())
+                        .createdAt(now)
                         .createdBy(actor)
                         .build());
             }
+        }
+        if (!attachments.isEmpty()) {
+            attachmentRepository.saveAll(attachments);
         }
     }
 

@@ -33,4 +33,13 @@ class GatewayPublicPathMatcherTest {
                 .isTrue();
         assertThat(GatewayPublicPathMatcher.isPublicPath("/api/v1/integrations/config")).isFalse();
     }
+
+    @Test
+    void shouldAllowHealthActuatorButNotMetrics() {
+        assertThat(GatewayPublicPathMatcher.isPublicPath("/actuator/health")).isTrue();
+        assertThat(GatewayPublicPathMatcher.isPublicPath("/actuator/health/liveness")).isTrue();
+        assertThat(GatewayPublicPathMatcher.isPublicPath("/actuator/info")).isTrue();
+        assertThat(GatewayPublicPathMatcher.isPublicPath("/actuator/prometheus")).isFalse();
+        assertThat(GatewayPublicPathMatcher.isPublicPath("/actuator/metrics")).isFalse();
+    }
 }

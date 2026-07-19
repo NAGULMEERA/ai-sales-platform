@@ -33,29 +33,25 @@ public class LeadLifecycleEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 LEAD_CREATED_CONSUMER,
-                "LeadCreated",
-                LeadCreatedEvent.class,
+                LeadCreatedEvent.EVENT_TYPE, LeadCreatedEvent.class,
                 event -> leadLifecycleWorkflowService.startOnLeadCreated(
                         event.getTenantId(), event.getAggregateId(), event.getCorrelationId()));
         integrationEventListener.handleIfType(
                 record,
                 LEAD_VALIDATED_CONSUMER,
-                "LeadValidated",
-                LeadValidatedEvent.class,
+                LeadValidatedEvent.EVENT_TYPE, LeadValidatedEvent.class,
                 event -> leadLifecycleWorkflowService.onLeadValidated(
                         event.getTenantId(), event.getAggregateId(), event.getCorrelationId()));
         integrationEventListener.handleIfType(
                 record,
                 LEAD_QUALIFIED_CONSUMER,
-                "LeadQualified",
-                LeadQualifiedEvent.class,
+                LeadQualifiedEvent.EVENT_TYPE, LeadQualifiedEvent.class,
                 event -> leadLifecycleWorkflowService.onLeadQualified(
                         event.getTenantId(), event.getAggregateId(), event.getCorrelationId()));
         integrationEventListener.handleIfType(
                 record,
                 LEAD_ASSIGNED_CONSUMER,
-                "LeadAssigned",
-                LeadAssignedEvent.class,
+                LeadAssignedEvent.EVENT_TYPE, LeadAssignedEvent.class,
                 event -> leadLifecycleWorkflowService.completeOnLeadAssigned(
                         event.getTenantId(), event.getAggregateId(), event.getCorrelationId()));
     }

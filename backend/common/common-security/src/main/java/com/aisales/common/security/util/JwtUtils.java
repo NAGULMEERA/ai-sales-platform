@@ -47,6 +47,12 @@ public class JwtUtils {
         return roles != null ? new HashSet<>(roles) : Set.of();
     }
 
+    @SuppressWarnings("unchecked")
+    public Set<String> extractPermissions(Claims claims) {
+        List<String> permissions = claims.get(SecurityConstants.PERMISSIONS_CLAIM, List.class);
+        return permissions != null ? new HashSet<>(permissions) : Set.of();
+    }
+
     public boolean isTokenExpired(Claims claims) {
         Date expiration = claims.getExpiration();
         return expiration != null && expiration.before(new Date());
@@ -60,6 +66,7 @@ public class JwtUtils {
                 .tenantId(tenantId)
                 .email(claims.get(SecurityConstants.EMAIL_CLAIM, String.class))
                 .roles(extractRoles(claims))
+                .permissions(extractPermissions(claims))
                 .enabled(true)
                 .build();
     }

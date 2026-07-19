@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class KnowledgeRetrievedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "KnowledgeRetrieved";
+
     private String knowledgeBaseId;
     private String retriever;
     private String chunkCount;
@@ -24,7 +26,7 @@ public class KnowledgeRetrievedEvent extends BaseEvent {
             String queryHash,
             String correlationId) {
         KnowledgeRetrievedEvent event = new KnowledgeRetrievedEvent();
-        event.init("KnowledgeRetrieved", tenantId, knowledgeBaseId, correlationId);
+        event.init(EVENT_TYPE, tenantId, knowledgeBaseId, correlationId);
         event.knowledgeBaseId = knowledgeBaseId;
         event.retriever = retriever;
         event.chunkCount = chunkCount;

@@ -20,7 +20,6 @@ import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.ValidationException;
 import com.aisales.common.observability.metrics.MetricNames;
 import com.aisales.common.observability.metrics.PlatformMetrics;
-import com.aisales.conversation.domain.entity.ConversationThread;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 /**
@@ -51,54 +50,58 @@ public class ConversationAiService {
     private final EventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
     private final ObjectProvider<PlatformMetrics> platformMetrics;
+    private final TransactionTemplate transactionTemplate;
 
-    @Transactional
+    /**
+     * Feign/AI run outside a DB transaction; persistence + outbox publish use a short TX.
+     */
     public ConversationAiInsightsDto generateInsights(UUID conversationId) {
         ConversationContextDto context = contextService.loadContext(conversationId);
-        ConversationThread thread = conversationService.requireThread(conversationId);
         AiExecuteResponse executed = executeGateway(context);
-
         ConversationAiInsightsDto insights = parseInsights(conversationId, executed);
-        conversationService.applyAiInsights(
-                conversationId,
-                insights.getSummary() == null ? null : insights.getSummary().getSummary(),
-                insights.getSentiment() == null ? null : insights.getSentiment().getSentiment(),
-                insights.getIntent(),
-                insights.getClassification(),
-                insights.getNextBestAction());
 
         String correlationId = CorrelationIdUtils.get().orElseGet(CorrelationIdUtils::generate);
-        String leadId = thread.getLeadId() == null ? null : thread.getLeadId().toString();
+        String tenantId = context.getTenantId().toString();
+        String leadId = context.getLead() == null || context.getLead().getId() == null
+                ? null
+                : context.getLead().getId().toString();
         String executionId = executed.getExecutionId() == null ? null : executed.getExecutionId().toString();
         String confidence = executed.getConfidence() == null ? null : executed.getConfidence().toString();
 
-        eventPublisher.publish(ConversationSummarizedEvent.of(
-                thread.getTenantId().toString(),
-                conversationId.toString(),
-                leadId,
-                executionId,
-                insights.getSentiment() == null ? null : insights.getSentiment().getSentiment(),
-                insights.getIntent(),
-                correlationId));
-        eventPublisher.publish(AiReplyGeneratedEvent.of(
-                thread.getTenantId().toString(),
-                conversationId.toString(),
-                leadId,
-                executionId,
-                insights.getIntent(),
-                confidence,
-                insights.getNextBestAction(),
-                correlationId));
+        transactionTemplate.executeWithoutResult(status -> {
+            conversationService.applyAiInsights(
+                    conversationId,
+                    insights.getSummary() == null ? null : insights.getSummary().getSummary(),
+                    insights.getSentiment() == null ? null : insights.getSentiment().getSentiment(),
+                    insights.getIntent(),
+                    insights.getClassification(),
+                    insights.getNextBestAction());
+            eventPublisher.publish(ConversationSummarizedEvent.of(
+                    tenantId,
+                    conversationId.toString(),
+                    leadId,
+                    executionId,
+                    insights.getSentiment() == null ? null : insights.getSentiment().getSentiment(),
+                    insights.getIntent(),
+                    correlationId));
+            eventPublisher.publish(AiReplyGeneratedEvent.of(
+                    tenantId,
+                    conversationId.toString(),
+                    leadId,
+                    executionId,
+                    insights.getIntent(),
+                    confidence,
+                    insights.getNextBestAction(),
+                    correlationId));
+        });
 
         PlatformMetrics metrics = platformMetrics.getIfAvailable();
         if (metrics != null) {
-            metrics.incrementForTenant(
-                    MetricNames.CONVERSATION_AI_INSIGHT, thread.getTenantId().toString());
+            metrics.incrementForTenant(MetricNames.CONVERSATION_AI_INSIGHT, tenantId);
         }
         return insights;
     }
 
-    @Transactional
     public ConversationMessageDto suggestAndPostReply(UUID conversationId) {
         ConversationAiInsightsDto insights = generateInsights(conversationId);
         if (!StringUtils.hasText(insights.getReplySuggestion())) {

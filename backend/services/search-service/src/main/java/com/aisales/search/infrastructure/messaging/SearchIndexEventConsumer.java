@@ -1,6 +1,7 @@
 package com.aisales.search.infrastructure.messaging;
 
 import com.aisales.common.contracts.search.SearchEntityType;
+import com.aisales.common.core.util.ObjectStrings;
 import com.aisales.common.events.consumer.IntegrationEventListener;
 import com.aisales.common.events.model.CatalogProductCreatedEvent;
 import com.aisales.common.events.model.CatalogProductUpdatedEvent;
@@ -38,7 +39,7 @@ public class SearchIndexEventConsumer {
             containerFactory = "integrationKafkaListenerContainerFactory")
     public void onMessage(ConsumerRecord<String, String> record) {
         integrationEventListener.handleIfType(
-                record, "search-lead-created", "LeadCreated", LeadCreatedEvent.class, event ->
+                record, "search-lead-created", LeadCreatedEvent.EVENT_TYPE, LeadCreatedEvent.class, event ->
                         index(
                                 event.getTenantId(),
                                 SearchEntityType.LEAD,
@@ -52,7 +53,7 @@ public class SearchIndexEventConsumer {
                                 Map.of("status", nullSafe(event.getStatus()))));
 
         integrationEventListener.handleIfType(
-                record, "search-lead-qualified", "LeadQualified", LeadQualifiedEvent.class, event ->
+                record, "search-lead-qualified", LeadQualifiedEvent.EVENT_TYPE, LeadQualifiedEvent.class, event ->
                         index(
                                 event.getTenantId(),
                                 SearchEntityType.LEAD,
@@ -68,8 +69,7 @@ public class SearchIndexEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "search-lead-status",
-                "LeadStatusChanged",
-                LeadStatusChangedEvent.class,
+                LeadStatusChangedEvent.EVENT_TYPE, LeadStatusChangedEvent.class,
                 event -> index(
                         event.getTenantId(),
                         SearchEntityType.LEAD,
@@ -83,7 +83,7 @@ public class SearchIndexEventConsumer {
                         Map.of("status", nullSafe(event.getNewStatus()))));
 
         integrationEventListener.handleIfType(
-                record, "search-customer-created", "CustomerCreated", CustomerCreatedEvent.class, event ->
+                record, "search-customer-created", CustomerCreatedEvent.EVENT_TYPE, CustomerCreatedEvent.class, event ->
                         index(
                                 event.getTenantId(),
                                 SearchEntityType.CUSTOMER,
@@ -97,7 +97,7 @@ public class SearchIndexEventConsumer {
                                 Map.of("email", nullSafe(event.getEmail()))));
 
         integrationEventListener.handleIfType(
-                record, "search-customer-updated", "CustomerUpdated", CustomerUpdatedEvent.class, event ->
+                record, "search-customer-updated", CustomerUpdatedEvent.EVENT_TYPE, CustomerUpdatedEvent.class, event ->
                         index(
                                 event.getTenantId(),
                                 SearchEntityType.CUSTOMER,
@@ -113,8 +113,7 @@ public class SearchIndexEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "search-catalog-created",
-                "CatalogProductCreated",
-                CatalogProductCreatedEvent.class,
+                CatalogProductCreatedEvent.EVENT_TYPE, CatalogProductCreatedEvent.class,
                 event -> index(
                         event.getTenantId(),
                         SearchEntityType.CATALOG,
@@ -130,8 +129,7 @@ public class SearchIndexEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "search-catalog-updated",
-                "CatalogProductUpdated",
-                CatalogProductUpdatedEvent.class,
+                CatalogProductUpdatedEvent.EVENT_TYPE, CatalogProductUpdatedEvent.class,
                 event -> index(
                         event.getTenantId(),
                         SearchEntityType.CATALOG,
@@ -147,8 +145,7 @@ public class SearchIndexEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "search-opportunity-created",
-                "OpportunityCreated",
-                OpportunityCreatedEvent.class,
+                OpportunityCreatedEvent.EVENT_TYPE, OpportunityCreatedEvent.class,
                 event -> index(
                         event.getTenantId(),
                         SearchEntityType.OPPORTUNITY,
@@ -168,8 +165,7 @@ public class SearchIndexEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "search-opportunity-status",
-                "OpportunityStatusChanged",
-                OpportunityStatusChangedEvent.class,
+                OpportunityStatusChangedEvent.EVENT_TYPE, OpportunityStatusChangedEvent.class,
                 event -> index(
                         event.getTenantId(),
                         SearchEntityType.OPPORTUNITY,
@@ -185,8 +181,7 @@ public class SearchIndexEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "search-conversation-started",
-                "ConversationStarted",
-                ConversationStartedEvent.class,
+                ConversationStartedEvent.EVENT_TYPE, ConversationStartedEvent.class,
                 event -> index(
                         event.getTenantId(),
                         SearchEntityType.CONVERSATION,
@@ -206,8 +201,7 @@ public class SearchIndexEventConsumer {
         integrationEventListener.handleIfType(
                 record,
                 "search-knowledge-registered",
-                "KnowledgeDocumentRegistered",
-                KnowledgeDocumentRegisteredEvent.class,
+                KnowledgeDocumentRegisteredEvent.EVENT_TYPE, KnowledgeDocumentRegisteredEvent.class,
                 event -> index(
                         event.getTenantId(),
                         SearchEntityType.KNOWLEDGE,
@@ -253,6 +247,6 @@ public class SearchIndexEventConsumer {
     }
 
     private static String nullSafe(Object value) {
-        return value == null ? "" : String.valueOf(value);
+        return ObjectStrings.nullSafe(value);
     }
 }

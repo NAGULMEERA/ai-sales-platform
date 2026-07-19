@@ -4,4 +4,6 @@ metadata:
   name: aisales-config
   namespace: aisales
 data:
-  SPRING_PROFILES_ACTIVE: kubernetes
+  SPRING_PROFILES_ACTIVE: prod
+  ENVIRONMENT: prod
+  TRACING_SAMPLE_RATE: "0.1"

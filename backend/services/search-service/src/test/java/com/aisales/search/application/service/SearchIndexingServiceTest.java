@@ -10,6 +10,7 @@ import com.aisales.common.observability.metrics.PlatformMetrics;
 import com.aisales.search.domain.entity.SearchDocument;
 import com.aisales.search.infrastructure.persistence.SearchDocumentRepository;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,6 +35,11 @@ class SearchIndexingServiceTest {
     @BeforeEach
     void setUp() {
         when(platformMetrics.getIfAvailable()).thenReturn(null);
+        service = new SearchIndexingService(documentRepository, platformMetrics);
+    }
+
+    @Test
+    void shouldUpsertSearchDocumentAndRefreshVector() {
         when(documentRepository.findByTenantIdAndEntityTypeAndEntityIdAndDeletedAtIsNull(any(), any(), any()))
                 .thenReturn(Optional.empty());
         when(documentRepository.saveAndFlush(any(SearchDocument.class))).thenAnswer(inv -> {
@@ -43,11 +49,7 @@ class SearchIndexingServiceTest {
             }
             return doc;
         });
-        service = new SearchIndexingService(documentRepository, platformMetrics);
-    }
 
-    @Test
-    void shouldUpsertSearchDocumentAndRefreshVector() {
         UUID tenantId = UUID.randomUUID();
         UUID entityId = UUID.randomUUID();
 
@@ -74,5 +76,61 @@ class SearchIndexingServiceTest {
         assertThat(saved.getTitle()).isEqualTo("Jane Lead");
         assertThat(saved.getBusinessScore()).isEqualTo(80d);
         verify(documentRepository).refreshSearchVector(saved.getId());
+    }
+
+    @Test
+    void shouldPreserveExistingFieldsWhenPartialUpdatePassesNulls() {
+        UUID tenantId = UUID.randomUUID();
+        UUID entityId = UUID.randomUUID();
+        SearchDocument existing = SearchDocument.builder()
+                .id(UUID.randomUUID())
+                .tenantId(tenantId)
+                .entityType(SearchEntityType.LEAD)
+                .entityId(entityId)
+                .title("Jane Lead")
+                .body("Interested in villa")
+                .keywords("WEB")
+                .status("NEW")
+                .source("WEB")
+                .businessScore(50d)
+                .popularity(2L)
+                .metadata(new HashMap<>(Map.of("status", "NEW")))
+                .createdAt(Instant.now())
+                .createdBy("system")
+                .updatedAt(Instant.now())
+                .updatedBy("system")
+                .build();
+
+        when(documentRepository.findByTenantIdAndEntityTypeAndEntityIdAndDeletedAtIsNull(
+                        tenantId, SearchEntityType.LEAD, entityId))
+                .thenReturn(Optional.of(existing));
+        when(documentRepository.saveAndFlush(any(SearchDocument.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.upsert(
+                tenantId,
+                null,
+                SearchEntityType.LEAD,
+                entityId,
+                "Jane Lead",
+                null,
+                null,
+                "QUALIFIED",
+                null,
+                80d,
+                null,
+                Instant.now(),
+                Map.of("qualified", true));
+
+        ArgumentCaptor<SearchDocument> captor = ArgumentCaptor.forClass(SearchDocument.class);
+        verify(documentRepository).saveAndFlush(captor.capture());
+        SearchDocument saved = captor.getValue();
+        assertThat(saved.getSource()).isEqualTo("WEB");
+        assertThat(saved.getKeywords()).isEqualTo("WEB");
+        assertThat(saved.getBody()).isEqualTo("Interested in villa");
+        assertThat(saved.getStatus()).isEqualTo("QUALIFIED");
+        assertThat(saved.getBusinessScore()).isEqualTo(80d);
+        assertThat(saved.getPopularity()).isEqualTo(2L);
+        assertThat(saved.getMetadata()).containsEntry("status", "NEW");
+        assertThat(saved.getMetadata()).containsEntry("qualified", true);
     }
 }

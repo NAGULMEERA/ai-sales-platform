@@ -6,19 +6,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
+@RequiredArgsConstructor
 public class PromptRenderer {
 
     private static final Pattern VARIABLE = Pattern.compile("\\{\\{\\s*([a-zA-Z0-9_]+)\\s*}}");
+
+    private final PromptVariableSanitizer variableSanitizer;
 
     public String render(String template, Map<String, String> variables, List<String> declaredVariables) {
         if (!StringUtils.hasText(template)) {
             return "";
         }
-        Map<String, String> vars = variables != null ? variables : Map.of();
+        Map<String, String> vars = variableSanitizer.sanitizeVariables(variables);
         List<String> missing = new ArrayList<>();
         if (declaredVariables != null) {
             for (String required : declaredVariables) {

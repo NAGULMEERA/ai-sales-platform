@@ -11,13 +11,15 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class SemanticCacheMissEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "SemanticCacheMiss";
+
     private String promptScope;
     private String model;
 
     public static SemanticCacheMissEvent of(
             String tenantId, String promptScope, String model, String correlationId) {
         SemanticCacheMissEvent event = new SemanticCacheMissEvent();
-        event.init("SemanticCacheMiss", tenantId, promptScope, correlationId);
+        event.init(EVENT_TYPE, tenantId, promptScope, correlationId);
         event.promptScope = promptScope;
         event.model = model;
         return event;

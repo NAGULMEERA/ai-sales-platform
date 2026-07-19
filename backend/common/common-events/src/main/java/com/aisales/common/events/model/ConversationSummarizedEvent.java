@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class ConversationSummarizedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "ConversationSummarized";
+
     private String conversationId;
     private String leadId;
     private String executionId;
@@ -26,7 +28,7 @@ public class ConversationSummarizedEvent extends BaseEvent {
             String intent,
             String correlationId) {
         ConversationSummarizedEvent event = new ConversationSummarizedEvent();
-        event.init("ConversationSummarized", tenantId, conversationId, correlationId);
+        event.init(EVENT_TYPE, tenantId, conversationId, correlationId);
         event.conversationId = conversationId;
         event.leadId = leadId;
         event.executionId = executionId;

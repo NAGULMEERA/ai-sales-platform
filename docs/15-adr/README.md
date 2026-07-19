@@ -19,6 +19,14 @@ They supersede speculative redesign; further core change requires dual-industry 
 | ADR-010 | [adr-029-conversation-model.md](adr-029-conversation-model.md) | Conversation model |
 | — | [adr-030-architecture-freeze-and-vertical-validation.md](adr-030-architecture-freeze-and-vertical-validation.md) | Freeze + dual-industry validation |
 
+## Post-freeze capability ADRs
+
+| File | Topic |
+|------|--------|
+| [adr-031-search-projections.md](adr-031-search-projections.md) | Search projections (search-service) |
+| [adr-032-analytics-facts.md](adr-032-analytics-facts.md) | Analytics facts + dashboards |
+| [adr-033-outbox-inbox-eventing.md](adr-033-outbox-inbox-eventing.md) | Outbox / inbox eventing |
+
 ## Infrastructure / platform tech series
 
 Earlier ADRs (`adr-001` … `adr-011`) cover Java, Spring Boot, PostgreSQL, Kafka, JWT, multi-tenancy, gateway, secrets, etc.

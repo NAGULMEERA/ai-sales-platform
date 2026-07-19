@@ -11,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class PluginDisabledEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "PluginDisabled";
+
     private String pluginKey;
     private String pluginType;
     private String pluginVersion;
@@ -18,7 +20,7 @@ public class PluginDisabledEvent extends BaseEvent {
     public static PluginDisabledEvent of(String tenantId, String installationId, String pluginKey,
                                          String pluginType, String pluginVersion, String correlationId) {
         PluginDisabledEvent event = new PluginDisabledEvent();
-        event.init("PluginDisabled", tenantId, installationId, correlationId);
+        event.init(EVENT_TYPE, tenantId, installationId, correlationId);
         event.pluginKey = pluginKey;
         event.pluginType = pluginType;
         event.pluginVersion = pluginVersion;

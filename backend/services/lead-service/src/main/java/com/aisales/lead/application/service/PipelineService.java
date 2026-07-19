@@ -20,11 +20,13 @@ import com.aisales.lead.infrastructure.persistence.SalesPipelineStageRepository;
 import com.aisales.lead.infrastructure.persistence.SalesPipelineTransitionRepository;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,8 +64,23 @@ public class PipelineService {
     @Transactional(readOnly = true)
     public List<PipelineDto> listPipelines() {
         UUID tenantId = requireTenantId();
-        return pipelineRepository.findByTenantIdAndActiveTrueOrderByNameAsc(tenantId).stream()
-                .map(this::toDto)
+        List<SalesPipeline> pipelines =
+                pipelineRepository.findByTenantIdAndActiveTrueOrderByNameAsc(tenantId);
+        if (pipelines.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> pipelineIds = pipelines.stream().map(SalesPipeline::getId).toList();
+        Map<UUID, List<SalesPipelineStage>> stagesByPipeline =
+                stageRepository.findByPipelineIdInOrderByStageOrderAsc(pipelineIds).stream()
+                        .collect(Collectors.groupingBy(SalesPipelineStage::getPipelineId));
+        Map<UUID, List<SalesPipelineTransition>> transitionsByPipeline =
+                transitionRepository.findByPipelineIdIn(pipelineIds).stream()
+                        .collect(Collectors.groupingBy(SalesPipelineTransition::getPipelineId));
+        return pipelines.stream()
+                .map(pipeline -> toDto(
+                        pipeline,
+                        stagesByPipeline.getOrDefault(pipeline.getId(), List.of()),
+                        transitionsByPipeline.getOrDefault(pipeline.getId(), List.of())))
                 .toList();
     }
 
@@ -145,8 +162,18 @@ public class PipelineService {
     }
 
     private PipelineDto toDto(SalesPipeline pipeline) {
-        List<PipelineStageDto> stages = stageRepository.findByPipelineIdOrderByStageOrderAsc(pipeline.getId())
-                .stream()
+        return toDto(
+                pipeline,
+                stageRepository.findByPipelineIdOrderByStageOrderAsc(pipeline.getId()),
+                transitionRepository.findByPipelineId(pipeline.getId()));
+    }
+
+    private PipelineDto toDto(
+            SalesPipeline pipeline,
+            List<SalesPipelineStage> stageRows,
+            List<SalesPipelineTransition> transitionRows) {
+        List<PipelineStageDto> stages = stageRows.stream()
+                .sorted(Comparator.comparingInt(SalesPipelineStage::getStageOrder))
                 .map(stage -> PipelineStageDto.builder()
                         .id(stage.getId())
                         .stageCode(stage.getStageCode())
@@ -155,8 +182,7 @@ public class PipelineService {
                         .terminal(stage.isTerminal())
                         .build())
                 .toList();
-        List<PipelineTransitionDto> transitions = transitionRepository.findByPipelineId(pipeline.getId())
-                .stream()
+        List<PipelineTransitionDto> transitions = transitionRows.stream()
                 .map(row -> PipelineTransitionDto.builder()
                         .fromStage(row.getFromStage())
                         .toStage(row.getToStage())

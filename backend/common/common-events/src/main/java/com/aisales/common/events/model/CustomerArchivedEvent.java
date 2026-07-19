@@ -11,13 +11,15 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class CustomerArchivedEvent extends BaseEvent {
 
+    public static final String EVENT_TYPE = "CustomerArchived";
+
     private String customerName;
     private String reason;
 
     public static CustomerArchivedEvent of(String tenantId, String customerId, String customerName,
                                            String reason, String correlationId) {
         CustomerArchivedEvent event = new CustomerArchivedEvent();
-        event.init("CustomerArchived", tenantId, customerId, correlationId);
+        event.init(EVENT_TYPE, tenantId, customerId, correlationId);
         event.customerName = customerName;
         event.reason = reason;
         return event;

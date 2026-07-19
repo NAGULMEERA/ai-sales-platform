@@ -7,6 +7,9 @@ import com.aisales.ai.domain.llm.LlmCompletionRequest;
 import com.aisales.ai.domain.llm.LlmCompletionResult;
 import com.aisales.ai.domain.llm.LlmProvider;
 import com.aisales.ai.infrastructure.configuration.LlmProperties;
+import com.aisales.ai.infrastructure.llm.GeminiLlmClient;
+import com.aisales.ai.infrastructure.llm.OpenAiLlmClient;
+import com.aisales.ai.infrastructure.llm.StubLlmProvider;
 import com.aisales.common.contracts.ai.AiExecuteRequest;
 import com.aisales.common.contracts.ai.AiExecuteResponse;
 import com.aisales.common.contracts.ai.RetrievedKnowledgeChunkDto;
@@ -20,6 +23,7 @@ import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.ValidationException;
 import com.aisales.common.observability.metrics.MetricNames;
 import com.aisales.common.observability.metrics.PlatformMetrics;
+import com.aisales.common.security.model.UserPrincipal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -30,10 +34,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -51,6 +59,7 @@ public class AiGatewayService {
 
     private final PromptService promptService;
     private final PromptRenderer promptRenderer;
+    private final PromptVariableSanitizer promptVariableSanitizer;
     private final LlmProvider llmProvider;
     private final EventPublisher eventPublisher;
     private final KnowledgeRetrievalService knowledgeRetrievalService;
@@ -74,16 +83,14 @@ public class AiGatewayService {
                 request.getLanguageCode(),
                 request.getCapability());
 
-        Map<String, String> variables = new HashMap<>();
-        if (request.getVariables() != null) {
-            variables.putAll(request.getVariables());
-        }
+        Map<String, String> variables = new HashMap<>(
+                promptVariableSanitizer.sanitizeVariables(request.getVariables()));
 
         List<RetrievedKnowledgeChunkDto> retrieved = List.of();
         String assembledContext = "";
         if (request.getKnowledgeBaseId() != null) {
-            String query = knowledgeRetrievalService.resolveQuery(
-                    request.getRetrievalQuery(), variables);
+            String query = promptVariableSanitizer.sanitizeRetrievalQuery(
+                    knowledgeRetrievalService.resolveQuery(request.getRetrievalQuery(), variables));
             var retriever = retrieverRegistry.resolveDefault();
             retrieved = retriever.retrieve(
                     request.getKnowledgeBaseId(), query, request.getRetrievalTopK());
@@ -174,8 +181,8 @@ public class AiGatewayService {
                     .promptVersion(resolved.version().getVersionNumber())
                     .provider(completion.provider())
                     .model(completion.model())
-                    .renderedSystemPrompt(request.isIncludeRenderedPrompts() ? system : null)
-                    .renderedUserPrompt(request.isIncludeRenderedPrompts() ? user : null)
+                    .renderedSystemPrompt(echoRenderedPrompts(request) ? system : null)
+                    .renderedUserPrompt(echoRenderedPrompts(request) ? user : null)
                     .rawText(completion.rawText())
                     .structuredOutput(completion.structuredOutput())
                     .confidence(completion.confidence())
@@ -189,6 +196,44 @@ public class AiGatewayService {
         } finally {
             aiQuotaService.release(tenantId, AiQuotaService.OPERATION_EXECUTE, reserved);
         }
+    }
+
+    /**
+     * Prompt echo is admin/debug only. Field remains for API compatibility; unauthorized
+     * callers get {@code null} rendered prompts even when the flag is true.
+     */
+    private boolean echoRenderedPrompts(AiExecuteRequest request) {
+        if (request == null || !request.isIncludeRenderedPrompts()) {
+            return false;
+        }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof UserPrincipal user) {
+            Set<String> roles = user.getRoles() == null ? Set.of() : user.getRoles();
+            Set<String> permissions = user.getPermissions() == null ? Set.of() : user.getPermissions();
+            if (roles.contains("TENANT_ADMIN")
+                    || roles.contains("ADMIN")
+                    || roles.contains("SUPER_ADMIN")
+                    || permissions.contains("ai:debug")
+                    || permissions.contains("tenant:admin")) {
+                return true;
+            }
+        }
+        for (GrantedAuthority authority : authentication.getAuthorities()) {
+            String value = authority.getAuthority();
+            if ("ROLE_TENANT_ADMIN".equals(value)
+                    || "ROLE_ADMIN".equals(value)
+                    || "ROLE_SUPER_ADMIN".equals(value)
+                    || "ai:debug".equals(value)
+                    || "tenant:admin".equals(value)) {
+                return true;
+            }
+        }
+        log.debug("Ignoring includeRenderedPrompts for non-admin principal");
+        return false;
     }
 
     private AiExecuteResponse buildCachedResponse(
@@ -227,8 +272,8 @@ public class AiGatewayService {
                 .promptVersion(resolved.version().getVersionNumber())
                 .provider(provider)
                 .model(cached.getModel())
-                .renderedSystemPrompt(request.isIncludeRenderedPrompts() ? system : null)
-                .renderedUserPrompt(request.isIncludeRenderedPrompts() ? user : null)
+                .renderedSystemPrompt(echoRenderedPrompts(request) ? system : null)
+                .renderedUserPrompt(echoRenderedPrompts(request) ? user : null)
                 .rawText(cached.getContent())
                 .structuredOutput(structured)
                 .confidence(confidence)
@@ -362,9 +407,9 @@ public class AiGatewayService {
             return "unknown";
         }
         return switch (provider.trim().toUpperCase(Locale.ROOT)) {
-            case "OPENAI" -> llmProperties.getOpenai().getModel();
-            case "GEMINI" -> llmProperties.getGemini().getModel();
-            case "STUB" -> "stub-model";
+            case OpenAiLlmClient.NAME -> llmProperties.getOpenai().getModel();
+            case GeminiLlmClient.NAME -> llmProperties.getGemini().getModel();
+            case StubLlmProvider.NAME -> "stub-model";
             default -> provider.trim().toLowerCase(Locale.ROOT);
         };
     }
