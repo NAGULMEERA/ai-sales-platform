@@ -12,6 +12,7 @@ Operational runbooks and production readiness materials for the AI Sales Platfor
 | [incident-response-runbook.md](incident-response-runbook.md) | Severity, triage, escalation |
 | [alerting-and-slos.md](alerting-and-slos.md) | Prometheus alerts, SLOs, runbook links |
 | [eventing-ops-matrix.md](eventing-ops-matrix.md) | Outbox / Inbox / DLT ownership by service |
+| [../19-pilot-delivery/](../19-pilot-delivery/) | **Pilot delivery pack** (go-live, support, limitations) |
 
 Related DevOps docs:
 

@@ -20,12 +20,15 @@ Use before promoting manifests under `deployment/kubernetes/`.
 - Harden script: `scripts/k8s-harden-deployments.ps1`
 - Shared Spring defaults: `platform/application-observability.yml`, `platform/application-prod.yml`
 
-## Recommended (next)
+## Platform hardening (in-repo)
 
-- [ ] HPA for gateway, identity, lead, AI
-- [ ] PodDisruptionBudget (minAvailable 1) for replicas ≥ 2
-- [ ] NetworkPolicies (deny by default)
-- [ ] Pin image digests (no `:latest` in prod)
+- [x] HPA for gateway, identity, lead, AI, customer, search (`hpa.yml` / Helm)
+- [x] PodDisruptionBudget (`pdb.yml` / Helm)
+- [x] NetworkPolicies default-deny + allowlist (`network-policies.yml`)
+- [x] Ingress TLS (`ingress.yml` + `aisales-tls` secret / cert-manager example)
+- [x] RollingUpdate strategy on Deployments
+- [x] Helm chart with optional blue/green (`deployment/helm/aisales-platform`)
+- [ ] Pin image digests (no `:latest` in prod) — set immutable `global.imageTag`
 - [ ] Separate data-plane charts for Postgres/Kafka/Redis (or managed services)
 
 ## Probe contract

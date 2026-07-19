@@ -15,6 +15,8 @@ public interface CatalogOfferRepository extends JpaRepository<CatalogOffer, UUID
 
     Optional<CatalogOffer> findByTenantIdAndIdAndDeletedAtIsNull(UUID tenantId, UUID id);
 
+    List<CatalogOffer> findByTenantIdAndIdInAndDeletedAtIsNull(UUID tenantId, List<UUID> ids);
+
     boolean existsByTenantIdAndCodeAndDeletedAtIsNull(UUID tenantId, String code);
 
     List<CatalogOffer> findByTenantIdAndProductIdAndDeletedAtIsNull(UUID tenantId, UUID productId);

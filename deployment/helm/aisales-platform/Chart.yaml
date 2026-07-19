@@ -1,0 +1,11 @@
+apiVersion: v2
+name: aisales-platform
+description: AI Sales Platform application chart (gateway + microservices)
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - aisales
+  - microservices
+maintainers:
+  - name: Platform Engineering

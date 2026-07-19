@@ -54,6 +54,12 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Token issuance for gateway JWT filter tests (reuse platform RSA keys). -->
+        <dependency>
+            <groupId>com.aisales</groupId>
+            <artifactId>common-security</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

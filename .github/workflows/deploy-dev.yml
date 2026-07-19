@@ -2,8 +2,17 @@ name: Deploy Dev
 
 on:
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Container image tag
+        required: true
+        default: latest
   push:
     branches: [develop]
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -11,5 +20,39 @@ jobs:
     environment: development
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy to dev
-        run: echo "Deploy to development environment"
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        env:
+          KUBE_CONFIG_DEV: ${{ secrets.KUBE_CONFIG_DEV }}
+        run: |
+          if [ -z "${KUBE_CONFIG_DEV}" ]; then
+            echo "KUBE_CONFIG_DEV not configured — skipping cluster deploy."
+            exit 0
+          fi
+          mkdir -p ~/.kube
+          echo "${KUBE_CONFIG_DEV}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Helm upgrade development
+        env:
+          KUBE_CONFIG_DEV: ${{ secrets.KUBE_CONFIG_DEV }}
+        run: |
+          if [ -z "${KUBE_CONFIG_DEV}" ]; then
+            exit 0
+          fi
+          TAG="${{ github.event.inputs.image_tag || 'latest' }}"
+          helm upgrade --install aisales-dev deployment/helm/aisales-platform \
+            --namespace aisales \
+            --create-namespace \
+            --set global.imageRegistry=${{ secrets.IMAGE_REGISTRY }} \
+            --set global.imageTag="${TAG}" \
+            --set global.deploymentStrategy=rolling \
+            --wait --timeout 20m

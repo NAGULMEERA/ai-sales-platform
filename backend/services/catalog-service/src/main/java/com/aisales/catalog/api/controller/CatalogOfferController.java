@@ -3,6 +3,7 @@ package com.aisales.catalog.api.controller;
 import com.aisales.catalog.application.service.CatalogService;
 import com.aisales.common.contracts.catalog.CatalogItemStatus;
 import com.aisales.common.contracts.catalog.CatalogOfferDto;
+import com.aisales.common.contracts.catalog.CatalogOfferLookupRequest;
 import com.aisales.common.contracts.catalog.CreateCatalogOfferRequest;
 import com.aisales.common.contracts.catalog.UpdateCatalogOfferRequest;
 import com.aisales.common.core.dto.ApiResponse;
@@ -54,6 +55,12 @@ public class CatalogOfferController {
     @Operation(summary = "Get an offer")
     public ApiResponse<CatalogOfferDto> get(@PathVariable UUID id) {
         return ApiResponse.ok(catalogService.getOffer(id));
+    }
+
+    @PostMapping("/offers/lookup")
+    @Operation(summary = "Batch lookup offers by id (tenant-scoped)")
+    public ApiResponse<List<CatalogOfferDto>> lookup(@Valid @RequestBody CatalogOfferLookupRequest request) {
+        return ApiResponse.ok(catalogService.getOffersByIds(request.getOfferIds()));
     }
 
     @GetMapping("/products/{productId}/offers")

@@ -1,0 +1,98 @@
+{{- range $name, $svc := .Values.services }}
+{{- if $svc.enabled }}
+{{- $colors := list "" }}
+{{- if eq $.Values.global.deploymentStrategy "blueGreen" }}
+{{- $colors = list $.Values.global.activeColor $.Values.global.inactiveColor }}
+{{- end }}
+{{- range $color := $colors }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ if $color }}{{ printf "%s-%s" $name $color }}{{ else }}{{ $name }}{{ end }}
+  namespace: {{ include "aisales.namespace" $ }}
+  labels:
+    app: {{ $name }}
+    {{- if $color }}
+    color: {{ $color }}
+    {{- end }}
+    {{- include "aisales.labels" $ | nindent 4 }}
+spec:
+  replicas: {{ $svc.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: {{ $.Values.rollingUpdate.maxUnavailable }}
+      maxSurge: {{ $.Values.rollingUpdate.maxSurge }}
+  selector:
+    matchLabels:
+      app: {{ $name }}
+      {{- if $color }}
+      color: {{ $color }}
+      {{- end }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+        {{- if $color }}
+        color: {{ $color }}
+        {{- end }}
+    spec:
+      terminationGracePeriodSeconds: 45
+      containers:
+        - name: {{ $name }}
+          image: {{ include "aisales.image" (dict "root" $ "image" $svc.image "color" $color) }}
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: {{ $svc.port }}
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: aisales-config
+                  key: SPRING_PROFILES_ACTIVE
+            - name: AISALES_SECURITY_JWT_JWK_SET_URI
+              value: {{ $.Values.config.jwksUri | quote }}
+            {{- if $svc.database }}
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/{{ $svc.database }}
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.existingSecret }}
+                  key: DB_USERNAME
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.existingSecret }}
+                  key: DB_PASSWORD
+            {{- end }}
+          startupProbe:
+            httpGet:
+              path: {{ $.Values.defaultProbes.startup.path }}
+              port: {{ $svc.port }}
+            failureThreshold: {{ $.Values.defaultProbes.startup.failureThreshold }}
+            periodSeconds: {{ $.Values.defaultProbes.startup.periodSeconds }}
+          livenessProbe:
+            httpGet:
+              path: {{ $.Values.defaultProbes.liveness.path }}
+              port: {{ $svc.port }}
+            initialDelaySeconds: {{ $.Values.defaultProbes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ $.Values.defaultProbes.liveness.periodSeconds }}
+            failureThreshold: {{ $.Values.defaultProbes.liveness.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ $.Values.defaultProbes.readiness.path }}
+              port: {{ $svc.port }}
+            initialDelaySeconds: {{ $.Values.defaultProbes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ $.Values.defaultProbes.readiness.periodSeconds }}
+            failureThreshold: {{ $.Values.defaultProbes.readiness.failureThreshold }}
+          resources:
+            {{- toYaml $.Values.defaultResources | nindent 12 }}
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
+{{- end }}
+{{- end }}
+{{- end }}

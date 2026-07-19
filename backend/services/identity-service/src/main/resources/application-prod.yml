@@ -10,6 +10,10 @@ spring:
       - optional:classpath:platform/application-prod.yml
 
 aisales:
+  cache:
+    # RBAC permission cache (PlatformCacheService). Requires Redis in the environment.
+    enabled: ${AISALES_CACHE_ENABLED:true}
+    default-ttl: ${AISALES_CACHE_TTL:15m}
   security:
     jwt:
       signing-enabled: true

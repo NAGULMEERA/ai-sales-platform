@@ -1,0 +1,9 @@
+# Activate blue/green deployment mode.
+# 1) helm upgrade --set global.activeColor=blue ...
+# 2) Deploy inactive (green) with new imageTag
+# 3) Smoke-test green pods
+# 4) helm upgrade --set global.activeColor=green ...
+global:
+  deploymentStrategy: blueGreen
+  activeColor: blue
+  inactiveColor: green

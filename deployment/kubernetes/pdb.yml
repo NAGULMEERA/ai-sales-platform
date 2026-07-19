@@ -1,0 +1,89 @@
+# Pod Disruption Budgets — keep at least one pod during voluntary disruptions.
+# Pair with HPA minReplicas >= 2 for listed services.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-gateway
+  namespace: aisales
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: identity-service
+  namespace: aisales
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: identity-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: lead-service
+  namespace: aisales
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: lead-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ai-service
+  namespace: aisales
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: ai-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: customer-service
+  namespace: aisales
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: customer-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: search-service
+  namespace: aisales
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: search-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: workflow-service
+  namespace: aisales
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: workflow-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: notification-service
+  namespace: aisales
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: notification-service

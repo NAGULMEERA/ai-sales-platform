@@ -24,8 +24,10 @@ import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.NotFoundException;
 import com.aisales.common.exception.exception.ValidationException;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -148,5 +150,60 @@ class CatalogServiceTest {
 
         assertThatThrownBy(() -> catalogService.getProduct(UUID.randomUUID()))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void shouldLookupOffersByIdsDeduplicatingAndOmittingMissing() {
+        UUID foundId = UUID.randomUUID();
+        UUID missingId = UUID.randomUUID();
+        CatalogOffer offer = CatalogOffer.builder()
+                .id(foundId)
+                .tenantId(tenantId)
+                .productId(UUID.randomUUID())
+                .code("OFFER-BATCH")
+                .name("Batch Offer")
+                .currency("INR")
+                .unitPrice(new BigDecimal("100.00"))
+                .status(CatalogItemStatus.ACTIVE)
+                .build();
+        when(offerRepository.findByTenantIdAndIdInAndDeletedAtIsNull(
+                        eq(tenantId), eq(List.of(foundId, missingId))))
+                .thenReturn(List.of(offer));
+
+        List<UUID> lookupIds = new java.util.ArrayList<>();
+        lookupIds.add(foundId);
+        lookupIds.add(foundId);
+        lookupIds.add(missingId);
+        lookupIds.add(null);
+        List<CatalogOfferDto> result = catalogService.getOffersByIds(lookupIds);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getId()).isEqualTo(foundId);
+        assertThat(result.getFirst().getCode()).isEqualTo("OFFER-BATCH");
+    }
+
+    @Test
+    void shouldReturnEmptyWhenOfferLookupIdsEmpty() {
+        assertThat(catalogService.getOffersByIds(List.of())).isEmpty();
+        assertThat(catalogService.getOffersByIds(null)).isEmpty();
+    }
+
+    @Test
+    void shouldRejectOfferLookupAboveHundredIds() {
+        List<UUID> ids = IntStream.range(0, 101).mapToObj(i -> UUID.randomUUID()).toList();
+
+        assertThatThrownBy(() -> catalogService.getOffersByIds(ids))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("100");
+    }
+
+    @Test
+    void shouldScopeOfferLookupToTenant() {
+        List<UUID> ids = List.of(UUID.randomUUID());
+        when(offerRepository.findByTenantIdAndIdInAndDeletedAtIsNull(eq(tenantId), eq(ids)))
+                .thenReturn(List.of());
+
+        assertThat(catalogService.getOffersByIds(ids)).isEmpty();
+        verify(offerRepository).findByTenantIdAndIdInAndDeletedAtIsNull(tenantId, ids);
     }
 }

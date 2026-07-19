@@ -1,0 +1,14 @@
+# Example cert-manager Certificate (apply only when cert-manager is installed).
+# Copy to tls-certificate.yml and set the real DNS name + ClusterIssuer.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: aisales-tls
+  namespace: aisales
+spec:
+  secretName: aisales-tls
+  dnsNames:
+    - api.aisales.example.com
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer

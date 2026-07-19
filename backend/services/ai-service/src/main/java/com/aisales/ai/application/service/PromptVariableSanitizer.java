@@ -1,5 +1,6 @@
 package com.aisales.ai.application.service;
 
+import com.aisales.common.exception.exception.ValidationException;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -24,6 +25,29 @@ public class PromptVariableSanitizer {
                     + "|system\\s*:\\s*you\\s+are"
                     + "|\\bOVERRIDE\\s+SYSTEM\\b"
                     + "|\\bDAN\\s+mode\\b)");
+
+    /**
+     * Rejects high-risk instruction-override payloads before sanitization.
+     * Soft filtering remains as defense-in-depth for obfuscated variants.
+     */
+    public void rejectIfInjection(Map<String, String> variables) {
+        if (variables == null || variables.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, String> entry : variables.entrySet()) {
+            if (looksLikeInjection(entry.getValue())) {
+                throw new ValidationException(
+                        "Prompt variable rejected: possible instruction override detected");
+            }
+        }
+    }
+
+    public void rejectIfInjection(String value) {
+        if (looksLikeInjection(value)) {
+            throw new ValidationException(
+                    "Prompt input rejected: possible instruction override detected");
+        }
+    }
 
     public Map<String, String> sanitizeVariables(Map<String, String> variables) {
         if (variables == null || variables.isEmpty()) {
@@ -57,7 +81,7 @@ public class PromptVariableSanitizer {
         return value;
     }
 
-    /** True when text still contains high-risk override markers after soft filtering (defense in depth). */
+    /** True when text contains high-risk instruction-override markers. */
     boolean looksLikeInjection(String value) {
         if (!StringUtils.hasText(value)) {
             return false;

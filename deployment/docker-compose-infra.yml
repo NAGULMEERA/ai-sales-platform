@@ -125,10 +125,60 @@ services:
   grafana:
     image: grafana/grafana:10.4.2
     container_name: aisales-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ../infrastructure/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "3000:3000"
     networks:
       - aisales-network
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: aisales-loki
+    command: ["-config.file=/etc/loki/loki-config.yml"]
+    volumes:
+      - ../infrastructure/monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - aisales-network
+
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: aisales-tempo
+    command: ["-config.file=/etc/tempo/tempo-config.yml"]
+    volumes:
+      - ../infrastructure/monitoring/tempo/tempo-config.yml:/etc/tempo/tempo-config.yml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - "3200:3200"
+      # OTLP for direct Tempo ingest (collector prefers tempo:4317 on the compose network)
+      - "4319:4317"
+    networks:
+      - aisales-network
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: aisales-promtail
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ../infrastructure/monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+    command: ["-config.file=/etc/promtail/config.yml"]
+    networks:
+      - aisales-network
+    depends_on:
+      - loki
 
   embedding-tei:
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.5
@@ -142,7 +192,10 @@ services:
 
 volumes:
   postgres-data:
+  loki-data:
+  tempo-data:
 
 networks:
   aisales-network:
+    name: aisales-network
     driver: bridge

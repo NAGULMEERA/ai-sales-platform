@@ -1,0 +1,49 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 6 * * 1'
+
+jobs:
+  dependency-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - name: OWASP Dependency-Check
+        working-directory: backend
+        run: |
+          ./mvnw -B org.owasp:dependency-check-maven:10.0.4:aggregate \
+            -DskipTests \
+            -Ddependency-check.failBuildOnCVSS=9 \
+            -Dformats=HTML,JSON \
+            -DdataDirectory=$HOME/odc-data || true
+        # failBuildOnCVSS=9 keeps CI informative; raise enforcement when baseline cleans up
+      - name: Upload Dependency-Check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: backend/target/dependency-check-report.*
+
+  filesystem-trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy filesystem / config scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          format: table
+          exit-code: '0'

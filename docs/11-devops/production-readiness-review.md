@@ -32,12 +32,19 @@ Date focus: platform shared patterns (config, K8s, health, resilience, observabi
 
 ## Remaining follow-ups
 
-1. Pin production images by digest; add HPA/PDB/NetworkPolicy.
+1. Pin production images by digest (immutable tags) in each environment.
 2. Provision managed Postgres/Kafka/Redis (or K8s data-plane charts) — not in-repo today.
-3. Replace staging deploy workflow stubs with real `kubectl`/Helm apply.
-4. Roll non-root Dockerfile pattern to remaining services.
-5. Baseline SLOs with real traffic, then tighten alert thresholds.
-6. Enable `JWT_REQUIRE_ISS_AUD=true` after token rollover (already default in prod platform YAML).
+3. Configure GitHub environment secrets (`KUBE_CONFIG_*`, `IMAGE_REGISTRY`) for CD.
+4. Baseline SLOs with real traffic, then tighten alert thresholds.
+5. Enable `JWT_REQUIRE_ISS_AUD=true` after token rollover (already default in prod platform YAML).
+
+## Completed in DevOps hardening pass
+
+1. Multi-stage non-root Dockerfiles for all services + infra modules.
+2. Expanded Compose services + Loki/Tempo/Promtail/Grafana provisioning.
+3. HPA, PDB, NetworkPolicy, TLS Ingress, RollingUpdate on Deployments.
+4. Helm chart with rolling + blue/green.
+5. Real Helm-based staging/prod workflows + Trivy/OWASP scans + gated Flyway workflow.
 
 ## Operator entry points
 

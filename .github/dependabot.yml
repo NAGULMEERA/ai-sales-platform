@@ -14,7 +14,19 @@ updates:
     schedule:
       interval: weekly
   - package-ecosystem: docker
+    directory: "/backend/services/ai-service"
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: "/backend/services/customer-service"
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
     directory: "/infrastructure/api-gateway"
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: "/infrastructure/service-registry"
     schedule:
       interval: weekly
   - package-ecosystem: github-actions

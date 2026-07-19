@@ -57,8 +57,21 @@ Consumers are idempotent via inbox (`processed_events`). After Kafka rebuild, pr
 - Cadence: quarterly (per DR plan)
 - Record actual RTO/RPO, gaps, and corrective actions in the incident system
 
+## Backup strategy (operational)
+
+| Cadence | Artifact | Retention | Tooling |
+|---------|----------|-----------|---------|
+| Continuous | Postgres WAL / PITR (managed) | Per cloud policy | Cloud provider |
+| Daily | Logical `pg_dump -Fc` per service DB | 30 days | `scripts/backup-postgres.sh` |
+| Monthly | Cold copy of daily dumps to second region | 12 months | Object storage lifecycle |
+| Pre-release | Ad-hoc dump before major Flyway | 14 days | Same scripts |
+
+Encrypt dumps at rest (SSE-KMS / age / GPG). Never store production dumps in the git repo.
+
 ## Related
 
 - [disaster-recovery-plan.md](disaster-recovery-plan.md)
+- [backup-and-restore.md](backup-and-restore.md)
 - [operational-guide.md](operational-guide.md)
 - [../11-devops/deployment-guide.md](../11-devops/deployment-guide.md)
+- [../11-devops/production-deployment.md](../11-devops/production-deployment.md)

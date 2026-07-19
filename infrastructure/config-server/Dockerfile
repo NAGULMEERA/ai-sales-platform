@@ -1,5 +1,42 @@
-FROM eclipse-temurin:21-jre-alpine
+# syntax=docker/dockerfile:1.7
+# Multi-stage image for config-server
+# Build from repository root:
+#   docker build -f infrastructure/config-server/Dockerfile -t aisales/config-server:latest .
+# 
+FROM eclipse-temurin:21-jdk-alpine AS builder
+WORKDIR /workspace
+
+RUN apk add --no-cache bash git
+
+COPY backend/mvnw backend/pom.xml ./backend/
+COPY backend/.mvn ./backend/.mvn
+COPY backend/common ./backend/common
+COPY backend/plugins ./backend/plugins
+COPY backend/services ./backend/services
+COPY infrastructure ./infrastructure
+
+WORKDIR /workspace/backend
+RUN chmod +x mvnw \
+ && ./mvnw -pl ../infrastructure/config-server -am package -DskipTests -B \
+ && cp ../infrastructure/config-server/target/config-server-*.jar /workspace/app.jar
+
+FROM eclipse-temurin:21-jre-alpine AS runtime
 WORKDIR /app
-COPY target/config-server-*.jar app.jar
+
+RUN addgroup -S aisales && adduser -S -G aisales aisales \
+ && apk add --no-cache curl \
+ && rm -rf /var/cache/apk/*
+
+COPY --from=builder /workspace/app.jar /app/app.jar
+RUN chown aisales:aisales /app/app.jar
+
+USER aisales
 EXPOSE 8888
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+ENV JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError" \
+    SERVER_PORT=8888
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD curl -fsS "http://127.0.0.1:8888/actuator/health/liveness" || exit 1
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

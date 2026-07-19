@@ -2,12 +2,78 @@ name: Deploy Production
 
 on:
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Immutable image tag (required)
+        required: true
+      strategy:
+        description: Deployment strategy
+        type: choice
+        options:
+          - rolling
+          - blueGreen
+        default: rolling
+      active_color:
+        description: Active color when using blue/green
+        type: choice
+        options:
+          - blue
+          - green
+        default: blue
+      confirm:
+        description: Type deploy-production to confirm
+        required: true
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      - name: Confirm production deploy
+        run: |
+          if [ "${{ inputs.confirm }}" != "deploy-production" ]; then
+            echo "Confirmation string mismatch"
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
-      - name: Deploy to production
-        run: echo "Deploy to production environment"
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Helm upgrade production
+        run: |
+          EXTRA_ARGS=()
+          if [ "${{ inputs.strategy }}" = "blueGreen" ]; then
+            EXTRA_ARGS+=(-f deployment/helm/aisales-platform/values-bluegreen.yaml)
+            EXTRA_ARGS+=(--set "global.activeColor=${{ inputs.active_color }}")
+          else
+            EXTRA_ARGS+=(--set global.deploymentStrategy=rolling)
+          fi
+          helm upgrade --install aisales-prod deployment/helm/aisales-platform \
+            --namespace aisales \
+            --create-namespace \
+            --set global.imageRegistry=${{ secrets.IMAGE_REGISTRY }} \
+            --set global.imageTag=${{ inputs.image_tag }} \
+            "${EXTRA_ARGS[@]}" \
+            --wait --timeout 30m
+
+      - name: Post-deploy smoke
+        run: |
+          kubectl -n aisales get deploy,svc,ingress,hpa,pdb
+          kubectl -n aisales get pods

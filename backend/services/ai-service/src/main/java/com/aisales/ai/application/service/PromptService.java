@@ -331,12 +331,16 @@ public class PromptService {
     }
 
     private void archiveActiveVersions(UUID tenantId, UUID promptId, UUID keepId) {
+        List<PromptVersionEntity> toArchive = new ArrayList<>();
         for (PromptVersionEntity existing :
                 promptVersionRepository.findByTenantIdAndPromptIdOrderByVersionNumberDesc(tenantId, promptId)) {
             if (!existing.getId().equals(keepId) && existing.getStatus() == PromptStatus.ACTIVE) {
                 existing.setStatus(PromptStatus.ARCHIVED);
-                promptVersionRepository.save(existing);
+                toArchive.add(existing);
             }
+        }
+        if (!toArchive.isEmpty()) {
+            promptVersionRepository.saveAll(toArchive);
         }
     }
 

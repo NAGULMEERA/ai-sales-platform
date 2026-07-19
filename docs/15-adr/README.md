@@ -26,6 +26,7 @@ They supersede speculative redesign; further core change requires dual-industry 
 | [adr-031-search-projections.md](adr-031-search-projections.md) | Search projections (search-service) |
 | [adr-032-analytics-facts.md](adr-032-analytics-facts.md) | Analytics facts + dashboards |
 | [adr-033-outbox-inbox-eventing.md](adr-033-outbox-inbox-eventing.md) | Outbox / inbox eventing |
+| [adr-034-natural-farming-vertical.md](adr-034-natural-farming-vertical.md) | Natural Farming industry vertical (metadata plugin) |
 
 ## Infrastructure / platform tech series
 

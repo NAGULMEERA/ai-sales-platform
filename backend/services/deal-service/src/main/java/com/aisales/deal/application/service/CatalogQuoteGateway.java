@@ -1,11 +1,20 @@
 package com.aisales.deal.application.service;
 
 import com.aisales.common.contracts.catalog.CatalogOfferDto;
+import com.aisales.common.contracts.catalog.CatalogOfferLookupRequest;
 import com.aisales.common.contracts.catalog.CatalogProductDto;
 import com.aisales.common.contracts.client.CatalogServiceClient;
 import com.aisales.common.core.dto.ApiResponse;
 import com.aisales.common.exception.exception.ValidationException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -20,16 +29,43 @@ public class CatalogQuoteGateway {
     private final CatalogServiceClient catalogServiceClient;
 
     public CatalogOfferDto requireOffer(UUID offerId) {
+        Map<UUID, CatalogOfferDto> found = requireOffers(List.of(offerId));
+        CatalogOfferDto offer = found.get(offerId);
+        if (offer == null) {
+            throw new ValidationException("Catalog offer not found: " + offerId);
+        }
+        return offer;
+    }
+
+    /**
+     * Batch resolve offers in one Feign call. Missing ids are absent from the map.
+     */
+    public Map<UUID, CatalogOfferDto> requireOffers(Collection<UUID> offerIds) {
+        if (offerIds == null || offerIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<UUID> distinct = offerIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (distinct.isEmpty()) {
+            return Collections.emptyMap();
+        }
         try {
-            ApiResponse<CatalogOfferDto> response = catalogServiceClient.getOffer(offerId);
+            ApiResponse<List<CatalogOfferDto>> response = catalogServiceClient.lookupOffers(
+                    CatalogOfferLookupRequest.builder().offerIds(distinct).build());
             if (response == null || response.getData() == null) {
-                throw new ValidationException("Catalog offer not found: " + offerId);
+                return Collections.emptyMap();
             }
-            return response.getData();
+            return response.getData().stream()
+                    .filter(Objects::nonNull)
+                    .filter(o -> o.getId() != null)
+                    .collect(Collectors.toMap(
+                            CatalogOfferDto::getId,
+                            Function.identity(),
+                            (a, b) -> a,
+                            HashMap::new));
         } catch (ValidationException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new ValidationException("Unable to resolve catalog offer: " + offerId);
+            throw new ValidationException("Unable to resolve catalog offers");
         }
     }
 

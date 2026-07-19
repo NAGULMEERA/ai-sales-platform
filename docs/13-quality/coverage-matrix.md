@@ -1,67 +1,71 @@
 # Test Coverage Matrix
 
-Last updated: 2026-07-19
+Last updated: 2026-07-19 (QA Architect pass)
 
-## Gap summary (before this pass)
+## Coverage goal
 
-| Area | Gap | Priority |
-|------|-----|----------|
-| Security | `JwtAuthenticationFilter`, `TenantAuthorizationAspect` untested | High |
-| Tenant isolation | Cross-tenant aspect path untested | High |
-| Workflow events | `LeadLifecycleEventConsumer` untested | High |
-| Search events | `SearchIndexEventConsumer` untested | High |
-| Analytics events | `AnalyticsEventConsumer` untested | High |
-| Workflow actions | `WorkflowActionExecutor` untested | High |
-| AI / prompt injection | `PromptVariableSanitizer` untested | High |
-| RAG concurrency | Hybrid fusion only unit-tested serially | Medium |
-| Repositories / Flyway | Search, analytics, workflow missing Testcontainers IT | Medium |
-| Controllers | Almost no MockMvc across thin services | Medium (follow-up) |
-| Appointment / Audit | Arch-only scaffolds | Low |
+| Target | Enforcement |
+|--------|-------------|
+| **85% line coverage** (platform goal) | Optional Maven profile: `mvn -Pcoverage-gate verify` |
+| Default CI (`mvn test`) | JaCoCo **report** always; **check not enforced** (scaffold services would fail CI) |
 
-## Coverage by category (current target)
+Trade-off: appointment-service and audit-service are ArchUnit-only scaffolds. A hard 85% gate on every module would block merges until those domains ship. Progressive path: instrument + report everywhere → raise `-Pcoverage-gate` module-by-module.
 
-| Category | Status | Primary tests |
-|----------|--------|---------------|
-| Untested services (thin) | Improved | Search/Analytics consumers + Flyway IT |
-| Untested aggregates | Partial | Existing lead/identity domain tests; workflow rules via engine tests |
-| Untested workflows | Improved | `LeadLifecycleEventConsumerTest`, `WorkflowActionExecutorTest` |
-| Untested events | Improved | Search/Analytics/Workflow consumer unit tests |
-| Untested AI orchestration | Strong | Existing `AiGatewayServiceTest`, `AiQualificationOrchestratorTest` |
-| Untested RAG | Improved | Existing Hybrid/Knowledge tests + concurrency + sanitizer |
-| Untested repositories | Improved | Search/Analytics/Workflow Flyway migration ITs |
-| Untested security | Improved | `JwtAuthenticationFilterTest`, JWT permission mapping |
-| Untested tenant isolation | Improved | `TenantAuthorizationAspectTest`, tenant header mismatch in filter |
+## Category status
 
-## New tests added in this pass
+| Category | Status | Evidence |
+|----------|--------|----------|
+| Unit | Strong / expanding | Catalog lookup, Quote batch/idempotency, CatalogQuoteGateway, QuoteIdempotency |
+| Integration / Testcontainers | Expanding | Catalog + Deal Flyway ITs (reuse `PlatformTestcontainers`) |
+| Architecture | Present | Per-service `ArchitectureTest` + `LayeredArchitectureRules` |
+| Security / JWT | Improved | Gateway `JwtAuthenticationFilterTest` + existing common-security filter/JWT suites |
+| Tenant isolation | Improved | Lead + Catalog + Knowledge retrieval isolation |
+| Concurrency | Present | `HybridRetrieverConcurrencyTest`, gateway load smoke |
+| Performance / Load | Smoke | `@Tag("performance")` / `@Tag("load")` on gateway batch + sanitizer |
+| Contract | Lightweight | `CatalogOfferLookupRequestContractTest` (Jakarta Validation) |
+| API / MockMvc | Gap | Thin controllers still mostly untested (follow-up) |
+| AI / RAG | Strong | Existing suite + tenant isolation |
+| Workflow | Present | Engine + lifecycle consumers (prior pass) |
+| Events / Kafka | Present | Outbox→Inbox IT + listener concurrency unit test |
+| Appointment / Audit | Weak | ArchUnit only |
+
+## Tests added this QA pass
 
 ### Unit
-- `common-security`: `JwtAuthenticationFilterTest`, `TenantAuthorizationAspectTest`
-- `ai-service`: `PromptVariableSanitizerTest`, `PromptVariableSanitizerPerformanceTest`
-- `ai-service`: `HybridRetrieverConcurrencyTest`
-- `workflow-service`: `LeadLifecycleEventConsumerTest`, `WorkflowActionExecutorTest`
-- `search-service`: `SearchIndexEventConsumerTest`
-- `analytics-service`: `AnalyticsEventConsumerTest`
+- `CatalogServiceTest` — `getOffersByIds` (dedupe, empty, max 100, tenant scope)
+- `CatalogQuoteGatewayTest` — batch Feign lookup / failure wrapping
+- `QuoteServiceTest` — multi-line batch lookup + idempotent cache hit
+- `QuoteIdempotencyServiceTest` — cache hit / blank / expired
+- `KnowledgeRetrievalTenantIsolationTest` — cross-tenant KB not found
+- `KafkaEventsAutoConfigurationTest` — listener concurrency wiring
+- Gateway `JwtAuthenticationFilterTest` — public bypass, 401, header propagation
+
+### Contract
+- `CatalogOfferLookupRequestContractTest`
 
 ### Integration (Testcontainers)
-- `SearchFlywayMigrationIT`
-- `AnalyticsFlywayMigrationIT`
-- `WorkflowFlywayMigrationIT`
-- Require Docker (`disabledWithoutDocker = true`); skipped cleanly when Docker is unavailable
+- `CatalogFlywayMigrationIT`
+- `DealFlywayMigrationIT`
 
-### Architecture
-- Existing `ArchitectureTest` + `LayeredArchitectureRules` (JDK 26+ disabled where needed)
+### Performance / load (tagged)
+- `CatalogQuoteGatewayLoadTest` (`@Tag("performance")`, `@Tag("load")`)
+
+### Tooling
+- Parent `backend/pom.xml`: JaCoCo prepare-agent + report; profile `coverage-gate` (85% LINE)
+
+## Follow-up backlog (toward sustained 85%)
+
+1. MockMvc `@WebMvcTest` security for AI/Search/Lead controllers
+2. Business tests for appointment/audit when aggregates land
+3. Enable `-Pcoverage-gate` on common-security, common-events, deal, catalog, ai first
+4. k6 / Gatling soak against gateway (out of unit CI)
+5. OpenAPI contract runner once `docs/api/` specs are published
+6. Repository slice IT for search document tenant filters
 
 ## Maintainability rules
 
 1. Prefer Mockito unit tests for Kafka consumers (stub `IntegrationEventListener.handleIfType`).
 2. Reuse `PlatformTestcontainers` — do not invent new container factories.
 3. Assert table presence in Flyway ITs, not brittle migration counts.
-4. Tag expensive suites with `@Tag("performance")` / `@Tag("concurrency")`.
-5. Keep controller MockMvc for a dedicated follow-up once permission seeds stabilize.
-
-## Follow-up backlog
-
-- MockMvc security tests for AI/Search/Analytics controllers (`@PreAuthorize`)
-- Repository slice tests for `SearchDocumentRepository` tenant filters
-- Appointment/Audit business tests when aggregates land
-- End-to-end Kafka IT (outbox → inbox) for search/analytics (reuse `OutboxToInboxIntegrationIT` pattern)
+4. Tag expensive suites with `@Tag("performance")` / `@Tag("concurrency")` / `@Tag("load")`.
+5. Do not change business behaviour to inflate coverage.

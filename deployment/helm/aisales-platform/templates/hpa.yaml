@@ -1,0 +1,27 @@
+{{- range $name, $svc := .Values.services }}
+{{- if and $svc.enabled $svc.hpa $svc.hpa.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "aisales.namespace" $ }}
+  labels:
+    app: {{ $name }}
+    {{- include "aisales.labels" $ | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ if eq $.Values.global.deploymentStrategy "blueGreen" }}{{ printf "%s-%s" $name $.Values.global.activeColor }}{{ else }}{{ $name }}{{ end }}
+  minReplicas: {{ $svc.hpa.minReplicas }}
+  maxReplicas: {{ $svc.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $svc.hpa.cpu | default 70 }}
+{{- end }}
+{{- end }}

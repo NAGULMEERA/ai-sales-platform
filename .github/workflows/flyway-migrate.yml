@@ -1,0 +1,78 @@
+name: Flyway Migrate (gated)
+
+# Prefer migrate-on-boot in services. Use this workflow for explicit pre-cutover migration
+# against a target environment when FLYWAY_JDBC_* secrets are configured.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub environment (staging|production)
+        required: true
+        default: staging
+      database:
+        description: Single database name (empty = all known)
+        required: false
+        default: ''
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve database list
+        id: dbs
+        run: |
+          if [ -n "${{ inputs.database }}" ]; then
+            echo "list=${{ inputs.database }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "list=aisales_identity aisales_tenant lead_db customer_db catalog_db conversation_db deal_db ai_db aisales_workflow aisales_notification billing_db search_db analytics_db media_db marketplace_db integration_db" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run Flyway (info + migrate)
+        env:
+          FLYWAY_URL_BASE: ${{ secrets.FLYWAY_JDBC_URL_BASE }}
+          FLYWAY_USER: ${{ secrets.FLYWAY_USER }}
+          FLYWAY_PASSWORD: ${{ secrets.FLYWAY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FLYWAY_URL_BASE}" ]; then
+            echo "FLYWAY_JDBC_URL_BASE secret not set — skipping (services migrate on boot)."
+            exit 0
+          fi
+          for db in ${{ steps.dbs.outputs.list }}; do
+            echo "==> Migrating ${db}"
+            # Map db name to service migration path when present
+            case "${db}" in
+              aisales_identity) SQL=backend/services/identity-service/src/main/resources/db/migration ;;
+              aisales_tenant) SQL=backend/services/tenant-service/src/main/resources/db/migration ;;
+              lead_db) SQL=backend/services/lead-service/src/main/resources/db/migration ;;
+              customer_db) SQL=backend/services/customer-service/src/main/resources/db/migration ;;
+              catalog_db) SQL=backend/services/catalog-service/src/main/resources/db/migration ;;
+              conversation_db) SQL=backend/services/conversation-service/src/main/resources/db/migration ;;
+              deal_db) SQL=backend/services/deal-service/src/main/resources/db/migration ;;
+              ai_db) SQL=backend/services/ai-service/src/main/resources/db/migration ;;
+              aisales_workflow) SQL=backend/services/workflow-service/src/main/resources/db/migration ;;
+              aisales_notification) SQL=backend/services/notification-service/src/main/resources/db/migration ;;
+              billing_db) SQL=backend/services/billing-service/src/main/resources/db/migration ;;
+              search_db) SQL=backend/services/search-service/src/main/resources/db/migration ;;
+              analytics_db) SQL=backend/services/analytics-service/src/main/resources/db/migration ;;
+              media_db) SQL=backend/services/media-service/src/main/resources/db/migration ;;
+              marketplace_db) SQL=backend/services/marketplace-service/src/main/resources/db/migration ;;
+              integration_db) SQL=backend/services/integration-service/src/main/resources/db/migration ;;
+              *) echo "No migration path for ${db}"; continue ;;
+            esac
+            if [ ! -d "${SQL}" ]; then
+              echo "Missing ${SQL}"; continue
+            fi
+            docker run --rm \
+              -v "${PWD}/${SQL}:/flyway/sql:ro" \
+              flyway/flyway:10.17.0 \
+              -url="${FLYWAY_URL_BASE}/${db}" \
+              -user="${FLYWAY_USER}" \
+              -password="${FLYWAY_PASSWORD}" \
+              -connectRetries=10 \
+              info migrate
+          done
