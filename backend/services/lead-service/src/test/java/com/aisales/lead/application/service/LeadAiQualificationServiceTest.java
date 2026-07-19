@@ -7,8 +7,8 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.aisales.common.contracts.ai.AiExecuteRequest;
-import com.aisales.common.contracts.ai.AiExecuteResponse;
+import com.aisales.common.contracts.ai.QualificationResultDto;
+import com.aisales.common.contracts.ai.QualifyLeadAiRequest;
 import com.aisales.common.contracts.client.AiServiceClient;
 import com.aisales.common.contracts.lead.AiLeadQualificationResultDto;
 import com.aisales.common.contracts.lead.LeadDto;
@@ -81,16 +81,17 @@ class LeadAiQualificationServiceTest {
         Lead lead = reLead();
         when(leadRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, leadId))
                 .thenReturn(Optional.of(lead));
-        when(aiServiceClient.execute(any())).thenReturn(ApiResponse.ok(
+        when(aiServiceClient.qualify(any())).thenReturn(ApiResponse.ok(
                 "ok",
-                AiExecuteResponse.builder()
+                QualificationResultDto.builder()
                         .executionId(UUID.randomUUID())
                         .promptCode("LEAD_QUALIFY_REAL_ESTATE")
                         .promptVersion(1)
                         .provider("STUB")
-                        .renderedUserPrompt("Qualify RE...")
-                        .structuredOutput(Map.of("recommendation", "QUALIFY", "score", 82))
+                        .recommendation("QUALIFY")
+                        .qualificationScore(82)
                         .confidence(0.9)
+                        .rawStructuredOutput(Map.of("recommendation", "QUALIFY", "qualificationScore", 82))
                         .build()));
         when(extensionService.recordQualityScore(eq(leadId), any()))
                 .thenReturn(LeadQualityScoreDto.builder().overallScore(82).build());
@@ -107,13 +108,14 @@ class LeadAiQualificationServiceTest {
 
         assertThat(result.isQualified()).isTrue();
         assertThat(result.getRecommendation()).isEqualTo("QUALIFY");
+        assertThat(result.getQualification()).isNotNull();
         assertThat(result.getVariablesUsed())
                 .containsEntry("budget", "7500000")
                 .containsEntry("location", "Whitefield")
                 .containsEntry("timeline", "3 months");
 
-        ArgumentCaptor<AiExecuteRequest> aiCaptor = ArgumentCaptor.forClass(AiExecuteRequest.class);
-        verify(aiServiceClient).execute(aiCaptor.capture());
+        ArgumentCaptor<QualifyLeadAiRequest> aiCaptor = ArgumentCaptor.forClass(QualifyLeadAiRequest.class);
+        verify(aiServiceClient).qualify(aiCaptor.capture());
         assertThat(aiCaptor.getValue().getPromptCode()).isEqualTo("LEAD_QUALIFY_REAL_ESTATE");
         verify(leadService).qualifyLead(eq(leadId), any(QualifyLeadRequest.class));
         verify(extensionService).recordQualityScore(eq(leadId), any(RecordLeadQualityScoreRequest.class));
@@ -124,15 +126,15 @@ class LeadAiQualificationServiceTest {
         Lead lead = autoLead();
         when(leadRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, leadId))
                 .thenReturn(Optional.of(lead));
-        when(aiServiceClient.execute(any())).thenReturn(ApiResponse.ok(
+        when(aiServiceClient.qualify(any())).thenReturn(ApiResponse.ok(
                 "ok",
-                AiExecuteResponse.builder()
+                QualificationResultDto.builder()
                         .executionId(UUID.randomUUID())
                         .promptCode("LEAD_QUALIFY_AUTOMOBILE")
                         .promptVersion(1)
                         .provider("STUB")
-                        .renderedUserPrompt("Qualify Auto...")
-                        .structuredOutput(Map.of("recommendation", "QUALIFY", "score", 78))
+                        .recommendation("QUALIFY")
+                        .qualificationScore(78)
                         .confidence(0.88)
                         .build()));
         when(extensionService.recordQualityScore(eq(leadId), any()))
@@ -161,12 +163,12 @@ class LeadAiQualificationServiceTest {
         Lead lead = reLead();
         when(leadRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, leadId))
                 .thenReturn(Optional.of(lead));
-        when(aiServiceClient.execute(any())).thenReturn(ApiResponse.ok(
+        when(aiServiceClient.qualify(any())).thenReturn(ApiResponse.ok(
                 "ok",
-                AiExecuteResponse.builder()
+                QualificationResultDto.builder()
                         .executionId(UUID.randomUUID())
                         .promptCode("LEAD_QUALIFY_REAL_ESTATE")
-                        .structuredOutput(Map.of("recommendation", "REVIEW"))
+                        .recommendation("REVIEW")
                         .confidence(0.85)
                         .build()));
         when(extensionService.recordQualityScore(eq(leadId), any()))

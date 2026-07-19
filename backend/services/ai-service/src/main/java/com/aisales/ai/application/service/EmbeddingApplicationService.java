@@ -37,41 +37,44 @@ public class EmbeddingApplicationService {
         }
 
         UUID tenantId = requireTenantId();
-        aiQuotaService.assertWithinDailyBudget(tenantId, AiQuotaService.OPERATION_EMBED);
-
         EmbeddingProvider provider = resolveProvider(request);
-        EmbeddingBatchResult batch = provider.embedWithUsage(request.getTexts());
-        List<float[]> vectors = batch.vectors();
-        List<EmbeddingVectorResponse> results = new ArrayList<>(vectors.size());
+        long reserved = aiQuotaService.reserveEmbed(tenantId);
+        try {
+            EmbeddingBatchResult batch = provider.embedWithUsage(request.getTexts());
+            List<float[]> vectors = batch.vectors();
+            List<EmbeddingVectorResponse> results = new ArrayList<>(vectors.size());
 
-        for (int i = 0; i < vectors.size(); i++) {
-            String text = request.getTexts().get(i);
-            results.add(EmbeddingVectorResponse.builder()
-                    .index(i)
-                    .embedding(vectors.get(i))
-                    .contentHash(sha256(text))
-                    .build());
+            for (int i = 0; i < vectors.size(); i++) {
+                String text = request.getTexts().get(i);
+                results.add(EmbeddingVectorResponse.builder()
+                        .index(i)
+                        .embedding(vectors.get(i))
+                        .contentHash(sha256(text))
+                        .build());
+            }
+
+            String providerLabel = provider.name().toLowerCase(Locale.ROOT);
+            tokenUsageService.recordEmbeddingUsage(
+                    tenantId,
+                    providerLabel,
+                    provider.modelName(),
+                    request.getTexts(),
+                    request.getCollectionKey(),
+                    request.getCollectionKey() != null ? request.getCollectionKey() : "EMBED",
+                    batch.promptTokens());
+
+            return EmbeddingResponse.builder()
+                    .tenantId(TenantContext.getTenantId())
+                    .collectionKey(request.getCollectionKey())
+                    .modelName(provider.modelName())
+                    .modelProvider(providerLabel)
+                    .providerKind(provider.kind().name())
+                    .dimension(provider.dimension())
+                    .embeddings(results)
+                    .build();
+        } finally {
+            aiQuotaService.release(tenantId, AiQuotaService.OPERATION_EMBED, reserved);
         }
-
-        String providerLabel = provider.name().toLowerCase(Locale.ROOT);
-        tokenUsageService.recordEmbeddingUsage(
-                tenantId,
-                providerLabel,
-                provider.modelName(),
-                request.getTexts(),
-                request.getCollectionKey(),
-                request.getCollectionKey() != null ? request.getCollectionKey() : "EMBED",
-                batch.promptTokens());
-
-        return EmbeddingResponse.builder()
-                .tenantId(TenantContext.getTenantId())
-                .collectionKey(request.getCollectionKey())
-                .modelName(provider.modelName())
-                .modelProvider(providerLabel)
-                .providerKind(provider.kind().name())
-                .dimension(provider.dimension())
-                .embeddings(results)
-                .build();
     }
 
     private EmbeddingProvider resolveProvider(EmbeddingRequest request) {

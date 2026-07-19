@@ -34,7 +34,9 @@ public final class DefaultSalesPipelineDefinition {
         TRANSITIONS.put(LeadStatus.NEGOTIATING, EnumSet.of(
                 LeadStatus.WON, LeadStatus.LOST));
         TRANSITIONS.put(LeadStatus.WON, EnumSet.of(LeadStatus.ARCHIVED));
-        TRANSITIONS.put(LeadStatus.LOST, EnumSet.of(LeadStatus.ARCHIVED));
+        // Reopen lost leads into an active stage; archive remains available.
+        TRANSITIONS.put(LeadStatus.LOST, EnumSet.of(
+                LeadStatus.QUALIFIED, LeadStatus.CONTACTED, LeadStatus.ARCHIVED));
         TRANSITIONS.put(LeadStatus.ARCHIVED, EnumSet.noneOf(LeadStatus.class));
     }
 

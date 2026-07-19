@@ -23,7 +23,12 @@ import com.aisales.customer.application.mapper.CustomerMapper;
 import com.aisales.customer.domain.entity.Customer;
 import com.aisales.customer.domain.entity.CustomerAddress;
 import com.aisales.customer.infrastructure.persistence.CustomerAddressRepository;
+import com.aisales.customer.infrastructure.persistence.CustomerConsentRepository;
+import com.aisales.customer.infrastructure.persistence.CustomerContactMethodRepository;
+import com.aisales.customer.infrastructure.persistence.CustomerDuplicateRepository;
+import com.aisales.customer.infrastructure.persistence.CustomerInteractionRepository;
 import com.aisales.customer.infrastructure.persistence.CustomerRepository;
+import com.aisales.customer.infrastructure.persistence.CustomerTimelineRepository;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -33,13 +38,27 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.springframework.beans.factory.ObjectProvider;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class CustomerServiceTest {
 
     @Mock private CustomerRepository customerRepository;
     @Mock private CustomerAddressRepository addressRepository;
+    @Mock private CustomerContactMethodRepository contactMethodRepository;
+    @Mock private CustomerConsentRepository consentRepository;
+    @Mock private CustomerTimelineRepository timelineRepository;
+    @Mock private CustomerInteractionRepository interactionRepository;
+    @Mock private CustomerDuplicateRepository duplicateRepository;
     @Mock private EventPublisher eventPublisher;
+    @Mock private CustomerTimelineRecorder timelineRecorder;
+    @Mock private CustomerDuplicateDetectionService duplicateDetection;
+    @Mock private CustomerIdentityResolutionService identityResolutionService;
+    @Mock private CustomerIdempotencyService idempotencyService;
+    @Mock private ObjectProvider<?> platformMetrics;
 
     private CustomerService customerService;
     private UUID tenantId;
@@ -49,8 +68,23 @@ class CustomerServiceTest {
         tenantId = UUID.randomUUID();
         TenantContext.setTenantId(tenantId.toString());
         TenantContext.setUserId(UUID.randomUUID().toString());
+        when(idempotencyService.beginCreate(any())).thenReturn(Optional.empty());
+        when(platformMetrics.getIfAvailable()).thenReturn(null);
         customerService = new CustomerService(
-                customerRepository, addressRepository, new CustomerMapper(), eventPublisher);
+                customerRepository,
+                addressRepository,
+                contactMethodRepository,
+                consentRepository,
+                timelineRepository,
+                interactionRepository,
+                duplicateRepository,
+                new CustomerMapper(),
+                eventPublisher,
+                timelineRecorder,
+                duplicateDetection,
+                identityResolutionService,
+                idempotencyService,
+                (ObjectProvider) platformMetrics);
     }
 
     @AfterEach
@@ -65,6 +99,7 @@ class CustomerServiceTest {
             c.setId(UUID.randomUUID());
             return c;
         });
+        when(contactMethodRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         CustomerDto dto = customerService.createCustomer(CreateCustomerRequest.builder()
                 .fullName("Jane Customer")
@@ -80,6 +115,7 @@ class CustomerServiceTest {
         ArgumentCaptor<CustomerCreatedEvent> captor = ArgumentCaptor.forClass(CustomerCreatedEvent.class);
         verify(eventPublisher).publish(captor.capture());
         assertThat(captor.getValue().getEventType()).isEqualTo("CustomerCreated");
+        verify(duplicateDetection).detectAndRecord(any(Customer.class));
     }
 
     @Test
@@ -136,6 +172,27 @@ class CustomerServiceTest {
         CustomerDto dto = customerService.activate(customerId);
 
         assertThat(dto.getStatus()).isEqualTo(CustomerStatus.ACTIVE);
+    }
+
+    @Test
+    void shouldDeactivateAndReactivateCustomer() {
+        UUID customerId = UUID.randomUUID();
+        Customer customer = Customer.builder()
+                .id(customerId)
+                .tenantId(tenantId)
+                .fullName("Ada")
+                .phone("+911234567890")
+                .status(CustomerStatus.ACTIVE)
+                .sourceType(CustomerSourceType.MANUAL)
+                .build();
+        when(customerRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, customerId))
+                .thenReturn(Optional.of(customer));
+        when(customerRepository.save(any(Customer.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThat(customerService.deactivate(customerId, "pause").getStatus())
+                .isEqualTo(CustomerStatus.INACTIVE);
+        assertThat(customerService.reactivate(customerId).getStatus())
+                .isEqualTo(CustomerStatus.ACTIVE);
     }
 
     @Test

@@ -55,7 +55,8 @@ public class LoginLockoutService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordFailedPasswordAttempt(UUID userId, String ipAddress, String userAgent) {
-        User user = userRepository.findById(userId).orElse(null);
+        // Pessimistic lock so concurrent failures cannot lose increments via @Version races.
+        User user = userRepository.findByIdForUpdate(userId).orElse(null);
         if (user == null) {
             return;
         }

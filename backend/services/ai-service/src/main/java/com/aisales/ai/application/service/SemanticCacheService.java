@@ -1,6 +1,7 @@
 package com.aisales.ai.application.service;
 
 import com.aisales.ai.domain.cache.CachedLlmResponse;
+import com.aisales.ai.domain.embedding.EmbeddingBatchResult;
 import com.aisales.ai.domain.embedding.EmbeddingProvider;
 import com.aisales.ai.infrastructure.configuration.SemanticCacheProperties;
 import com.aisales.ai.infrastructure.embedding.EmbeddingProviderRegistry;
@@ -14,6 +15,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,9 +23,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
+/**
+ * Semantic LLM response cache. Embedding HTTP runs outside DB transactions; EMBED quota
+ * is reserved around similarity lookups and puts.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -36,13 +43,14 @@ public class SemanticCacheService {
     private final EmbeddingProviderRegistry providerRegistry;
     private final SemanticCacheProperties cacheProperties;
     private final ObjectProvider<PlatformCacheService> platformCacheService;
+    private final PlatformTransactionManager transactionManager;
+    private final AiQuotaService aiQuotaService;
+    private final TokenUsageService tokenUsageService;
 
-    @Transactional(readOnly = true)
     public Optional<CachedLlmResponse> get(UUID tenantId, String queryText, String model) {
         return get(tenantId, "", queryText, model);
     }
 
-    @Transactional(readOnly = true)
     public Optional<CachedLlmResponse> get(UUID tenantId, String promptScope, String queryText, String model) {
         if (!cacheProperties.isEnabled()) {
             return Optional.empty();
@@ -54,32 +62,35 @@ public class SemanticCacheService {
             return redisHit;
         }
 
-        Optional<SemanticCacheEntry> exact =
+        String hash = queryHash(tenantId, scope, queryText);
+        Optional<SemanticCacheEntry> exact = new TransactionTemplate(transactionManager).execute(status ->
                 cacheRepository.findByTenantIdAndPromptScopeAndQueryHashAndModelUsed(
-                        tenantId, scope, queryHash(tenantId, scope, queryText), model);
-        if (exact.isPresent() && isValid(exact.get())) {
+                        tenantId, scope, hash, model));
+        if (exact != null && exact.isPresent() && isValid(exact.get())) {
             return recordHit(exact.get(), cacheKey);
         }
 
         EmbeddingProvider provider = resolveProvider();
-        float[] embedding = provider.embed(List.of(queryText)).getFirst();
-        Optional<UUID> similarId = vectorRepository.findMostSimilarId(
-                tenantId, scope, model, embedding, cacheProperties.getMaxCosineDistance());
-        if (similarId.isEmpty()) {
+        float[] embedding = embedWithQuota(tenantId, provider, queryText, "SEMANTIC_CACHE_GET");
+        Optional<UUID> similarId = new TransactionTemplate(transactionManager).execute(status ->
+                vectorRepository.findMostSimilarId(
+                        tenantId, scope, model, embedding, cacheProperties.getMaxCosineDistance()));
+        if (similarId == null || similarId.isEmpty()) {
             return Optional.empty();
         }
 
-        return cacheRepository.findById(similarId.get())
-                .filter(this::isValid)
-                .flatMap(entry -> recordHit(entry, cacheKey));
+        Optional<SemanticCacheEntry> similar = new TransactionTemplate(transactionManager).execute(status ->
+                cacheRepository.findById(similarId.get()).filter(this::isValid));
+        if (similar == null || similar.isEmpty()) {
+            return Optional.empty();
+        }
+        return recordHit(similar.get(), cacheKey);
     }
 
-    @Transactional
     public void put(UUID tenantId, String queryText, CachedLlmResponse response, String model) {
         put(tenantId, "", queryText, response, model);
     }
 
-    @Transactional
     public void put(
             UUID tenantId, String promptScope, String queryText, CachedLlmResponse response, String model) {
         if (!cacheProperties.isEnabled()) {
@@ -87,40 +98,42 @@ public class SemanticCacheService {
         }
         String scope = normalizeScope(promptScope);
         EmbeddingProvider provider = resolveProvider();
-        float[] embedding = provider.embed(List.of(queryText)).getFirst();
+        float[] embedding = embedWithQuota(tenantId, provider, queryText, "SEMANTIC_CACHE_PUT");
         String hash = queryHash(tenantId, scope, queryText);
         Instant expiresAt = Instant.now().plus(cacheProperties.getDefaultTtl());
 
-        SemanticCacheEntry entry =
-                cacheRepository
-                        .findByTenantIdAndPromptScopeAndQueryHashAndModelUsed(tenantId, scope, hash, model)
-                        .orElseGet(() -> SemanticCacheEntry.builder()
-                                .tenantId(tenantId)
-                                .promptScope(scope)
-                                .queryHash(hash)
-                                .queryText(queryText)
-                                .modelUsed(model)
-                                .hitCount(0)
-                                .build());
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            SemanticCacheEntry entry =
+                    cacheRepository
+                            .findByTenantIdAndPromptScopeAndQueryHashAndModelUsed(tenantId, scope, hash, model)
+                            .orElseGet(() -> SemanticCacheEntry.builder()
+                                    .tenantId(tenantId)
+                                    .promptScope(scope)
+                                    .queryHash(hash)
+                                    .queryText(queryText)
+                                    .modelUsed(model)
+                                    .hitCount(0)
+                                    .build());
 
-        entry.setPromptScope(scope);
-        entry.setQueryText(queryText);
-        entry.setResponse(Map.of(
-                "content", response.getContent(),
-                "model", response.getModel(),
-                "metadata", response.getMetadata() != null ? response.getMetadata() : Map.of()));
-        entry.setMetadata(response.getMetadata());
-        entry.setExpiresAt(expiresAt);
+            entry.setPromptScope(scope);
+            entry.setQueryText(queryText);
+            entry.setResponse(Map.of(
+                    "content", response.getContent(),
+                    "model", response.getModel(),
+                    "metadata", response.getMetadata() != null ? response.getMetadata() : Map.of()));
+            entry.setMetadata(response.getMetadata());
+            entry.setExpiresAt(expiresAt);
 
-        SemanticCacheEntry saved = cacheRepository.save(entry);
-        vectorRepository.updateEmbedding(saved.getId(), embedding);
+            SemanticCacheEntry saved = cacheRepository.save(entry);
+            vectorRepository.updateEmbedding(saved.getId(), embedding);
+        });
         putInRedis(cacheKey(tenantId, scope, queryText, model), response);
         log.debug("semantic_cache_stored tenant_id={} scope={} model={}", tenantId, scope, model);
     }
 
-    @Transactional
     public void invalidateTenant(UUID tenantId) {
-        cacheRepository.deleteByTenantId(tenantId);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                cacheRepository.deleteByTenantId(tenantId));
         log.info("semantic_cache_invalidated tenant_id={}", tenantId);
     }
 
@@ -132,9 +145,34 @@ public class SemanticCacheService {
         return (double) cacheRepository.sumHitCountByTenantId(tenantId) / total;
     }
 
+    private float[] embedWithQuota(
+            UUID tenantId, EmbeddingProvider provider, String queryText, String purpose) {
+        long reserved = aiQuotaService.reserveEmbed(tenantId);
+        try {
+            EmbeddingBatchResult batch = provider.embedWithUsage(List.of(queryText));
+            tokenUsageService.recordEmbeddingUsage(
+                    tenantId,
+                    provider.name().toLowerCase(Locale.ROOT),
+                    provider.modelName(),
+                    List.of(queryText),
+                    purpose,
+                    purpose,
+                    batch.promptTokens());
+            List<float[]> vectors = batch.vectors();
+            if (vectors.isEmpty()) {
+                throw new IllegalStateException("Embedding provider returned no vectors");
+            }
+            return vectors.getFirst();
+        } finally {
+            aiQuotaService.release(tenantId, AiQuotaService.OPERATION_EMBED, reserved);
+        }
+    }
+
     private Optional<CachedLlmResponse> recordHit(SemanticCacheEntry entry, String cacheKey) {
-        entry.incrementHitCount();
-        cacheRepository.save(entry);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            entry.incrementHitCount();
+            cacheRepository.save(entry);
+        });
         CachedLlmResponse response = toResponse(entry);
         putInRedis(cacheKey, response);
         return Optional.of(response);

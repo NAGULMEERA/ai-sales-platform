@@ -7,9 +7,11 @@ import com.aisales.common.core.util.CorrelationIdUtils;
 import com.aisales.common.core.util.EmailNormalizer;
 import com.aisales.common.events.model.EmailVerifiedEvent;
 import com.aisales.common.events.publisher.EventPublisher;
+import com.aisales.common.exception.exception.BusinessException;
 import com.aisales.common.exception.exception.NotFoundException;
 import com.aisales.common.exception.exception.UnauthorizedException;
 import com.aisales.common.exception.exception.ValidationException;
+import com.aisales.common.exception.model.ErrorCode;
 import com.aisales.common.observability.metrics.MetricNames;
 import com.aisales.common.observability.metrics.PlatformMetrics;
 import java.time.Instant;
@@ -177,17 +179,20 @@ public class AuthService {
 
     @Transactional
     public MessageResponse verifyEmail(VerifyEmailRequest request) {
-        EmailVerificationToken token = emailVerificationTokenRepository.findByTokenAndConsumedAtIsNull(request.getToken())
+        Instant now = Instant.now();
+        EmailVerificationToken token = emailVerificationTokenRepository
+                .findByTokenAndConsumedAtIsNull(RefreshTokenHasher.sha256Hex(request.getToken()))
                 .orElseThrow(() -> new ValidationException("Invalid verification token"));
-        if (token.getExpiresAt().isBefore(Instant.now())) {
+        if (token.getExpiresAt().isBefore(now)) {
             throw new ValidationException("Verification token expired");
+        }
+        if (emailVerificationTokenRepository.consumeById(token.getId(), now) != 1) {
+            throw new ValidationException("Invalid verification token");
         }
         User user = userRepository.findById(token.getUserId())
                 .orElseThrow(() -> new NotFoundException("User", token.getUserId()));
         user.setEmailVerified(true);
         userRepository.save(user);
-        token.setConsumedAt(Instant.now());
-        emailVerificationTokenRepository.save(token);
         auditService.logSecurityEvent(user.getTenantId(), user.getId(), AuditAction.EMAIL_VERIFIED, "user",
                 user.getId().toString(), null, null, null);
         eventPublisher.publish(EmailVerifiedEvent.of(
@@ -200,9 +205,17 @@ public class AuthService {
 
     @Transactional
     public MessageResponse forgotPassword(ForgotPasswordRequest request) {
-        userRepository.findByEmail(EmailNormalizer.normalize(request.getEmail())).ifPresent(user ->
+        userRepository.findByEmail(EmailNormalizer.normalize(request.getEmail())).ifPresent(user -> {
+            try {
                 passwordResetTokenService.issueResetToken(
-                        user.getTenantId(), user.getId(), user.getEmail(), user.getFirstName()));
+                        user.getTenantId(), user.getId(), user.getEmail(), user.getFirstName());
+            } catch (BusinessException ex) {
+                // Do not reveal whether the email exists via rate-limit errors.
+                if (ex.getErrorCode() != ErrorCode.AUTH_RATE_LIMIT) {
+                    throw ex;
+                }
+            }
+        });
         return MessageResponse.builder()
                 .message("If the email exists, a reset link has been sent")
                 .build();
@@ -212,8 +225,14 @@ public class AuthService {
     public MessageResponse resendVerificationEmail(ResendVerificationEmailRequest request) {
         userRepository.findByEmail(EmailNormalizer.normalize(request.getEmail())).ifPresent(user -> {
             if (!user.isEmailVerified()) {
-                emailVerificationService.resendVerificationToken(
-                        user.getTenantId(), user.getId(), user.getEmail(), user.getFirstName());
+                try {
+                    emailVerificationService.resendVerificationToken(
+                            user.getTenantId(), user.getId(), user.getEmail(), user.getFirstName());
+                } catch (BusinessException ex) {
+                    if (ex.getErrorCode() != ErrorCode.AUTH_RATE_LIMIT) {
+                        throw ex;
+                    }
+                }
             }
         });
         return MessageResponse.builder()
@@ -223,19 +242,22 @@ public class AuthService {
 
     @Transactional
     public MessageResponse resetPassword(ResetPasswordRequest request) {
-        PasswordResetToken token = passwordResetTokenRepository.findByTokenAndConsumedAtIsNull(request.getToken())
+        Instant now = Instant.now();
+        PasswordResetToken token = passwordResetTokenRepository
+                .findByTokenAndConsumedAtIsNull(RefreshTokenHasher.sha256Hex(request.getToken()))
                 .orElseThrow(() -> new ValidationException("Invalid reset token"));
-        if (token.getExpiresAt().isBefore(Instant.now())) {
+        if (token.getExpiresAt().isBefore(now)) {
             throw new ValidationException("Reset token expired");
+        }
+        if (passwordResetTokenRepository.consumeById(token.getId(), now) != 1) {
+            throw new ValidationException("Invalid reset token");
         }
         User user = userRepository.findById(token.getUserId())
                 .orElseThrow(() -> new NotFoundException("User", token.getUserId()));
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         loginLockoutService.clearFailedAttempts(user);
         userRepository.save(user);
-        token.setConsumedAt(Instant.now());
-        passwordResetTokenRepository.save(token);
-        passwordResetTokenRepository.invalidatePendingForUser(user.getId(), Instant.now());
+        passwordResetTokenRepository.invalidatePendingForUser(user.getId(), now);
         refreshTokenService.revokeAllForUser(user.getId());
         auditService.logSecurityEvent(user.getTenantId(), user.getId(), AuditAction.PASSWORD_RESET, "user",
                 user.getId().toString(), null, null, null);

@@ -18,9 +18,20 @@ public final class SecurityConstants {
     public static final String TOKEN_TYPE_CLAIM = "tokenType";
     public static final String ACCESS_TOKEN = "access";
     public static final String REFRESH_TOKEN = "refresh";
+    /**
+     * Unauthenticated routes only. Logout/sessions require a Bearer token
+     * ({@code /api/v1/auth/logout}, {@code /logout-all}, {@code /sessions}).
+     */
     public static final String[] PUBLIC_PATHS = {
             "/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
-            "/api/v1/auth/**", "/api/v1/public/**",
+            "/api/v1/auth/login",
+            "/api/v1/auth/register",
+            "/api/v1/auth/refresh",
+            "/api/v1/auth/forgot-password",
+            "/api/v1/auth/reset-password",
+            "/api/v1/auth/verify-email",
+            "/api/v1/auth/resend-verification",
+            "/api/v1/public/**",
             "/api/v1/payments/webhooks/**",
             "/api/v1/integrations/webhooks/**",
             "/.well-known/jwks.json", "/api/v1/.well-known/jwks.json",

@@ -47,6 +47,22 @@ public class PromptTemplate {
     @Column(nullable = false, length = 100)
     private String purpose;
 
+    /** Optional industry key for dimension resolution (e.g. REAL_ESTATE). */
+    @Column(name = "industry_code", length = 64)
+    private String industryCode;
+
+    /** Optional BCP-47 / ISO language (e.g. en, hi). Null = language-agnostic. */
+    @Column(name = "language_code", length = 16)
+    private String languageCode;
+
+    /** Optional capability key (e.g. LEAD_QUALIFICATION, RAG_ANSWER). */
+    @Column(name = "capability", length = 64)
+    private String capability;
+
+    /** Optional preferred model hint for routing (not a hard provider lock). */
+    @Column(name = "preferred_model", length = 128)
+    private String preferredModel;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)

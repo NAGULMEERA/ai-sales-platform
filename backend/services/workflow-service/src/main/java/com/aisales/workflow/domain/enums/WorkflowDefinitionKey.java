@@ -4,5 +4,7 @@ public enum WorkflowDefinitionKey {
     ONBOARDING_V1,
     LEAD_LIFECYCLE_V1,
     /** Coordinates conversation follow-up; business decisions stay outside workflow. */
-    CONVERSATION_FOLLOWUP_V1
+    CONVERSATION_FOLLOWUP_V1,
+    /** Tenant-scoped trigger/condition/action automation rules. */
+    AUTOMATION_RULE_V1
 }

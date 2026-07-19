@@ -18,14 +18,18 @@ import com.aisales.common.core.util.CorrelationIdUtils;
 import com.aisales.common.core.util.TenantContext;
 import com.aisales.common.events.model.CatalogOfferCreatedEvent;
 import com.aisales.common.events.model.CatalogProductCreatedEvent;
+import com.aisales.common.events.model.CatalogProductUpdatedEvent;
 import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.NotFoundException;
 import com.aisales.common.exception.exception.ValidationException;
+import com.aisales.common.observability.metrics.MetricNames;
+import com.aisales.common.observability.metrics.PlatformMetrics;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -40,6 +44,7 @@ public class CatalogService {
     private final CatalogOfferRepository offerRepository;
     private final CatalogMapper mapper;
     private final EventPublisher eventPublisher;
+    private final ObjectProvider<PlatformMetrics> platformMetrics;
 
     @Transactional
     public CatalogProductDto createProduct(CreateCatalogProductRequest request) {
@@ -79,6 +84,7 @@ public class CatalogService {
                 saved.getProductType().name(),
                 saved.getStatus().name(),
                 correlationId()));
+        incrementMetric(MetricNames.CATALOG_PRODUCT_CREATED, tenantId);
         return mapper.toProductDto(saved);
     }
 
@@ -119,7 +125,17 @@ public class CatalogService {
                 request.getStatus(),
                 request.getAttributes(),
                 actorId());
-        return mapper.toProductDto(productRepository.save(product));
+        CatalogProduct saved = productRepository.save(product);
+        eventPublisher.publish(CatalogProductUpdatedEvent.of(
+                saved.getTenantId().toString(),
+                saved.getId().toString(),
+                saved.getCode(),
+                saved.getName(),
+                saved.getProductType().name(),
+                saved.getStatus().name(),
+                correlationId()));
+        incrementMetric(MetricNames.CATALOG_PRODUCT_UPDATED, saved.getTenantId());
+        return mapper.toProductDto(saved);
     }
 
     @Transactional
@@ -213,30 +229,14 @@ public class CatalogService {
     @Transactional
     public CatalogOfferDto updateOffer(UUID offerId, UpdateCatalogOfferRequest request) {
         CatalogOffer offer = requireOffer(offerId);
-        UUID actor = actorId();
-        if (StringUtils.hasText(request.getName())) {
-            offer.setName(request.getName().trim());
-        }
-        if (StringUtils.hasText(request.getCurrency())) {
-            offer.setCurrency(request.getCurrency().trim().toUpperCase());
-        }
-        if (request.getUnitPrice() != null) {
-            if (request.getUnitPrice().signum() < 0) {
-                throw new ValidationException("Unit price must be >= 0");
-            }
-            offer.setUnitPrice(request.getUnitPrice());
-        }
-        if (request.getStatus() != null) {
-            offer.setStatus(request.getStatus());
-        }
-        if (request.getValidFrom() != null) {
-            offer.setValidFrom(request.getValidFrom());
-        }
-        if (request.getValidTo() != null) {
-            offer.setValidTo(request.getValidTo());
-        }
-        offer.setUpdatedAt(Instant.now());
-        offer.setUpdatedBy(actor);
+        offer.update(
+                request.getName(),
+                request.getCurrency(),
+                request.getUnitPrice(),
+                request.getStatus(),
+                request.getValidFrom() != null ? request.getValidFrom() : offer.getValidFrom(),
+                request.getValidTo() != null ? request.getValidTo() : offer.getValidTo(),
+                actorId());
         return mapper.toOfferDto(offerRepository.save(offer));
     }
 
@@ -289,5 +289,12 @@ public class CatalogService {
             return null;
         }
         return value.trim();
+    }
+
+    private void incrementMetric(String name, UUID tenantId) {
+        PlatformMetrics metrics = platformMetrics.getIfAvailable();
+        if (metrics != null) {
+            metrics.incrementForTenant(name, tenantId.toString());
+        }
     }
 }

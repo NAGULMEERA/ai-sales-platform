@@ -4,3 +4,24 @@
 spring:
   application:
     name: search-service
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+aisales:
+  security:
+    use-platform-defaults: true
+  clients:
+    ai-service:
+      url: ${AI_SERVICE_URL:}
+  events:
+    default-topic: aisales-events
+    outbox:
+      enabled: true
+    inbox:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

@@ -7,15 +7,20 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
+import com.aisales.ai.application.rag.HybridRetriever;
+import com.aisales.ai.application.rag.KeywordRetriever;
 import com.aisales.ai.application.rag.NoneReranker;
 import com.aisales.ai.application.rag.RerankerRegistry;
+import com.aisales.ai.application.rag.RetrieverRegistry;
 import com.aisales.ai.application.rag.StubReranker;
+import com.aisales.ai.application.rag.VectorRetriever;
 import com.aisales.ai.domain.embedding.EmbeddingBatchResult;
 import com.aisales.ai.domain.embedding.EmbeddingProvider;
 import com.aisales.ai.domain.entity.KnowledgeBase;
 import com.aisales.ai.infrastructure.configuration.RagProperties;
 import com.aisales.ai.infrastructure.embedding.EmbeddingProviderRegistry;
 import com.aisales.ai.infrastructure.persistence.KnowledgeBaseRepository;
+import com.aisales.ai.infrastructure.persistence.KnowledgeChunkFullTextRepository;
 import com.aisales.ai.infrastructure.persistence.KnowledgeChunkVectorRepository;
 import com.aisales.common.contracts.ai.KnowledgeBaseStatus;
 import com.aisales.common.contracts.ai.RetrievedKnowledgeChunkDto;
@@ -39,6 +44,7 @@ class KnowledgeRetrievalServiceTest {
 
     @Mock private KnowledgeBaseRepository knowledgeBaseRepository;
     @Mock private KnowledgeChunkVectorRepository knowledgeChunkVectorRepository;
+    @Mock private KnowledgeChunkFullTextRepository knowledgeChunkFullTextRepository;
     @Mock private EmbeddingProviderRegistry embeddingProviderRegistry;
     @Mock private EmbeddingProvider embeddingProvider;
     @Mock private PlatformTransactionManager transactionManager;
@@ -57,11 +63,12 @@ class KnowledgeRetrievalServiceTest {
         lenient().when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         lenient().when(aiQuotaService.reserveEmbed(any())).thenReturn(8192L);
         RagProperties ragProperties = new RagProperties();
+        ragProperties.setRetriever("VECTOR");
         ragProperties.setReranker("STUB");
         ragProperties.getRerank().setCandidateMultiplier(3);
         RerankerRegistry rerankerRegistry =
                 new RerankerRegistry(List.of(new NoneReranker(), new StubReranker()), ragProperties);
-        service = new KnowledgeRetrievalService(
+        VectorRetriever vectorRetriever = new VectorRetriever(
                 knowledgeBaseRepository,
                 knowledgeChunkVectorRepository,
                 embeddingProviderRegistry,
@@ -70,6 +77,16 @@ class KnowledgeRetrievalServiceTest {
                 aiQuotaService,
                 rerankerRegistry,
                 ragProperties);
+        KeywordRetriever keywordRetriever = new KeywordRetriever(
+                knowledgeBaseRepository,
+                knowledgeChunkFullTextRepository,
+                transactionManager,
+                rerankerRegistry,
+                ragProperties);
+        RetrieverRegistry retrieverRegistry = new RetrieverRegistry(
+                List.of(vectorRetriever, keywordRetriever, new HybridRetriever(vectorRetriever, keywordRetriever)),
+                ragProperties);
+        service = new KnowledgeRetrievalService(retrieverRegistry);
     }
 
     @AfterEach

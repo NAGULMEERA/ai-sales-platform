@@ -1,5 +1,6 @@
 package com.aisales.common.contracts.lead;
 
+import com.aisales.common.contracts.ai.QualificationResultDto;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -33,4 +34,7 @@ public class AiLeadQualificationResultDto {
 
     private String renderedUserPrompt;
     private String notes;
+
+    /** Typed AI qualification payload (scores, risks, follow-ups, citations). */
+    private QualificationResultDto qualification;
 }

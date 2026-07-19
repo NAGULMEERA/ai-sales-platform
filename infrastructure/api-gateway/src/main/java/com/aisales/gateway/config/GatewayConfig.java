@@ -26,6 +26,7 @@ public class GatewayConfig {
     private RedisRateLimiter writeRedisRateLimiter;
     private RedisRateLimiter mediaUploadRedisRateLimiter;
     private RedisRateLimiter searchRedisRateLimiter;
+    private RedisRateLimiter analyticsRedisRateLimiter;
     private RedisRateLimiter webhookRedisRateLimiter;
 
     public GatewayConfig(
@@ -45,6 +46,7 @@ public class GatewayConfig {
             @Qualifier("writeRedisRateLimiter") RedisRateLimiter writeRedisRateLimiter,
             @Qualifier("mediaUploadRedisRateLimiter") RedisRateLimiter mediaUploadRedisRateLimiter,
             @Qualifier("searchRedisRateLimiter") RedisRateLimiter searchRedisRateLimiter,
+            @Qualifier("analyticsRedisRateLimiter") RedisRateLimiter analyticsRedisRateLimiter,
             @Qualifier("webhookRedisRateLimiter") RedisRateLimiter webhookRedisRateLimiter) {
         this.authRedisRateLimiter = authRedisRateLimiter;
         this.passwordResetRedisRateLimiter = passwordResetRedisRateLimiter;
@@ -52,6 +54,7 @@ public class GatewayConfig {
         this.writeRedisRateLimiter = writeRedisRateLimiter;
         this.mediaUploadRedisRateLimiter = mediaUploadRedisRateLimiter;
         this.searchRedisRateLimiter = searchRedisRateLimiter;
+        this.analyticsRedisRateLimiter = analyticsRedisRateLimiter;
         this.webhookRedisRateLimiter = webhookRedisRateLimiter;
     }
 
@@ -138,6 +141,16 @@ public class GatewayConfig {
                             .setKeyResolver(tenantPlanKeyResolver)
                             .setDenyEmptyKey(false)))
                     .uri("lb://search-service"));
+        }
+
+        if (rateLimitProperties.isEnabled() && analyticsRedisRateLimiter != null) {
+            routes = routes.route("analytics-rate-limited", r -> r
+                    .path("/api/v1/analytics/**")
+                    .filters(f -> f.requestRateLimiter(config -> config
+                            .setRateLimiter(analyticsRedisRateLimiter)
+                            .setKeyResolver(tenantPlanKeyResolver)
+                            .setDenyEmptyKey(false)))
+                    .uri("lb://analytics-service"));
         }
 
         return routes

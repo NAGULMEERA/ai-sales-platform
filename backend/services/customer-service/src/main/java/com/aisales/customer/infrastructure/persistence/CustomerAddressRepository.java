@@ -27,4 +27,17 @@ public interface CustomerAddressRepository extends JpaRepository<CustomerAddress
               AND a.primaryAddress = true
             """)
     void clearPrimaryFlags(@Param("tenantId") UUID tenantId, @Param("customerId") UUID customerId);
+
+    @Modifying
+    @Query("""
+            UPDATE CustomerAddress a
+            SET a.customerId = :survivorId, a.updatedAt = CURRENT_TIMESTAMP
+            WHERE a.tenantId = :tenantId
+              AND a.customerId = :loserId
+              AND a.deletedAt IS NULL
+            """)
+    int reassignToSurvivor(
+            @Param("tenantId") UUID tenantId,
+            @Param("loserId") UUID loserId,
+            @Param("survivorId") UUID survivorId);
 }

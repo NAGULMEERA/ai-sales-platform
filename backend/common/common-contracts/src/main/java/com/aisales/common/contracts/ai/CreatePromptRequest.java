@@ -27,6 +27,18 @@ public class CreatePromptRequest {
     @Size(max = 100)
     private String purpose;
 
+    @Size(max = 64)
+    private String industryCode;
+
+    @Size(max = 16)
+    private String languageCode;
+
+    @Size(max = 64)
+    private String capability;
+
+    @Size(max = 128)
+    private String preferredModel;
+
     @Size(max = 20000)
     private String systemTemplate;
 

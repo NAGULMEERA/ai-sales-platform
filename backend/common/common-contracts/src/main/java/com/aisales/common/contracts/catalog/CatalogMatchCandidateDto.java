@@ -1,6 +1,8 @@
 package com.aisales.common.contracts.catalog;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,7 +24,13 @@ public class CatalogMatchCandidateDto {
     private String offerCode;
     private String currency;
     private BigDecimal unitPrice;
-    /** 0–100 deterministic score from filter fit (not AI confidence). */
+    /** 0–100 hybrid ranking score. */
     private int matchScore;
+    /** 0–100 confidence in the recommendation. */
+    private int confidenceScore;
+    private CatalogMatchScoreFactorsDto scoreFactors;
     private String reason;
+
+    @Builder.Default
+    private List<String> reasons = new ArrayList<>();
 }

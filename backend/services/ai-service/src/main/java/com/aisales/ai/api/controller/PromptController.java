@@ -71,4 +71,25 @@ public class PromptController {
     public ApiResponse<List<PromptVersionDto>> listVersions(@PathVariable UUID id) {
         return ApiResponse.ok(promptService.listVersions(id));
     }
+
+    @PostMapping("/{id}/versions/{versionNumber}/approve")
+    @Operation(summary = "Approve a draft prompt version")
+    public ApiResponse<PromptVersionDto> approveVersion(
+            @PathVariable UUID id, @PathVariable int versionNumber) {
+        return ApiResponse.ok(promptService.approveVersion(id, versionNumber));
+    }
+
+    @PostMapping("/{id}/versions/{versionNumber}/activate")
+    @Operation(summary = "Activate a prompt version (archives previous ACTIVE)")
+    public ApiResponse<PromptDto> activateVersion(
+            @PathVariable UUID id, @PathVariable int versionNumber) {
+        return ApiResponse.ok(promptService.activateVersion(id, versionNumber));
+    }
+
+    @PostMapping("/{id}/versions/{versionNumber}/rollback")
+    @Operation(summary = "Rollback by reactivating a prior prompt version")
+    public ApiResponse<PromptDto> rollbackVersion(
+            @PathVariable UUID id, @PathVariable int versionNumber) {
+        return ApiResponse.ok(promptService.rollbackToVersion(id, versionNumber));
+    }
 }

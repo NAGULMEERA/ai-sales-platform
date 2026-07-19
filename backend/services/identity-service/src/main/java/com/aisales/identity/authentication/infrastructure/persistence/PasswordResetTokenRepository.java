@@ -26,4 +26,13 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
             WHERE t.userId = :userId AND t.consumedAt IS NULL
             """)
     int invalidatePendingForUser(@Param("userId") UUID userId, @Param("invalidatedAt") Instant invalidatedAt);
+
+    /** Single-winner consume; returns 1 only for the first concurrent consumer. */
+    @Modifying(clearAutomatically = true)
+    @Query("""
+            UPDATE PasswordResetToken t
+            SET t.consumedAt = :consumedAt
+            WHERE t.id = :id AND t.consumedAt IS NULL
+            """)
+    int consumeById(@Param("id") UUID id, @Param("consumedAt") Instant consumedAt);
 }

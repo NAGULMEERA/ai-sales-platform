@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aisales.com/schemas/events/MessageSent.v1.json",
+  "title": "MessageSent v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["eventId", "eventType", "eventVersion", "tenantId", "aggregateId", "occurredAt", "correlationId", "conversationId", "messageId", "senderType"],
+  "properties": {
+    "eventId": {"type": "string", "minLength": 1},
+    "eventType": {"const": "MessageSent"},
+    "eventVersion": {"const": 1},
+    "tenantId": {"type": "string", "minLength": 1},
+    "aggregateId": {"type": "string", "minLength": 1},
+    "occurredAt": {"type": "string", "format": "date-time"},
+    "correlationId": {"type": "string", "minLength": 1},
+    "conversationId": {"type": "string"},
+    "leadId": {"type": "string"},
+    "messageId": {"type": "string"},
+    "senderType": {"type": "string"},
+    "channel": {"type": "string"},
+    "correlationKey": {"type": "string"}
+  }
+}

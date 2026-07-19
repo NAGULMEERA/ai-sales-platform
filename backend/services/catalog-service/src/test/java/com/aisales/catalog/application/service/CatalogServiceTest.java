@@ -33,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 @ExtendWith(MockitoExtension.class)
 class CatalogServiceTest {
@@ -40,6 +41,7 @@ class CatalogServiceTest {
     @Mock private CatalogProductRepository productRepository;
     @Mock private CatalogOfferRepository offerRepository;
     @Mock private EventPublisher eventPublisher;
+    @Mock private ObjectProvider<?> platformMetrics;
 
     private CatalogService catalogService;
     private UUID tenantId;
@@ -49,8 +51,13 @@ class CatalogServiceTest {
         tenantId = UUID.randomUUID();
         TenantContext.setTenantId(tenantId.toString());
         TenantContext.setUserId(UUID.randomUUID().toString());
+        org.mockito.Mockito.lenient().when(platformMetrics.getIfAvailable()).thenReturn(null);
         catalogService = new CatalogService(
-                productRepository, offerRepository, new CatalogMapper(), eventPublisher);
+                productRepository,
+                offerRepository,
+                new CatalogMapper(),
+                eventPublisher,
+                (ObjectProvider) platformMetrics);
     }
 
     @AfterEach

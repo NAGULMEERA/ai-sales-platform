@@ -73,4 +73,31 @@ class IndustryQualificationConfigResolverTest {
                 .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("promptCode is required");
     }
+
+    @Test
+    void shouldNotInventVariableKeysWhenOnlyPromptCodeProvided() {
+        IndustryQualificationConfigResolver.Resolved resolved =
+                resolver.resolve(QualifyLeadWithAiRequest.builder()
+                        .promptCode("LEAD_QUALIFY_REAL_ESTATE")
+                        .build());
+
+        assertThat(resolved.promptCode()).isEqualTo("LEAD_QUALIFY_REAL_ESTATE");
+        assertThat(resolved.variableKeys()).isEmpty();
+    }
+
+    @Test
+    void shouldIgnoreNullPluginTypeEvenWithQualificationConfig() {
+        when(marketplaceServiceClient.listInstallations())
+                .thenReturn(ApiResponse.ok(List.of(PluginInstallationDto.builder()
+                        .id(UUID.randomUUID())
+                        .pluginKey("mystery")
+                        .pluginType(null)
+                        .status(PluginInstallationStatus.ENABLED)
+                        .config(Map.of("qualificationPromptCode", "LEAD_QUALIFY_REAL_ESTATE"))
+                        .build())));
+
+        assertThatThrownBy(() -> resolver.resolve(QualifyLeadWithAiRequest.builder().build()))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("promptCode is required");
+    }
 }

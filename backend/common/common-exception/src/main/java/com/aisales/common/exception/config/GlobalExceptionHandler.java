@@ -9,8 +9,10 @@ import com.aisales.common.exception.model.ErrorResponse;
 import com.aisales.common.exception.model.ValidationError;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.persistence.OptimisticLockException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
@@ -68,6 +70,20 @@ public class GlobalExceptionHandler {
             HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
         ErrorResponse response = buildResponse(ErrorCode.VALIDATION_ERROR, ex.getMessage(), request);
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(response);
+    }
+
+    @ExceptionHandler({
+            ObjectOptimisticLockingFailureException.class,
+            OptimisticLockException.class
+    })
+    public ResponseEntity<ErrorResponse> handleOptimisticLock(
+            Exception ex, HttpServletRequest request) {
+        log.warn("Optimistic lock conflict: {}", ex.getMessage());
+        ErrorResponse response = buildResponse(
+                ErrorCode.CONFLICT,
+                "Resource was modified concurrently; retry the request",
+                request);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
     @ExceptionHandler(Exception.class)

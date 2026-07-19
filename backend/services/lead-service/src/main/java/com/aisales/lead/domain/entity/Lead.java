@@ -161,6 +161,89 @@ public class Lead {
         touch(actor);
     }
 
+    public void unassign(UUID actor, LeadStateMachine stateMachine) {
+        assertActive();
+        if (stateMachine.isTerminal(status)) {
+            throw new ValidationException("Cannot unassign a terminal lead");
+        }
+        if (assignedTo == null) {
+            throw new ValidationException("Lead is not assigned");
+        }
+        this.assignedTo = null;
+        touch(actor);
+    }
+
+    /**
+     * Reopens a lost lead into an active pipeline stage (default QUALIFIED).
+     */
+    public void reopen(LeadStatus target, UUID actor, LeadStateMachine stateMachine) {
+        assertActive();
+        if (status != LeadStatus.LOST) {
+            throw new ValidationException("Only LOST leads can be reopened");
+        }
+        LeadStatus destination = target != null ? target : LeadStatus.QUALIFIED;
+        if (destination == LeadStatus.LOST
+                || destination == LeadStatus.WON
+                || destination == LeadStatus.ARCHIVED) {
+            throw new ValidationException("Invalid reopen target: " + destination);
+        }
+        stateMachine.assertTransition(pipelineId, status, destination);
+        this.status = destination;
+        if (destination == LeadStatus.QUALIFIED) {
+            this.qualified = true;
+        }
+        touch(actor);
+    }
+
+    /** Restores a soft-deleted lead. */
+    public void restore(UUID actor) {
+        if (deletedAt == null) {
+            throw new ValidationException("Lead is not deleted");
+        }
+        this.deletedAt = null;
+        touch(actor);
+    }
+
+    /**
+     * Absorbs contact/details from a duplicate loser into this survivor (merge).
+     * Does not change status or assignment of the survivor.
+     */
+    public void absorbFrom(Lead other, UUID actor) {
+        assertActive();
+        if (other == null) {
+            throw new ValidationException("Merge source lead is required");
+        }
+        if (!tenantId.equals(other.getTenantId())) {
+            throw new ValidationException("Cannot merge leads across tenants");
+        }
+        if (isBlank(this.email) && !isBlank(other.getEmail())) {
+            this.email = other.getEmail();
+        }
+        if (isBlank(this.phone) && !isBlank(other.getPhone())) {
+            this.phone = other.getPhone();
+        }
+        if (isBlank(this.customerName) && !isBlank(other.getCustomerName())) {
+            this.customerName = other.getCustomerName();
+        }
+        if (this.customerId == null && other.getCustomerId() != null) {
+            this.customerId = other.getCustomerId();
+        }
+        if (other.getAttributes() != null && !other.getAttributes().isEmpty()) {
+            Map<String, Object> merged = new HashMap<>(
+                    this.attributes != null ? this.attributes : Map.of());
+            other.getAttributes().forEach(merged::putIfAbsent);
+            this.attributes = merged;
+        }
+        if (this.score == null && other.getScore() != null) {
+            this.score = other.getScore();
+        }
+        if (this.confidenceScore == null && other.getConfidenceScore() != null) {
+            this.confidenceScore = other.getConfidenceScore();
+        }
+        assertHasContactMethod();
+        touch(actor);
+    }
+
     public void qualify(Integer newScore, UUID actor, LeadStateMachine stateMachine) {
         assertActive();
         LeadStatus previous = this.status;

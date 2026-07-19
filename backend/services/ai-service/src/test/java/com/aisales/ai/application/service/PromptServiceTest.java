@@ -182,4 +182,141 @@ class PromptServiceTest {
         assertThat(resolved.template().getTenantId()).isEqualTo(PlatformPromptConstants.PLATFORM_TENANT_ID);
         assertThat(resolved.version().getUserTemplate()).contains("{{budget}}");
     }
+
+    @Test
+    void shouldResolveByIndustryAndCapabilityWithPlatformFallback() {
+        UUID platformPromptId = UUID.randomUUID();
+        PromptTemplate platformTemplate = PromptTemplate.builder()
+                .id(platformPromptId)
+                .tenantId(PlatformPromptConstants.PLATFORM_TENANT_ID)
+                .code("LEAD_QUALIFY_REAL_ESTATE")
+                .name("RE Qualify")
+                .purpose("LEAD_QUALIFICATION")
+                .industryCode("REAL_ESTATE")
+                .capability("LEAD_QUALIFICATION")
+                .languageCode("en")
+                .status(PromptStatus.ACTIVE)
+                .activeVersion(1)
+                .createdAt(java.time.Instant.now())
+                .updatedAt(java.time.Instant.now())
+                .build();
+        PromptVersionEntity platformVersion = PromptVersionEntity.builder()
+                .id(UUID.randomUUID())
+                .tenantId(PlatformPromptConstants.PLATFORM_TENANT_ID)
+                .promptId(platformPromptId)
+                .versionNumber(1)
+                .userTemplate("Qualify RE lead {{budget}}")
+                .variables(List.of("budget"))
+                .status(PromptStatus.ACTIVE)
+                .createdAt(java.time.Instant.now())
+                .build();
+
+        when(promptTemplateRepository.findByDimensionsExact(
+                        tenantId, "REAL_ESTATE", "LEAD_QUALIFICATION", "en", PromptStatus.ACTIVE))
+                .thenReturn(List.of());
+        when(promptTemplateRepository.findByDimensionsLanguageAgnostic(
+                        tenantId, "REAL_ESTATE", "LEAD_QUALIFICATION", PromptStatus.ACTIVE))
+                .thenReturn(List.of());
+        when(promptTemplateRepository.findByDimensionsExact(
+                        PlatformPromptConstants.PLATFORM_TENANT_ID,
+                        "REAL_ESTATE",
+                        "LEAD_QUALIFICATION",
+                        "en",
+                        PromptStatus.ACTIVE))
+                .thenReturn(List.of(platformTemplate));
+        when(promptVersionRepository.findByTenantIdAndPromptIdAndVersionNumber(
+                        PlatformPromptConstants.PLATFORM_TENANT_ID, platformPromptId, 1))
+                .thenReturn(Optional.of(platformVersion));
+
+        PromptService.ResolvedPrompt resolved = promptService.resolveForExecution(
+                null, null, null, "real_estate", "en", "lead_qualification");
+
+        assertThat(resolved.template().getCode()).isEqualTo("LEAD_QUALIFY_REAL_ESTATE");
+        assertThat(resolved.template().getIndustryCode()).isEqualTo("REAL_ESTATE");
+    }
+
+    @Test
+    void shouldApproveDraftVersionWithoutActivating() {
+        UUID promptId = UUID.randomUUID();
+        PromptTemplate template = PromptTemplate.builder()
+                .id(promptId)
+                .tenantId(tenantId)
+                .code("P_APPROVE")
+                .name("Approve")
+                .purpose("TEST")
+                .status(PromptStatus.ACTIVE)
+                .activeVersion(1)
+                .createdAt(java.time.Instant.now())
+                .updatedAt(java.time.Instant.now())
+                .build();
+        PromptVersionEntity draft = PromptVersionEntity.builder()
+                .id(UUID.randomUUID())
+                .tenantId(tenantId)
+                .promptId(promptId)
+                .versionNumber(2)
+                .userTemplate("v2")
+                .status(PromptStatus.DRAFT)
+                .createdAt(java.time.Instant.now())
+                .build();
+        when(promptTemplateRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, promptId))
+                .thenReturn(Optional.of(template));
+        when(promptVersionRepository.findByTenantIdAndPromptIdAndVersionNumber(tenantId, promptId, 2))
+                .thenReturn(Optional.of(draft));
+        when(promptVersionRepository.save(any(PromptVersionEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        PromptVersionDto approved = promptService.approveVersion(promptId, 2);
+
+        assertThat(approved.getStatus()).isEqualTo(PromptStatus.APPROVED);
+        assertThat(template.getActiveVersion()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldRollbackByActivatingPriorVersion() {
+        UUID promptId = UUID.randomUUID();
+        UUID v1Id = UUID.randomUUID();
+        UUID v2Id = UUID.randomUUID();
+        PromptTemplate template = PromptTemplate.builder()
+                .id(promptId)
+                .tenantId(tenantId)
+                .code("P_ROLLBACK")
+                .name("Rollback")
+                .purpose("TEST")
+                .status(PromptStatus.ACTIVE)
+                .activeVersion(2)
+                .createdAt(java.time.Instant.now())
+                .updatedAt(java.time.Instant.now())
+                .build();
+        PromptVersionEntity v1 = PromptVersionEntity.builder()
+                .id(v1Id)
+                .tenantId(tenantId)
+                .promptId(promptId)
+                .versionNumber(1)
+                .userTemplate("v1")
+                .status(PromptStatus.ARCHIVED)
+                .createdAt(java.time.Instant.now())
+                .build();
+        PromptVersionEntity v2 = PromptVersionEntity.builder()
+                .id(v2Id)
+                .tenantId(tenantId)
+                .promptId(promptId)
+                .versionNumber(2)
+                .userTemplate("v2")
+                .status(PromptStatus.ACTIVE)
+                .createdAt(java.time.Instant.now())
+                .build();
+        when(promptTemplateRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, promptId))
+                .thenReturn(Optional.of(template));
+        when(promptVersionRepository.findByTenantIdAndPromptIdAndVersionNumber(tenantId, promptId, 1))
+                .thenReturn(Optional.of(v1));
+        when(promptVersionRepository.findByTenantIdAndPromptIdOrderByVersionNumberDesc(tenantId, promptId))
+                .thenReturn(List.of(v2, v1));
+        when(promptVersionRepository.save(any(PromptVersionEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(promptTemplateRepository.save(any(PromptTemplate.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        PromptDto rolledBack = promptService.rollbackToVersion(promptId, 1);
+
+        assertThat(rolledBack.getActiveVersion()).isEqualTo(1);
+        assertThat(v1.getStatus()).isEqualTo(PromptStatus.ACTIVE);
+        assertThat(v2.getStatus()).isEqualTo(PromptStatus.ARCHIVED);
+    }
 }

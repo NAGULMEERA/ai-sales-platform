@@ -1,6 +1,6 @@
 package com.aisales.common.contracts.ai;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -15,14 +15,32 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AiExecuteRequest {
 
-    /** Prompt code (preferred). */
-    @NotBlank
+    /**
+     * Prompt code (preferred when known). Optional when industry + capability dimensions are set.
+     */
+    @Size(max = 100)
     private String promptCode;
 
     /** Optional explicit version; defaults to active version. */
     private Integer promptVersion;
 
     private UUID promptId;
+
+    /** Dimension resolution: industry (e.g. REAL_ESTATE). */
+    @Size(max = 64)
+    private String industryCode;
+
+    /** Dimension resolution: language (e.g. en). */
+    @Size(max = 16)
+    private String languageCode;
+
+    /** Dimension resolution: capability (e.g. LEAD_QUALIFICATION). */
+    @Size(max = 64)
+    private String capability;
+
+    /** Optional preferred model hint forwarded with resolved prompt metadata. */
+    @Size(max = 128)
+    private String preferredModel;
 
     @Builder.Default
     private Map<String, String> variables = new HashMap<>();

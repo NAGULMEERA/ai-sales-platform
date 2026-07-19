@@ -19,6 +19,7 @@ import com.aisales.deal.application.mapper.DealMapper;
 import com.aisales.deal.domain.entity.Opportunity;
 import com.aisales.deal.domain.entity.Quote;
 import com.aisales.deal.infrastructure.persistence.OpportunityRepository;
+import com.aisales.deal.infrastructure.persistence.OpportunityTimelineRepository;
 import com.aisales.deal.infrastructure.persistence.QuoteRepository;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 /**
  * Sprint 5: same Opportunity + Quote APIs for property vs vehicle catalog offers.
@@ -39,9 +41,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class IndustryOpportunityQuoteFlowTest {
 
     @Mock private OpportunityRepository opportunityRepository;
+    @Mock private OpportunityTimelineRepository timelineRepository;
     @Mock private QuoteRepository quoteRepository;
     @Mock private CatalogQuoteGateway catalogQuoteGateway;
     @Mock private EventPublisher eventPublisher;
+    @Mock private ObjectProvider<?> platformMetrics;
 
     private OpportunityService opportunityService;
     private QuoteService quoteService;
@@ -53,7 +57,17 @@ class IndustryOpportunityQuoteFlowTest {
         TenantContext.setTenantId(tenantId.toString());
         TenantContext.setUserId(UUID.randomUUID().toString());
         DealMapper mapper = new DealMapper();
-        opportunityService = new OpportunityService(opportunityRepository, mapper, eventPublisher);
+        org.mockito.Mockito.lenient().when(platformMetrics.getIfAvailable()).thenReturn(null);
+        org.mockito.Mockito.lenient()
+                .when(timelineRepository.save(any()))
+                .thenAnswer(inv -> inv.getArgument(0));
+        opportunityService = new OpportunityService(
+                opportunityRepository,
+                timelineRepository,
+                new OpportunityTimelineRecorder(timelineRepository),
+                mapper,
+                eventPublisher,
+                (ObjectProvider) platformMetrics);
         quoteService = new QuoteService(
                 quoteRepository, opportunityService, catalogQuoteGateway, mapper, eventPublisher,
                 noopTxManager(), org.mockito.Mockito.mock(QuoteIdempotencyService.class));

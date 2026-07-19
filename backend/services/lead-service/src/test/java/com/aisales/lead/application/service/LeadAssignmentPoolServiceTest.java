@@ -74,7 +74,7 @@ class LeadAssignmentPoolServiceTest {
                 mapper, eventPublisher, new LeadStateMachine(), sideEffects, duplicateDetection,
                 poolService, org.mockito.Mockito.mock(PipelineService.class),
                 org.mockito.Mockito.mock(LeadCustomerConversionGateway.class),
-                noopTxManager(), org.mockito.Mockito.mock(LeadIdempotencyService.class));
+                noopTxManager(), org.mockito.Mockito.mock(LeadIdempotencyService.class), org.mockito.Mockito.mock(org.springframework.beans.factory.ObjectProvider.class), org.mockito.Mockito.mock(org.springframework.beans.factory.ObjectProvider.class));
     }
 
     private static org.springframework.transaction.PlatformTransactionManager noopTxManager() {

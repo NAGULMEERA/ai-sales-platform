@@ -52,6 +52,10 @@ public class PromptService {
                 .code(code)
                 .name(request.getName().trim())
                 .purpose(request.getPurpose().trim())
+                .industryCode(normalizeDimension(request.getIndustryCode()))
+                .languageCode(normalizeLanguage(request.getLanguageCode()))
+                .capability(normalizeDimension(request.getCapability()))
+                .preferredModel(trimToNull(request.getPreferredModel()))
                 .status(PromptStatus.ACTIVE)
                 .activeVersion(1)
                 .createdAt(now)
@@ -156,17 +160,103 @@ public class PromptService {
                 .toList();
     }
 
+    /**
+     * Marks a DRAFT version as APPROVED (eligible for activation). Does not change active_version.
+     */
+    @Transactional
+    public PromptVersionDto approveVersion(UUID promptId, int versionNumber) {
+        PromptTemplate template = requireTemplate(promptId);
+        PromptVersionEntity version = requireVersion(template, versionNumber);
+        if (version.getStatus() == PromptStatus.ARCHIVED) {
+            throw new ValidationException("Cannot approve an archived prompt version");
+        }
+        if (version.getStatus() == PromptStatus.ACTIVE) {
+            return mapper.toVersionDto(version);
+        }
+        version.setStatus(PromptStatus.APPROVED);
+        return mapper.toVersionDto(promptVersionRepository.save(version));
+    }
+
+    /**
+     * Activates an APPROVED or DRAFT version and archives other ACTIVE versions.
+     */
+    @Transactional
+    public PromptDto activateVersion(UUID promptId, int versionNumber) {
+        UUID actor = actorId();
+        PromptTemplate template = requireTemplate(promptId);
+        PromptVersionEntity version = requireVersion(template, versionNumber);
+        if (version.getStatus() == PromptStatus.ARCHIVED) {
+            throw new ValidationException("Cannot activate an archived prompt version");
+        }
+        archiveActiveVersions(template.getTenantId(), promptId, version.getId());
+        version.setStatus(PromptStatus.ACTIVE);
+        promptVersionRepository.save(version);
+        template.activateVersion(version.getVersionNumber(), actor);
+        if (template.getStatus() == PromptStatus.DRAFT || template.getStatus() == PromptStatus.ARCHIVED) {
+            template.setStatus(PromptStatus.ACTIVE);
+        }
+        promptTemplateRepository.save(template);
+        return mapper.toDto(template, version);
+    }
+
+    /**
+     * Rolls back to a prior version by reactivating it (including ARCHIVED versions).
+     * Previous ACTIVE versions become ARCHIVED.
+     */
+    @Transactional
+    public PromptDto rollbackToVersion(UUID promptId, int versionNumber) {
+        UUID actor = actorId();
+        PromptTemplate template = requireTemplate(promptId);
+        PromptVersionEntity version = requireVersion(template, versionNumber);
+        archiveActiveVersions(template.getTenantId(), promptId, version.getId());
+        version.setStatus(PromptStatus.ACTIVE);
+        promptVersionRepository.save(version);
+        template.activateVersion(version.getVersionNumber(), actor);
+        if (template.getStatus() == PromptStatus.DRAFT || template.getStatus() == PromptStatus.ARCHIVED) {
+            template.setStatus(PromptStatus.ACTIVE);
+        }
+        promptTemplateRepository.save(template);
+        return mapper.toDto(template, version);
+    }
+
+    private PromptVersionEntity requireVersion(PromptTemplate template, int versionNumber) {
+        return promptVersionRepository
+                .findByTenantIdAndPromptIdAndVersionNumber(
+                        template.getTenantId(), template.getId(), versionNumber)
+                .orElseThrow(() -> new NotFoundException(
+                        "Prompt version not found: " + template.getCode() + " v" + versionNumber));
+    }
+
     @Transactional(readOnly = true)
     public ResolvedPrompt resolveForExecution(String promptCode, UUID promptId, Integer versionNumber) {
+        return resolveForExecution(promptCode, promptId, versionNumber, null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public ResolvedPrompt resolveForExecution(
+            String promptCode,
+            UUID promptId,
+            Integer versionNumber,
+            String industryCode,
+            String languageCode,
+            String capability) {
         PromptTemplate template;
         if (promptId != null) {
             template = requireTemplate(promptId);
-        } else {
-            if (!StringUtils.hasText(promptCode)) {
-                throw new ValidationException("promptCode or promptId is required");
-            }
+        } else if (StringUtils.hasText(promptCode)) {
             template = findByCodeWithPlatformFallback(requireTenantId(), promptCode.trim().toUpperCase())
                     .orElseThrow(() -> new NotFoundException("Prompt not found: " + promptCode));
+        } else {
+            String industry = normalizeDimension(industryCode);
+            String cap = normalizeDimension(capability);
+            if (!StringUtils.hasText(industry) || !StringUtils.hasText(cap)) {
+                throw new ValidationException(
+                        "promptCode, promptId, or industryCode+capability is required");
+            }
+            template = findByDimensionsWithPlatformFallback(
+                            requireTenantId(), industry, normalizeLanguage(languageCode), cap)
+                    .orElseThrow(() -> new NotFoundException(
+                            "Prompt not found for industry=" + industry + " capability=" + cap));
         }
         template.assertActiveRecord();
         if (template.getStatus() == PromptStatus.ARCHIVED) {
@@ -195,6 +285,49 @@ public class PromptService {
         }
         return promptTemplateRepository.findByTenantIdAndCodeAndDeletedAtIsNull(
                 PlatformPromptConstants.PLATFORM_TENANT_ID, code);
+    }
+
+    private Optional<PromptTemplate> findByDimensionsWithPlatformFallback(
+            UUID tenantId, String industryCode, String languageCode, String capability) {
+        Optional<PromptTemplate> tenantMatch =
+                firstDimensionMatch(tenantId, industryCode, languageCode, capability);
+        if (tenantMatch.isPresent()) {
+            return tenantMatch;
+        }
+        if (PlatformPromptConstants.PLATFORM_TENANT_ID.equals(tenantId)) {
+            return Optional.empty();
+        }
+        return firstDimensionMatch(
+                PlatformPromptConstants.PLATFORM_TENANT_ID, industryCode, languageCode, capability);
+    }
+
+    private Optional<PromptTemplate> firstDimensionMatch(
+            UUID tenantId, String industryCode, String languageCode, String capability) {
+        if (StringUtils.hasText(languageCode)) {
+            List<PromptTemplate> exact = promptTemplateRepository.findByDimensionsExact(
+                    tenantId, industryCode, capability, languageCode, PromptStatus.ACTIVE);
+            if (!exact.isEmpty()) {
+                return Optional.of(exact.get(0));
+            }
+        }
+        List<PromptTemplate> agnostic = promptTemplateRepository.findByDimensionsLanguageAgnostic(
+                tenantId, industryCode, capability, PromptStatus.ACTIVE);
+        if (!agnostic.isEmpty()) {
+            return Optional.of(agnostic.get(0));
+        }
+        if (!StringUtils.hasText(languageCode)) {
+            List<PromptTemplate> anyLanguage = promptTemplateRepository.findByDimensionsExact(
+                    tenantId, industryCode, capability, null, PromptStatus.ACTIVE);
+            // Also try common default when caller omitted language.
+            if (anyLanguage.isEmpty()) {
+                anyLanguage = promptTemplateRepository.findByDimensionsExact(
+                        tenantId, industryCode, capability, "en", PromptStatus.ACTIVE);
+            }
+            if (!anyLanguage.isEmpty()) {
+                return Optional.of(anyLanguage.get(0));
+            }
+        }
+        return Optional.empty();
     }
 
     private void archiveActiveVersions(UUID tenantId, UUID promptId, UUID keepId) {
@@ -257,6 +390,16 @@ public class PromptService {
             return null;
         }
         return value.trim();
+    }
+
+    private static String normalizeDimension(String value) {
+        String trimmed = trimToNull(value);
+        return trimmed == null ? null : trimmed.toUpperCase();
+    }
+
+    private static String normalizeLanguage(String value) {
+        String trimmed = trimToNull(value);
+        return trimmed == null ? null : trimmed.toLowerCase();
     }
 
     public record ResolvedPrompt(PromptTemplate template, PromptVersionEntity version) {

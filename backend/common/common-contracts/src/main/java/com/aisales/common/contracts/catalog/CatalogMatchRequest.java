@@ -28,6 +28,8 @@ public class CatalogMatchRequest {
     /** Optional lead correlation for audit / journey linkage (no FK). */
     private UUID leadId;
 
+    private UUID customerId;
+
     @Size(max = 100)
     private String category;
 
@@ -36,7 +38,13 @@ public class CatalogMatchRequest {
     @Size(max = 255)
     private String keyword;
 
+    /** Budget ceiling; alias for maxPrice when set. */
+    private BigDecimal budget;
+
     private BigDecimal maxPrice;
+
+    @Size(max = 255)
+    private String location;
 
     @Size(min = 3, max = 3)
     private String currency;
@@ -48,6 +56,12 @@ public class CatalogMatchRequest {
      */
     @Builder.Default
     private Map<String, Object> attributeFilters = new HashMap<>();
+
+    /** Soft preferences used for scoring (do not hard-filter). */
+    @Builder.Default
+    private Map<String, Object> preferences = new HashMap<>();
+
+    private CatalogScoringWeights scoringWeights;
 
     @Min(1)
     @Max(50)

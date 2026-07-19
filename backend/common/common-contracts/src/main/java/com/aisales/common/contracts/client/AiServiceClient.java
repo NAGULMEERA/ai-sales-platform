@@ -2,6 +2,8 @@ package com.aisales.common.contracts.client;
 
 import com.aisales.common.contracts.ai.AiExecuteRequest;
 import com.aisales.common.contracts.ai.AiExecuteResponse;
+import com.aisales.common.contracts.ai.QualificationResultDto;
+import com.aisales.common.contracts.ai.QualifyLeadAiRequest;
 import com.aisales.common.contracts.ai.AiUsageSummaryDto;
 import com.aisales.common.contracts.ai.CreateKnowledgeBaseRequest;
 import com.aisales.common.contracts.ai.CreatePromptRequest;
@@ -50,6 +52,9 @@ public interface AiServiceClient {
 
     @PostMapping("/ai/execute")
     ApiResponse<AiExecuteResponse> execute(@RequestBody AiExecuteRequest request);
+
+    @PostMapping("/ai/qualify")
+    ApiResponse<QualificationResultDto> qualify(@RequestBody QualifyLeadAiRequest request);
 
     @PostMapping("/knowledge-bases")
     ApiResponse<KnowledgeBaseDto> createKnowledgeBase(@RequestBody CreateKnowledgeBaseRequest request);

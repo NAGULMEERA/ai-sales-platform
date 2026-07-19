@@ -32,6 +32,12 @@ public class RagProperties {
     private TokenChunker tokenWindow = new TokenChunker();
 
     /**
+     * Active retriever key resolved by {@code RetrieverRegistry}.
+     * Plug/flag: {@code VECTOR} | {@code KEYWORD} | {@code HYBRID}.
+     */
+    private String retriever = "VECTOR";
+
+    /**
      * Active reranker key resolved by {@code RerankerRegistry}.
      * Plug/flag: {@code NONE} | {@code STUB} | {@code TEI}.
      */

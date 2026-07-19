@@ -62,22 +62,15 @@ public class EmailDeliveryService {
             return;
         }
 
-        log.info("""
-                ================= EMAIL ({} mode) =================
-                To: {}
-                Tenant: {}
-                Template: {}
-                Subject: {}
-                Body:
-                {}
-                ====================================================
-                """,
+        // Never log subject/body — templates embed verification/reset tokens and links.
+        log.info(
+                "Email rendered ({} mode) template={} tenantId={} recipient={} subject_len={} body_len={}",
                 notificationProperties.getDeliveryMode(),
-                redactEmail(request.getRecipientEmail()),
-                request.getTenantId(),
                 request.getTemplateCode(),
-                rendered.subject(),
-                rendered.body());
+                request.getTenantId(),
+                redactEmail(request.getRecipientEmail()),
+                rendered.subject() != null ? rendered.subject().length() : 0,
+                rendered.body() != null ? rendered.body().length() : 0);
     }
 
     /** Redacts local-part for structured logs (keeps domain for ops diagnosis). */

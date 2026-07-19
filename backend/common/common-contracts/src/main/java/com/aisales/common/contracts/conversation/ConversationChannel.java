@@ -6,5 +6,6 @@ public enum ConversationChannel {
     EMAIL,
     SMS,
     VOICE,
+    SOCIAL,
     OTHER
 }

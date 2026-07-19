@@ -59,6 +59,8 @@ aisales:
     semantic-cache:
       enabled: false
     rag:
+      # Plug/flag — VECTOR | KEYWORD | HYBRID
+      retriever: VECTOR
       # Plug/flag — change only `chunker` (CHAR | TOKEN). Dev/prod default: TOKEN.
       chunker: TOKEN
       # Plug/flag — AUTO | TEXT | PDF for media ingest extraction.

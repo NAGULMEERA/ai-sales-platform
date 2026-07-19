@@ -46,23 +46,24 @@ public class EmailVerificationService {
     private void createActiveToken(UUID tenantId, UUID userId, String email, String firstName) {
         Instant now = Instant.now();
         tokenRepository.invalidatePendingForUser(userId, now);
-        String token = UUID.randomUUID().toString();
+        String rawToken = UUID.randomUUID().toString();
         tokenRepository.save(EmailVerificationToken.builder()
                 .userId(userId)
-                .token(token)
+                .token(RefreshTokenHasher.sha256Hex(rawToken))
                 .expiresAt(now.plusSeconds(authProperties.getEmailVerificationExpirationHours() * 3600))
                 .createdAt(now)
                 .build());
 
-        String verificationLink = authProperties.getVerificationLinkBaseUrl() + "?token=" + token;
+        String verificationLink = authProperties.getVerificationLinkBaseUrl() + "?token=" + rawToken;
         String correlationId = CorrelationIdUtils.get()
                 .orElseGet(CorrelationIdUtils::generate);
+        // Raw token is required for the email link only; DB stores SHA-256 digest.
         eventPublisher.publish(EmailVerificationRequestedEvent.of(
                 tenantId != null ? tenantId.toString() : null,
                 userId.toString(),
                 email,
                 firstName,
-                token,
+                rawToken,
                 verificationLink,
                 correlationId));
 
