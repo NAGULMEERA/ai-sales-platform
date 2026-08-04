@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,6 +39,11 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorizeTenant
 @Tag(name = "Opportunities", description = "Sales opportunity aggregate (deal-service)")
 public class OpportunityController {
+
+    static final String CLOSE = "hasAuthority('opportunity:close') or hasAuthority('tenant:admin') "
+            + "or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')";
+    private static final String DELETE = "hasAuthority('opportunity:delete') or hasAuthority('tenant:admin') "
+            + "or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')";
 
     private final OpportunityService opportunityService;
 
@@ -108,6 +114,7 @@ public class OpportunityController {
 
     @PostMapping("/{id}/close-won")
     @Operation(summary = "Close opportunity as won")
+    @PreAuthorize(CLOSE)
     public ApiResponse<OpportunityDto> closeWon(
             @PathVariable UUID id, @Valid @RequestBody(required = false) CloseOpportunityRequest request) {
         return ApiResponse.ok(opportunityService.closeWon(
@@ -116,6 +123,7 @@ public class OpportunityController {
 
     @PostMapping("/{id}/close-lost")
     @Operation(summary = "Close opportunity as lost")
+    @PreAuthorize(CLOSE)
     public ApiResponse<OpportunityDto> closeLost(
             @PathVariable UUID id, @Valid @RequestBody(required = false) CloseOpportunityRequest request) {
         return ApiResponse.ok(opportunityService.closeLost(
@@ -124,6 +132,7 @@ public class OpportunityController {
 
     @PostMapping("/{id}/reopen")
     @Operation(summary = "Reopen a terminal opportunity")
+    @PreAuthorize(CLOSE)
     public ApiResponse<OpportunityDto> reopen(
             @PathVariable UUID id, @Valid @RequestBody(required = false) ReopenOpportunityRequest request) {
         return ApiResponse.ok(opportunityService.reopen(
@@ -133,6 +142,7 @@ public class OpportunityController {
     @PostMapping("/{id}/archive")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Archive (soft-delete) opportunity")
+    @PreAuthorize(DELETE)
     public ApiResponse<Void> archive(@PathVariable UUID id) {
         opportunityService.archive(id);
         return ApiResponse.ok(null);

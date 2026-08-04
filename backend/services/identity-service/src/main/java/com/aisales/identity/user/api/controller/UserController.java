@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,6 +33,8 @@ public class UserController {
 
     @PostMapping
     @Operation(summary = "Create user within tenant")
+    @PreAuthorize("hasAuthority('user:create') or hasAuthority('tenant:admin') "
+            + "or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')")
     public ApiResponse<UserDto> createUser(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
             @Valid @RequestBody CreateUserRequest request) {

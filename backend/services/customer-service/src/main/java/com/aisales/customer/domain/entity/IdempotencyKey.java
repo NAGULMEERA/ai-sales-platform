@@ -27,7 +27,10 @@ public class IdempotencyKey {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "idempotency_key", nullable = false, unique = true)
+    @Column(name = "tenant_id")
+    private UUID tenantId;
+
+    @Column(name = "idempotency_key", nullable = false)
     private String idempotencyKey;
 
     @Column(nullable = false, length = 100)

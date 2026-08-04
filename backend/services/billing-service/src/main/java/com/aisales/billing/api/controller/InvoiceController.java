@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,12 +31,16 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Invoices", description = "Tenant invoices + payment (STUB | STRIPE)")
 public class InvoiceController {
 
+    private static final String MANAGE = "hasAuthority('billing:manage') or hasAuthority('tenant:admin') "
+            + "or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')";
+
     private final InvoiceService invoiceService;
     private final PaymentService paymentService;
 
     @PostMapping("/from-ai-usage")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create invoice from AI usage ledger for a period")
+    @PreAuthorize(MANAGE)
     public ApiResponse<InvoiceDto> createFromAiUsage(@Valid @RequestBody CreateAiUsageInvoiceRequest request) {
         return ApiResponse.ok(invoiceService.createFromAiUsage(request));
     }
@@ -57,12 +62,14 @@ public class InvoiceController {
 
     @PostMapping("/{id}/issue")
     @Operation(summary = "Issue a DRAFT invoice")
+    @PreAuthorize(MANAGE)
     public ApiResponse<InvoiceDto> issue(@PathVariable UUID id) {
         return ApiResponse.ok(invoiceService.issue(id));
     }
 
     @PostMapping("/{id}/pay")
     @Operation(summary = "Pay an ISSUED invoice via configured provider (STUB | STRIPE)")
+    @PreAuthorize(MANAGE)
     public ApiResponse<PaymentDto> pay(
             @PathVariable UUID id, @RequestBody(required = false) PayInvoiceRequest request) {
         return ApiResponse.ok(paymentService.payInvoice(

@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 
 import com.aisales.common.contracts.deal.QuoteDto;
 import com.aisales.common.contracts.deal.QuoteStatus;
+import com.aisales.common.core.util.TenantContext;
 import com.aisales.deal.domain.entity.IdempotencyKey;
 import com.aisales.deal.infrastructure.persistence.IdempotencyKeyRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,11 +27,18 @@ class QuoteIdempotencyServiceTest {
 
     private QuoteIdempotencyService service;
     private ObjectMapper objectMapper;
+    private final UUID tenantId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper().findAndRegisterModules();
         service = new QuoteIdempotencyService(idempotencyKeyRepository, objectMapper);
+        TenantContext.setTenantId(tenantId.toString());
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContext.clear();
     }
 
     @Test
@@ -46,6 +55,7 @@ class QuoteIdempotencyServiceTest {
                 .totalAmount(new BigDecimal("99.0000"))
                 .build();
         IdempotencyKey key = IdempotencyKey.builder()
+                .tenantId(tenantId)
                 .idempotencyKey("quote-key-1")
                 .operation(QuoteIdempotencyService.CREATE_QUOTE_OPERATION)
                 .resourceId(dto.getId())
@@ -54,7 +64,8 @@ class QuoteIdempotencyServiceTest {
                 .createdAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(3600))
                 .build();
-        when(idempotencyKeyRepository.findByIdempotencyKey("quote-key-1")).thenReturn(Optional.of(key));
+        when(idempotencyKeyRepository.findByTenantIdAndIdempotencyKey(tenantId, "quote-key-1"))
+                .thenReturn(Optional.of(key));
 
         assertThat(service.findCachedCreateResponse("quote-key-1"))
                 .isPresent()
@@ -67,6 +78,7 @@ class QuoteIdempotencyServiceTest {
     void shouldIgnoreExpiredCachedResponse() throws Exception {
         QuoteDto dto = QuoteDto.builder().id(UUID.randomUUID()).status(QuoteStatus.DRAFT).build();
         IdempotencyKey key = IdempotencyKey.builder()
+                .tenantId(tenantId)
                 .idempotencyKey("expired")
                 .operation(QuoteIdempotencyService.CREATE_QUOTE_OPERATION)
                 .resourceId(dto.getId())
@@ -75,7 +87,8 @@ class QuoteIdempotencyServiceTest {
                 .createdAt(Instant.now().minusSeconds(100_000))
                 .expiresAt(Instant.now().minusSeconds(1))
                 .build();
-        when(idempotencyKeyRepository.findByIdempotencyKey("expired")).thenReturn(Optional.of(key));
+        when(idempotencyKeyRepository.findByTenantIdAndIdempotencyKey(tenantId, "expired"))
+                .thenReturn(Optional.of(key));
 
         assertThat(service.findCachedCreateResponse("expired")).isEmpty();
     }

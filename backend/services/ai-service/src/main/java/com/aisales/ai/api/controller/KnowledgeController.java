@@ -11,6 +11,7 @@ import com.aisales.common.contracts.ai.KnowledgeDocumentDto;
 import com.aisales.common.contracts.ai.RegisterKnowledgeDocumentRequest;
 import com.aisales.common.core.dto.ApiResponse;
 import com.aisales.common.core.dto.PageResponse;
+import com.aisales.common.security.annotation.PreAuthorizeTenant;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,8 +30,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
+@PreAuthorizeTenant
 @Tag(name = "Knowledge", description = "Knowledge base metadata + RAG indexing/ingest")
 public class KnowledgeController {
+
+    private static final String READ = "hasAuthority('knowledge:read') or hasAuthority('tenant:admin') "
+            + "or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')";
+    private static final String MANAGE = "hasAuthority('knowledge:manage') or hasAuthority('tenant:admin') "
+            + "or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')";
 
     private final KnowledgeService knowledgeService;
     private final KnowledgeIndexingService knowledgeIndexingService;
@@ -38,12 +46,14 @@ public class KnowledgeController {
     @PostMapping("/api/v1/knowledge-bases")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create a knowledge base")
+    @PreAuthorize(MANAGE)
     public ApiResponse<KnowledgeBaseDto> createBase(@Valid @RequestBody CreateKnowledgeBaseRequest request) {
         return ApiResponse.ok(knowledgeService.createBase(request));
     }
 
     @GetMapping("/api/v1/knowledge-bases")
     @Operation(summary = "List knowledge bases")
+    @PreAuthorize(READ)
     public ApiResponse<PageResponse<KnowledgeBaseDto>> listBases(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
@@ -52,6 +62,7 @@ public class KnowledgeController {
 
     @GetMapping("/api/v1/knowledge-bases/{id}")
     @Operation(summary = "Get a knowledge base")
+    @PreAuthorize(READ)
     public ApiResponse<KnowledgeBaseDto> getBase(@PathVariable UUID id) {
         return ApiResponse.ok(knowledgeService.getBase(id));
     }
@@ -59,6 +70,7 @@ public class KnowledgeController {
     @PostMapping("/api/v1/knowledge-bases/{id}/documents")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Register document metadata (no binary upload)")
+    @PreAuthorize(MANAGE)
     public ApiResponse<KnowledgeDocumentDto> registerDocument(
             @PathVariable UUID id, @Valid @RequestBody RegisterKnowledgeDocumentRequest request) {
         return ApiResponse.ok(knowledgeService.registerDocument(id, request));
@@ -66,18 +78,21 @@ public class KnowledgeController {
 
     @GetMapping("/api/v1/knowledge-bases/{id}/documents")
     @Operation(summary = "List documents in a knowledge base")
+    @PreAuthorize(READ)
     public ApiResponse<List<KnowledgeDocumentDto>> listDocuments(@PathVariable UUID id) {
         return ApiResponse.ok(knowledgeService.listDocuments(id));
     }
 
     @GetMapping("/api/v1/knowledge-documents/{id}")
     @Operation(summary = "Get knowledge document metadata")
+    @PreAuthorize(READ)
     public ApiResponse<KnowledgeDocumentDto> getDocument(@PathVariable UUID id) {
         return ApiResponse.ok(knowledgeService.getDocument(id));
     }
 
     @PostMapping("/api/v1/knowledge-documents/{id}/index")
     @Operation(summary = "Index plain text into chunks + embeddings")
+    @PreAuthorize(MANAGE)
     public ApiResponse<KnowledgeDocumentDto> indexDocument(
             @PathVariable UUID id, @Valid @RequestBody IndexKnowledgeDocumentRequest request) {
         return ApiResponse.ok(knowledgeIndexingService.indexDocument(id, request));
@@ -85,6 +100,7 @@ public class KnowledgeController {
 
     @PostMapping("/api/v1/knowledge-documents/{id}/ingest")
     @Operation(summary = "Download media (S3/LOCAL) → extract TEXT/PDF → index for RAG")
+    @PreAuthorize(MANAGE)
     public ApiResponse<KnowledgeDocumentDto> ingestDocument(
             @PathVariable UUID id, @RequestBody(required = false) IngestKnowledgeDocumentRequest request) {
         return ApiResponse.ok(knowledgeIngestService.ingest(

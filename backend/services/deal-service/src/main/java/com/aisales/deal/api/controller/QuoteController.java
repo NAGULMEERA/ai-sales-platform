@@ -4,6 +4,7 @@ import com.aisales.common.contracts.deal.CreateQuoteRequest;
 import com.aisales.common.contracts.deal.QuoteDto;
 import com.aisales.common.core.constant.ApiConstants;
 import com.aisales.common.core.dto.ApiResponse;
+import com.aisales.common.security.annotation.PreAuthorizeTenant;
 import com.aisales.deal.application.service.QuoteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
+@PreAuthorizeTenant
 @Tag(name = "Quotes", description = "Commercial quotes linked to opportunities")
 public class QuoteController {
 
@@ -56,6 +59,7 @@ public class QuoteController {
 
     @PostMapping("/api/v1/quotes/{id}/accept")
     @Operation(summary = "Accept a sent quote (marks opportunity WON)")
+    @PreAuthorize(OpportunityController.CLOSE)
     public ApiResponse<QuoteDto> accept(@PathVariable UUID id) {
         return ApiResponse.ok(quoteService.accept(id));
     }
