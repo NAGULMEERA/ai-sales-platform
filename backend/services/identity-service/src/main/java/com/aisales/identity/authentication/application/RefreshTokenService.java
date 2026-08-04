@@ -4,11 +4,15 @@ import com.aisales.common.exception.exception.BusinessException;
 import com.aisales.common.exception.exception.UnauthorizedException;
 import com.aisales.common.exception.model.ErrorCode;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import com.aisales.identity.authentication.domain.entity.RefreshToken;
 import com.aisales.identity.authentication.infrastructure.persistence.RefreshTokenRepository;
 import com.aisales.identity.session.application.SessionService;
@@ -23,6 +27,7 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final SessionService sessionService;
+    private final PlatformTransactionManager transactionManager;
 
     @Value("${aisales.security.jwt.refresh-token-expiration-ms:86400000}")
     private long refreshTokenExpirationMs;
@@ -83,14 +88,27 @@ public class RefreshTokenService {
         sessionService.revokeAllSessions(userId);
     }
 
-    @Transactional
+    /**
+     * Revokes an entire refresh-token family (reuse detection / logout / inactive-user
+     * rejection). Runs in its own independent, immediately-committing transaction
+     * (manual {@code REQUIRES_NEW} via {@link TransactionTemplate}) rather than relying on
+     * the {@code @Transactional} proxy, because callers (e.g. {@code AuthService.refresh}
+     * and the self-invoked reuse-detection path below) throw immediately after calling this
+     * method to reject the request. If the revoke joined the caller's transaction it would be
+     * rolled back together with that failure response, silently undoing the security action.
+     */
     public void revokeTokenFamily(UUID tokenFamilyId) {
-        refreshTokenRepository.findByTokenFamilyId(tokenFamilyId).forEach(token -> {
-            if (!token.isRevoked()) {
-                token.setRevoked(true);
-                refreshTokenRepository.save(token);
+        TransactionTemplate independent = new TransactionTemplate(transactionManager);
+        independent.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        independent.executeWithoutResult(status -> {
+            List<RefreshToken> tokens = refreshTokenRepository.findByTokenFamilyId(tokenFamilyId);
+            if (tokens.isEmpty()) {
+                return;
             }
-            sessionService.revokeSessionByRefreshTokenId(token.getId());
+            // Bulk-revoke the family in one UPDATE and batch-revoke sessions in one query,
+            // instead of one save() + one session lookup per token in the family.
+            refreshTokenRepository.revokeAllActiveByTokenFamilyId(tokenFamilyId);
+            sessionService.revokeSessionsByRefreshTokenIds(tokens.stream().map(RefreshToken::getId).toList());
         });
     }
 

@@ -13,7 +13,6 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -56,20 +55,20 @@ public class QuoteIdempotencyService {
             return;
         }
         String normalizedKey = idempotencyKey.trim();
+        String serializedResponse;
         try {
-            Instant now = Instant.now();
-            idempotencyKeyRepository.save(IdempotencyKey.builder()
-                    .idempotencyKey(normalizedKey)
-                    .operation(CREATE_QUOTE_OPERATION)
-                    .resourceId(resourceId)
-                    .responseBody(objectMapper.writeValueAsString(response))
-                    .httpStatus(HttpStatus.CREATED.value())
-                    .createdAt(now)
-                    .expiresAt(now.plus(TTL))
-                    .build());
+            serializedResponse = objectMapper.writeValueAsString(response);
         } catch (JsonProcessingException ex) {
             throw new ValidationException("Failed to store idempotent quote response");
-        } catch (DataIntegrityViolationException ex) {
+        }
+        Instant now = Instant.now();
+        int inserted = idempotencyKeyRepository.insertIgnoreConflict(
+                UUID.randomUUID(), normalizedKey, CREATE_QUOTE_OPERATION, resourceId,
+                serializedResponse, HttpStatus.CREATED.value(), now, now.plus(TTL));
+        if (inserted == 0) {
+            // A concurrent request already stored a response for this key (the advisory
+            // lock in beginCreate should make this rare). ON CONFLICT DO NOTHING never
+            // aborts the surrounding transaction, so this lookup is safe to run here.
             findCached(normalizedKey)
                     .orElseThrow(() -> new ValidationException("Idempotency key conflict without stored response"));
         }

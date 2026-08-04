@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -73,14 +74,17 @@ public class PluginRegistryService {
 
     @Transactional(readOnly = true)
     public List<PluginInstallationDto> listInstallations() {
-        return installationRepository.findByTenantIdOrderByUpdatedAtDesc(requireTenantId()).stream()
-                .map(installation -> {
-                    PluginTypeDto type = catalogRepository
-                            .findByPluginKey(installation.getPluginKey())
-                            .map(PluginCatalogEntry::getType)
-                            .orElse(null);
-                    return mapper.toDto(installation, type);
-                })
+        List<PluginInstallation> installations =
+                installationRepository.findByTenantIdOrderByUpdatedAtDesc(requireTenantId());
+        // Batch-load catalog types in one query instead of one findByPluginKey per installation.
+        Map<String, PluginTypeDto> typeByPluginKey = catalogRepository
+                .findByPluginKeyIn(installations.stream().map(PluginInstallation::getPluginKey).distinct().toList())
+                .stream()
+                .collect(Collectors.toMap(
+                        PluginCatalogEntry::getPluginKey, PluginCatalogEntry::getType));
+        return installations.stream()
+                .map(installation -> mapper.toDto(
+                        installation, typeByPluginKey.get(installation.getPluginKey())))
                 .toList();
     }
 

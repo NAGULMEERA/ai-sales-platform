@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
@@ -137,6 +138,10 @@ public class SemanticCacheService {
         log.info("semantic_cache_invalidated tenant_id={}", tenantId);
     }
 
+    // The only method here that touches the DB alone (no embedding-provider HTTP call to keep
+    // outside a transaction, unlike get()/put() above), so a plain readOnly transaction gives
+    // both counts a single consistent snapshot instead of two independent implicit transactions.
+    @Transactional(readOnly = true)
     public double hitRate(UUID tenantId) {
         long total = cacheRepository.countByTenantId(tenantId);
         if (total == 0) {

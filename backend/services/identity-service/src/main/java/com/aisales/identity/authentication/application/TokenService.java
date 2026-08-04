@@ -5,6 +5,7 @@ import com.aisales.common.security.model.TokenInfo;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.aisales.identity.authentication.domain.entity.RefreshToken;
 import com.aisales.identity.authorization.application.RbacService;
 import com.aisales.identity.session.application.SessionService;
@@ -30,12 +31,17 @@ public class TokenService {
     private final SessionService sessionService;
     private final OpaqueRefreshTokenGenerator opaqueRefreshTokenGenerator;
 
+    // Wraps refresh-token creation + session creation in one transaction so a failure between
+    // the two steps rolls back both instead of leaving an orphaned refresh token (both callees
+    // only touch the local database — no cross-service I/O is held under this transaction).
+    @Transactional
     public AuthResponse issueTokens(User user, String ipAddress, String userAgent) {
         String opaqueRefreshToken = opaqueRefreshTokenGenerator.generate();
         RefreshToken refreshToken = refreshTokenService.createForSession(user.getId(), opaqueRefreshToken);
         return buildAuthResponse(user, refreshToken, opaqueRefreshToken, ipAddress, userAgent);
     }
 
+    @Transactional
     public AuthResponse rotateTokens(User user, String presentedRefreshToken, String ipAddress, String userAgent) {
         String opaqueRefreshToken = opaqueRefreshTokenGenerator.generate();
         RefreshToken refreshToken = refreshTokenService.rotate(presentedRefreshToken, opaqueRefreshToken);

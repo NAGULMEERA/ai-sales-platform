@@ -57,21 +57,27 @@ public class DocumentEmbeddingPipeline {
         UUID documentId = document.getId();
         claimForIndexing(tenantId, documentId);
 
+        // Everything past this point runs against a claimed (INDEXING) document. Any
+        // RuntimeException here — including provider resolution or quota reservation
+        // failures that used to occur before quota release/claim recovery were wired up —
+        // must release the claim so the document never gets stuck in INDEXING forever.
+        try {
+            return doIndex(tenantId, document, documentId, chunks);
+        } catch (RuntimeException ex) {
+            markFailedIfClaimHeld(tenantId, documentId);
+            throw ex;
+        }
+    }
+
+    private KnowledgeDocumentDto doIndex(
+            UUID tenantId, KnowledgeDocument document, UUID documentId, List<String> chunks) {
         EmbeddingProvider embeddingProvider = embeddingProviderRegistry.resolveDefault();
-        List<float[]> vectors;
-        Integer providerTokens;
         long reserved = aiQuotaService.reserveEmbed(tenantId);
         try {
-            try {
-                EmbeddingBatchResult batch = embeddingProvider.embedWithUsage(chunks);
-                vectors = batch.vectors();
-                providerTokens = batch.promptTokens();
-            } catch (RuntimeException ex) {
-                markFailedIfClaimHeld(tenantId, documentId);
-                throw ex;
-            }
+            EmbeddingBatchResult batch = embeddingProvider.embedWithUsage(chunks);
+            List<float[]> vectors = batch.vectors();
+            Integer providerTokens = batch.promptTokens();
             if (vectors.size() != chunks.size()) {
-                markFailedIfClaimHeld(tenantId, documentId);
                 throw new ValidationException("Embedding provider returned unexpected vector count");
             }
 

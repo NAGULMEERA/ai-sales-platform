@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 @Service
@@ -22,6 +23,10 @@ public class CustomerDuplicateDetectionService {
     private final CustomerDuplicateRepository duplicateRepository;
     private final CustomerMatchingProperties matchingProperties;
 
+    // Guards the read-then-save-N-duplicates sequence with its own transaction boundary so this
+    // remains atomic regardless of caller context (no cross-service I/O here, so a local DB
+    // transaction is safe to hold).
+    @Transactional
     public void detectAndRecord(Customer customer) {
         String phone = matchingProperties.isMatchPhone() ? trim(customer.getPhone()) : null;
         String email = matchingProperties.isMatchEmail() ? trim(customer.getEmail()) : null;

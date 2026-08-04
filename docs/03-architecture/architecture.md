@@ -40,3 +40,4 @@ JWT-based authentication (identity-service) with refresh tokens. Resource server
 | [sequence-diagrams.md](sequence-diagrams.md) | Auth, lead→events, AI+RAG, workflow actions |
 | [service-boundaries.md](service-boundaries.md) | Ownership boundaries |
 | [communication-patterns.md](communication-patterns.md) | REST vs events |
+| [architecture-governance.md](architecture-governance.md) | ArchUnit + Maven module-graph rules that enforce this document automatically |

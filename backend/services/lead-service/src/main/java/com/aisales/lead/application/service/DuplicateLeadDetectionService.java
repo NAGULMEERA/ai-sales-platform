@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
@@ -24,6 +25,10 @@ public class DuplicateLeadDetectionService {
     private final LeadRepository leadRepository;
     private final LeadDuplicateRepository leadDuplicateRepository;
 
+    // Guards the read-then-save-N-duplicates sequence with its own transaction boundary so this
+    // remains atomic even if called from a context other than LeadService.createLead's existing
+    // transaction (no cross-service I/O here, so a local DB transaction is safe to hold).
+    @Transactional
     public void detectAndRecord(Lead lead) {
         String phone = StringUtils.hasText(lead.getPhone()) ? lead.getPhone().trim() : null;
         String email = StringUtils.hasText(lead.getEmail()) ? lead.getEmail().trim() : null;

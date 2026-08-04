@@ -144,7 +144,12 @@ class LeadOpportunityConversionServiceTest {
         verify(dealServiceClient).createOpportunity(captor.capture());
         assertThat(captor.getValue().getCatalogProductId()).isEqualTo(productId);
         assertThat(captor.getValue().getCustomerId()).isEqualTo(customerId);
-        verify(sideEffects).recordActivity(eq(leadId), eq("OPPORTUNITY_CREATED"), any(), any());
-        verify(sideEffects).recordActivity(eq(leadId), eq("CATALOG_MATCHED"), any(), any());
+        ArgumentCaptor<List<LeadSideEffectRecorder.ActivityEntry>> activitiesCaptor =
+                ArgumentCaptor.forClass(List.class);
+        verify(sideEffects).recordActivities(eq(leadId), any(), activitiesCaptor.capture());
+        List<String> recordedTypes = activitiesCaptor.getValue().stream()
+                .map(LeadSideEffectRecorder.ActivityEntry::type)
+                .toList();
+        assertThat(recordedTypes).contains("OPPORTUNITY_CREATED", "CATALOG_MATCHED");
     }
 }

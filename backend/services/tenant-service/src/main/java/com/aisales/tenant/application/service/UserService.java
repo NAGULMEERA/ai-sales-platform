@@ -26,12 +26,14 @@ public class UserService {
         return userMapper.toResponse(userRepository.save(user));
     }
 
+    @Transactional(readOnly = true)
     public UserResponse getById(UUID id) {
         return userRepository.findById(id)
                 .map(userMapper::toResponse)
                 .orElseThrow(() -> new NotFoundException("User not found: " + id));
     }
 
+    @Transactional(readOnly = true)
     public List<UserResponse> listByTenant(UUID tenantId) {
         return userRepository.findByTenantId(tenantId).stream().map(userMapper::toResponse).toList();
     }

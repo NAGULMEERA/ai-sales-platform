@@ -27,7 +27,9 @@ public class MediaApplicationService {
     private final ObjectStorageRegistry objectStorageRegistry;
     private final MediaContentValidator mediaContentValidator;
 
-    @Transactional
+    // Intentionally not @Transactional: storage.put() is a network call to the object
+    // store and must not run inside a DB transaction (would hold a connection open for
+    // the duration of the upload). The single save() below is already atomic on its own.
     public MediaDto upload(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new ValidationException("file is required");

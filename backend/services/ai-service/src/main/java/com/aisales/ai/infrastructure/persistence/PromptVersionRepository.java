@@ -1,6 +1,7 @@
 package com.aisales.ai.infrastructure.persistence;
 
 import com.aisales.ai.domain.entity.PromptVersionEntity;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,6 +16,9 @@ public interface PromptVersionRepository extends JpaRepository<PromptVersionEnti
 
     List<PromptVersionEntity> findByTenantIdAndPromptIdOrderByVersionNumberDesc(
             UUID tenantId, UUID promptId);
+
+    List<PromptVersionEntity> findByTenantIdAndPromptIdInOrderByPromptIdAscVersionNumberDesc(
+            UUID tenantId, Collection<UUID> promptIds);
 
     @Query("""
             SELECT COALESCE(MAX(v.versionNumber), 0)

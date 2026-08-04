@@ -15,7 +15,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -25,6 +24,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -106,16 +107,20 @@ class TenantIdempotencyServiceTest {
                 .name("Acme")
                 .status(TenantStatus.ACTIVE)
                 .build();
+        when(idempotencyKeyRepository.insertIgnoreConflict(
+                any(), eq("key-1"), eq(TenantIdempotencyService.CREATE_TENANT_OPERATION),
+                eq(tenantId), any(), eq(HttpStatus.CREATED.value()), any(), any()))
+                .thenReturn(1);
 
         tenantIdempotencyService.storeCreateResponse("key-1", tenantId, tenantDto);
 
-        ArgumentCaptor<IdempotencyKey> captor = ArgumentCaptor.forClass(IdempotencyKey.class);
-        verify(idempotencyKeyRepository).save(captor.capture());
-        IdempotencyKey saved = captor.getValue();
-        assertThat(saved.getIdempotencyKey()).isEqualTo("key-1");
-        assertThat(saved.getOperation()).isEqualTo(TenantIdempotencyService.CREATE_TENANT_OPERATION);
-        assertThat(saved.getResourceId()).isEqualTo(tenantId);
-        assertThat(saved.getHttpStatus()).isEqualTo(HttpStatus.CREATED.value());
+        ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<UUID> resourceIdCaptor = ArgumentCaptor.forClass(UUID.class);
+        verify(idempotencyKeyRepository).insertIgnoreConflict(
+                any(), keyCaptor.capture(), any(), resourceIdCaptor.capture(),
+                any(), eq(HttpStatus.CREATED.value()), any(), any());
+        assertThat(keyCaptor.getValue()).isEqualTo("key-1");
+        assertThat(resourceIdCaptor.getValue()).isEqualTo(tenantId);
     }
 
     @Test
@@ -127,7 +132,9 @@ class TenantIdempotencyServiceTest {
                 .status(TenantStatus.ACTIVE)
                 .build();
         String responseJson = new ObjectMapper().writeValueAsString(tenantDto);
-        when(idempotencyKeyRepository.save(any())).thenThrow(new DataIntegrityViolationException("duplicate"));
+        when(idempotencyKeyRepository.insertIgnoreConflict(
+                any(), any(), any(), any(), any(), anyInt(), any(), any()))
+                .thenReturn(0);
         when(idempotencyKeyRepository.findByIdempotencyKey("key-1")).thenReturn(Optional.of(
                 IdempotencyKey.builder()
                         .idempotencyKey("key-1")
@@ -145,7 +152,8 @@ class TenantIdempotencyServiceTest {
     void shouldIgnoreBlankKey() {
         assertThat(tenantIdempotencyService.findCachedCreateResponse("  ")).isEmpty();
         tenantIdempotencyService.storeCreateResponse(" ", tenantId(), tenantDto());
-        verify(idempotencyKeyRepository, never()).save(any());
+        verify(idempotencyKeyRepository, never()).insertIgnoreConflict(
+                any(), any(), any(), any(), any(), anyInt(), any(), any());
     }
 
     private UUID tenantId() {

@@ -44,6 +44,7 @@
         <module>services/deal-service</module>
         <module>services/marketplace-service</module>
         <module>plugins</module>
+        <module>architecture-tests</module>
     </modules>
 
     <properties>
@@ -68,6 +69,17 @@
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
         <maven-pmd-plugin.version>3.21.2</maven-pmd-plugin.version>
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
+        <maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
+        <duplicate-finder-maven-plugin.version>2.0.1</duplicate-finder-maven-plugin.version>
+        <maven-dependency-plugin.version>3.11.0</maven-dependency-plugin.version>
+
+        <!-- Pinned transitive versions: resolve convergence conflicts surfaced by
+             maven-enforcer-plugin (requireUpperBoundDependencies) across the reactor. -->
+        <httpclient.version>4.5.14</httpclient.version>
+        <jetbrains-annotations.version>17.0.0</jetbrains-annotations.version>
+        <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
+        <pdfbox.version>3.0.3</pdfbox.version>
+        <aws-sdk-s3.version>2.25.70</aws-sdk-s3.version>
     </properties>
 
     <dependencyManagement>
@@ -165,13 +177,47 @@
             </dependency>
             <dependency>
                 <groupId>com.tngtech.archunit</groupId>
-                <artifactId>archunit-junit5</artifactId>
+                <artifactId>archunit</artifactId>
                 <version>${archunit.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.aisales</groupId>
                 <artifactId>plugin-sdk</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <!-- Explicit pins for transitive dependencies pulled in with divergent versions by
+                 Spring Cloud Netflix (Eureka), Testcontainers and the AWS SDK. Pinning here
+                 guarantees a single, deliberately chosen version resolves reactor-wide instead
+                 of relying on Maven's "nearest wins" mediation. -->
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpclient.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains</groupId>
+                <artifactId>annotations</artifactId>
+                <version>${jetbrains-annotations.version}</version>
+            </dependency>
+
+            <!-- Dependencies previously declared with ad-hoc versions directly inside individual
+                 service POMs. Centralised here so every module resolves the same version and
+                 future upgrades happen in a single place. -->
+            <dependency>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>${logstash-logback-encoder.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>pdfbox</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>s3</artifactId>
+                <version>${aws-sdk-s3.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -232,6 +278,21 @@
                     <artifactId>jacoco-maven-plugin</artifactId>
                     <version>${jacoco-maven-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${maven-enforcer-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.basepom.maven</groupId>
+                    <artifactId>duplicate-finder-maven-plugin</artifactId>
+                    <version>${duplicate-finder-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${maven-dependency-plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
@@ -260,6 +321,118 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <!-- Fails the build (validate phase) on: duplicate dependency coordinates within a
+                     single POM, duplicate plugin declarations, and dependency versions that resolve
+                     lower than a version required transitively elsewhere in the tree. -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-dependency-rules</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <banDuplicatePomDependencyVersions/>
+                                <requireMavenVersion>
+                                    <version>[3.6.3,)</version>
+                                </requireMavenVersion>
+                                <requireJavaVersion>
+                                    <version>[21,)</version>
+                                </requireJavaVersion>
+                                <requireUpperBoundDeps>
+                                    <excludes>
+                                        <!-- Deep transitive dependencies of Netflix Eureka
+                                             (spring-cloud-starter-netflix-eureka-server, used only by
+                                             service-registry). Both hk2-api 3.1.1 vs 4.0.0-M3 and the
+                                             error_prone_annotations versions originate entirely inside
+                                             Eureka's own Jersey/HK2/Guava stack, are never referenced by
+                                             platform code, and forcing convergence would require pinning
+                                             an unreleased HK2 milestone across an unrelated major version
+                                             boundary. Documented exception per Rule 01 (technical debt
+                                             requires justification): risk of pinning outweighs benefit. -->
+                                        <exclude>org.glassfish.hk2:hk2-api</exclude>
+                                        <exclude>com.google.errorprone:error_prone_annotations</exclude>
+                                    </excludes>
+                                </requireUpperBoundDeps>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <!-- Reports duplicate classes/resources shaded onto the classpath by two different
+                     dependencies (classic sources: multiple logging bindings, javax vs jakarta
+                     namespace clashes, shaded-vs-unshaded artifacts). Report-only for now: the
+                     platform has zero conflicting-class findings today, so this is a regression
+                     guard rather than a currently-failing gate. Flip failBuildInCaseOfConflict to
+                     true once triaged for a module that introduces a real conflict. -->
+                <groupId>org.basepom.maven</groupId>
+                <artifactId>duplicate-finder-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>duplicate-class-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <failBuildInCaseOfConflict>false</failBuildInCaseOfConflict>
+                    <printEqualFiles>false</printEqualFiles>
+                    <failBuildInCaseOfDifferentContentConflict>false</failBuildInCaseOfDifferentContentConflict>
+                    <ignoredResourcePatterns>
+                        <ignoredResourcePattern>.*\.txt$</ignoredResourcePattern>
+                        <ignoredResourcePattern>META-INF/.*\.SF</ignoredResourcePattern>
+                        <ignoredResourcePattern>META-INF/.*\.DSA</ignoredResourcePattern>
+                        <ignoredResourcePattern>META-INF/.*\.RSA</ignoredResourcePattern>
+                        <ignoredResourcePattern>module-info\.class</ignoredResourcePattern>
+                    </ignoredResourcePatterns>
+                </configuration>
+            </plugin>
+            <plugin>
+                <!-- Non-failing "unused/undeclared dependency" report, generated on every `mvn verify`.
+                     Spring Boot starters, Lombok-generated code and re-exported test dependencies
+                     (see common-testing) produce structural false positives with this goal, so it is
+                     intentionally report-only rather than a hard gate. Review target/dependency-analysis
+                     output when adding or removing dependencies. -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>analyze-dependencies</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <failOnWarning>false</failOnWarning>
+                            <ignoreNonCompile>true</ignoreNonCompile>
+                            <ignoredUnusedDeclaredDependencies>
+                                <!-- Spring Boot starters are intentional aggregators: consumers declare
+                                     the starter and use classes from its transitive children by design. -->
+                                <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter*</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.springframework.cloud:spring-cloud-starter*</ignoredUnusedDeclaredDependency>
+                                <!-- Annotation-processor-only / bytecode-woven dependencies: no compile-time import exists. -->
+                                <ignoredUnusedDeclaredDependency>org.projectlombok:lombok</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.mapstruct:mapstruct-processor</ignoredUnusedDeclaredDependency>
+                                <!-- JDBC/Flyway drivers are loaded via SPI at runtime, never imported directly. -->
+                                <ignoredUnusedDeclaredDependency>org.postgresql:postgresql</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.flywaydb:flyway-database-postgresql</ignoredUnusedDeclaredDependency>
+                                <!-- common-testing is a deliberate shared test-dependency aggregator: it
+                                     re-exports JUnit/Testcontainers/ArchUnit so consuming services do not
+                                     need to redeclare each one individually. -->
+                                <ignoredUnusedDeclaredDependency>com.aisales:common-testing</ignoredUnusedDeclaredDependency>
+                            </ignoredUnusedDeclaredDependencies>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

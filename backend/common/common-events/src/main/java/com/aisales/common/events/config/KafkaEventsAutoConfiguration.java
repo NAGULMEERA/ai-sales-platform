@@ -2,11 +2,12 @@ package com.aisales.common.events.config;
 
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.kafka.autoconfigure.KafkaAutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
@@ -16,7 +17,9 @@ import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.util.backoff.FixedBackOff;
 
-@Configuration
+// Must run after Boot's KafkaAutoConfiguration: the @ConditionalOnBean(ConsumerFactory)
+// check only passes once Boot has registered the Kafka infrastructure beans.
+@AutoConfiguration(after = KafkaAutoConfiguration.class)
 @EnableKafka
 @ConditionalOnClass(KafkaTemplate.class)
 @ConditionalOnBean(ConsumerFactory.class)

@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -126,10 +127,20 @@ public class WorkflowAutomationEngine {
         List<WorkflowAutomationExecution> due =
                 executionRepository.findByTenantIdAndStateAndNextRetryAtLessThanEqual(
                         tenantId, "RETRYING", Instant.now());
+        if (due.isEmpty()) {
+            return;
+        }
+        // Batch-load rules for the due executions in one query instead of one findById per execution.
+        Map<UUID, WorkflowRule> ruleById = ruleRepository
+                .findByTenantIdAndIdInAndDeletedAtIsNull(
+                        tenantId, due.stream().map(WorkflowAutomationExecution::getRuleId).distinct().toList())
+                .stream()
+                .collect(Collectors.toMap(WorkflowRule::getId, rule -> rule));
         for (WorkflowAutomationExecution execution : due) {
-            ruleRepository
-                    .findByTenantIdAndIdAndDeletedAtIsNull(tenantId, execution.getRuleId())
-                    .ifPresent(rule -> retryExecution(execution, rule));
+            WorkflowRule rule = ruleById.get(execution.getRuleId());
+            if (rule != null) {
+                retryExecution(execution, rule);
+            }
         }
     }
 

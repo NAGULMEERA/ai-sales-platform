@@ -11,6 +11,7 @@ import com.aisales.common.contracts.lead.UpdateLeadRequest;
 import com.aisales.common.contracts.workflow.WorkflowActionDto;
 import com.aisales.common.contracts.workflow.WorkflowActionType;
 import com.aisales.common.core.util.CorrelationIdUtils;
+import com.aisales.common.events.model.BaseEvent;
 import com.aisales.common.events.model.NotificationSentEvent;
 import com.aisales.common.events.model.WorkflowTriggeredEvent;
 import com.aisales.common.events.publisher.EventPublisher;
@@ -23,6 +24,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 /**
@@ -38,6 +41,7 @@ public class WorkflowActionExecutor {
     private final ObjectProvider<LeadServiceClient> leadServiceClient;
     private final ObjectProvider<DealServiceClient> dealServiceClient;
     private final ObjectProvider<AiServiceClient> aiServiceClient;
+    private final PlatformTransactionManager transactionManager;
 
     public Map<String, Object> execute(
             WorkflowActionDto action,
@@ -171,7 +175,7 @@ public class WorkflowActionExecutor {
                 "recipient", context.getOrDefault("recipient", context.get("email"))));
         String template = string(params.getOrDefault("template", "workflow-followup"));
         String correlationId = CorrelationIdUtils.get().orElseGet(CorrelationIdUtils::generate);
-        eventPublisher.publish(NotificationSentEvent.of(
+        publishInTransaction(NotificationSentEvent.of(
                 tenantId,
                 UUID.randomUUID().toString(),
                 channel,
@@ -192,7 +196,7 @@ public class WorkflowActionExecutor {
             Map<String, Object> params,
             Map<String, Object> context) {
         String correlationId = CorrelationIdUtils.get().orElseGet(CorrelationIdUtils::generate);
-        eventPublisher.publish(WorkflowTriggeredEvent.of(
+        publishInTransaction(WorkflowTriggeredEvent.of(
                 tenantId,
                 UUID.randomUUID().toString(),
                 WorkflowDefinitionKey.AUTOMATION_RULE_V1.name(),
@@ -202,6 +206,19 @@ public class WorkflowActionExecutor {
                 correlationId));
         log.info("Published coordination action {} for businessKey={}", type, businessKey);
         return Map.of("action", type.name(), "published", true);
+    }
+
+    /**
+     * {@code EventPublisher.publish} (outbox) requires {@code Propagation.MANDATORY} — an
+     * already-active transaction. Today this executor is only invoked from
+     * {@code WorkflowAutomationEngine}, itself only reachable from the Kafka consumer's
+     * wrapping transaction, so an active transaction is always present in practice. This
+     * wrapper makes that requirement self-sufficient: it joins an existing transaction when
+     * present (identical behavior to today) or opens a short one when this executor is
+     * ever invoked from a non-transactional caller (e.g. a scheduled retry path).
+     */
+    private void publishInTransaction(BaseEvent event) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> eventPublisher.publish(event));
     }
 
     private static UUID uuid(Object primary, Object secondary) {
