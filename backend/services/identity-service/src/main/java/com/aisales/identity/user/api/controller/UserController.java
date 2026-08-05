@@ -43,7 +43,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get user by ID")
+    @Operation(summary = "Get user by ID (tenant-scoped; SUPER_ADMIN may access any tenant)")
     public ApiResponse<UserDto> getUser(@PathVariable("id") UUID id) {
         return withCorrelation(ApiResponse.ok(userService.getUser(id)));
     }

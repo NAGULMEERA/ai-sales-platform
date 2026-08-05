@@ -1,9 +1,7 @@
 package com.aisales.gateway.ratelimit;
 
 import com.aisales.common.core.constant.ApiConstants;
-import com.aisales.gateway.support.ClientIpResolver;
 import java.util.Locale;
-import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -11,22 +9,22 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 /**
- * Rate-limit key for authenticated SaaS routes: {@code PLAN:tenantId} (falls back to IP).
- * Plan comes from {@link ApiConstants#SUBSCRIPTION_PLAN_HEADER} set by the JWT filter.
+ * Rate-limit key for authenticated SaaS routes: {@code PLAN:tenantId}.
+ * Missing tenant fails closed ({@link Mono#empty()}); pair with {@code denyEmptyKey=true}
+ * so requests without a tenant key are rejected rather than falling back to a shared IP bucket.
  */
 @Component
-@RequiredArgsConstructor
 public class TenantPlanKeyResolver implements KeyResolver {
-
-    private final ClientIpResolver clientIpResolver;
 
     @Override
     public Mono<String> resolve(ServerWebExchange exchange) {
+        String tenantId = exchange.getRequest().getHeaders().getFirst(ApiConstants.TENANT_ID_HEADER);
+        if (!StringUtils.hasText(tenantId)) {
+            return Mono.empty();
+        }
         String plan = normalizePlan(
                 exchange.getRequest().getHeaders().getFirst(ApiConstants.SUBSCRIPTION_PLAN_HEADER));
-        String tenantId = exchange.getRequest().getHeaders().getFirst(ApiConstants.TENANT_ID_HEADER);
-        String identity = StringUtils.hasText(tenantId) ? tenantId.trim() : clientIpResolver.resolve(exchange);
-        return Mono.just(plan + ":" + identity);
+        return Mono.just(plan + ":" + tenantId.trim());
     }
 
     static String normalizePlan(String raw) {

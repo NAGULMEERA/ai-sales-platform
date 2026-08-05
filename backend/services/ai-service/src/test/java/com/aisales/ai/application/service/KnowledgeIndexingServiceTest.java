@@ -108,10 +108,10 @@ class KnowledgeIndexingServiceTest {
         when(embeddingProvider.modelName()).thenReturn("stub-embedding-1024");
         when(embeddingProvider.embedWithUsage(anyList()))
                 .thenReturn(new EmbeddingBatchResult(List.of(new float[1024]), 12));
-        when(knowledgeChunkRepository.save(any(KnowledgeChunk.class))).thenAnswer(inv -> {
-            KnowledgeChunk chunk = inv.getArgument(0);
-            chunk.setId(UUID.randomUUID());
-            return chunk;
+        when(knowledgeChunkRepository.saveAll(anyList())).thenAnswer(inv -> {
+            List<KnowledgeChunk> chunks = inv.getArgument(0);
+            chunks.forEach(chunk -> chunk.setId(UUID.randomUUID()));
+            return chunks;
         });
         when(knowledgeDocumentRepository.save(any(KnowledgeDocument.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -121,7 +121,7 @@ class KnowledgeIndexingServiceTest {
 
         assertThat(dto.getStatus()).isEqualTo(KnowledgeDocumentStatus.READY);
         verify(knowledgeChunkRepository).deleteByTenantIdAndDocumentId(tenantId, documentId);
-        verify(knowledgeChunkVectorRepository).updateEmbedding(any(UUID.class), any(float[].class));
+        verify(knowledgeChunkVectorRepository).updateEmbeddings(eq(tenantId), anyList(), anyList());
         verify(embeddingProvider).embedWithUsage(eq(List.of("Warranty covers three years.")));
     }
 

@@ -4,17 +4,23 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 /**
  * Tenant-aware read-through cache backed by Redis. Keys are generated via {@link TenantCacheKeyGenerator}.
@@ -155,6 +161,23 @@ public class PlatformCacheService {
         return deleted;
     }
 
+    /**
+     * Evicts every Redis entry for {@code namespace} belonging to {@code tenantId}, regardless of
+     * the calling thread's {@link com.aisales.common.core.util.TenantContext}. Use this when the
+     * tenant being invalidated is supplied explicitly (e.g. a tenant-offboarding job) rather than
+     * implied by the current request.
+     */
+    public long evictNamespaceForTenantAndCount(String namespace, UUID tenantId) {
+        String pattern = keyGenerator.namespacePatternForTenant(namespace, tenantId);
+        long deleted = evictByPattern(namespace, pattern);
+        metrics.recordEviction(namespace, deleted);
+        return deleted;
+    }
+
+    public void evictNamespaceForTenant(String namespace, UUID tenantId) {
+        evictNamespaceForTenantAndCount(namespace, tenantId);
+    }
+
     public long evictTenantAndCount() {
         String pattern = keyGenerator.tenantPattern();
         long deleted = evictByPattern("*", pattern);
@@ -166,17 +189,48 @@ public class PlatformCacheService {
         evictTenantAndCount();
     }
 
+    private static final int SCAN_COUNT = 256;
+    private static final int DELETE_BATCH_SIZE = 256;
+
+    /**
+     * Evicts matching keys via Redis SCAN (cursor batches). Never uses KEYS — KEYS is O(N) and
+     * blocks the Redis event loop under production key cardinality.
+     */
     private long evictByPattern(String namespace, String pattern) {
-        Set<String> keys = redisTemplate.keys(pattern);
-        if (keys == null || keys.isEmpty()) {
-            return 0;
-        }
-        Long deleted = metrics.recordLatency("evict", namespace, () -> redisTemplate.delete(keys));
-        return Optional.ofNullable(deleted).orElse(0L);
+        return metrics.recordLatency("evict", namespace, () -> {
+            long deleted = 0L;
+            ScanOptions options = ScanOptions.scanOptions().match(pattern).count(SCAN_COUNT).build();
+            List<String> batch = new ArrayList<>(DELETE_BATCH_SIZE);
+            try (Cursor<String> cursor = redisTemplate.scan(options)) {
+                while (cursor.hasNext()) {
+                    batch.add(cursor.next());
+                    if (batch.size() >= DELETE_BATCH_SIZE) {
+                        deleted += deleteBatch(batch);
+                        batch.clear();
+                    }
+                }
+            }
+            if (!batch.isEmpty()) {
+                deleted += deleteBatch(batch);
+            }
+            return deleted;
+        });
+    }
+
+    private long deleteBatch(List<String> batch) {
+        Long deleted = redisTemplate.delete(batch);
+        return deleted != null ? deleted : 0L;
     }
 
     Set<String> keysForNamespace(String namespace) {
-        Set<String> keys = redisTemplate.keys(keyGenerator.namespacePattern(namespace));
-        return keys != null ? keys : Collections.emptySet();
+        String pattern = keyGenerator.namespacePattern(namespace);
+        Set<String> keys = new HashSet<>();
+        ScanOptions options = ScanOptions.scanOptions().match(pattern).count(SCAN_COUNT).build();
+        try (Cursor<String> cursor = redisTemplate.scan(options)) {
+            while (cursor.hasNext()) {
+                keys.add(cursor.next());
+            }
+        }
+        return keys.isEmpty() ? Collections.emptySet() : keys;
     }
 }

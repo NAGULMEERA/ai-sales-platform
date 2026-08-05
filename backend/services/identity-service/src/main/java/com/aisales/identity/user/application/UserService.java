@@ -4,6 +4,7 @@ import com.aisales.common.contracts.user.CreateUserRequest;
 import com.aisales.common.contracts.user.UserDto;
 import com.aisales.common.core.util.CorrelationIdUtils;
 import com.aisales.common.core.util.EmailNormalizer;
+import com.aisales.common.core.util.TenantContext;
 import com.aisales.common.events.model.UserCreatedEvent;
 import com.aisales.common.events.publisher.EventPublisher;
 import com.aisales.common.exception.exception.ForbiddenException;
@@ -41,6 +42,18 @@ public class UserService {
 
     @Transactional
     public UserDto createUser(UUID tenantId, CreateUserRequest request) {
+        // The tenant id is supplied via header rather than derived purely from the JWT, so an
+        // explicit ownership check is required here: only a platform admin may create a user for
+        // a tenant other than their own. Regular callers whose token happens to carry no tenant
+        // claim (context empty) are rejected rather than silently trusting the header.
+        if (!TenantContext.isPlatformAdmin()) {
+            String contextTenantId = TenantContext.getTenantId();
+            if (contextTenantId == null || contextTenantId.isBlank()
+                    || !contextTenantId.equals(tenantId.toString())) {
+                throw new ForbiddenException(ErrorCode.FORBIDDEN,
+                        "Cannot create a user outside of your own tenant");
+            }
+        }
         String email = EmailNormalizer.normalize(request.getEmail());
         if (userRepository.existsByEmail(email)) {
             throw new ValidationException("Email already registered");
@@ -83,9 +96,25 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserDto getUser(UUID id) {
-        return userRepository.findById(id)
+        // Platform admins may look up any user; everyone else is scoped to their own tenant to
+        // prevent cross-tenant enumeration of user records by guessing/leaking a UUID.
+        if (TenantContext.isPlatformAdmin()) {
+            return userRepository.findById(id)
+                    .map(this::toDto)
+                    .orElseThrow(() -> new NotFoundException("User", id));
+        }
+        UUID tenantId = requireTenantId();
+        return userRepository.findByIdAndTenantId(id, tenantId)
                 .map(this::toDto)
                 .orElseThrow(() -> new NotFoundException("User", id));
+    }
+
+    private UUID requireTenantId() {
+        String tenantId = TenantContext.getTenantId();
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new ForbiddenException(ErrorCode.FORBIDDEN, "Tenant context is required");
+        }
+        return UUID.fromString(tenantId);
     }
 
     private UserDto toDto(User user) {

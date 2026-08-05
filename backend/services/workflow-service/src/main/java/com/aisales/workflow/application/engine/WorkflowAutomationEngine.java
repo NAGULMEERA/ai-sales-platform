@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -91,7 +92,8 @@ public class WorkflowAutomationEngine {
                 return;
             }
             transactionTemplate.executeWithoutResult(status ->
-                    appendHistoryById(execution.getId(), "CONDITION", "ALL", "PASSED", null, Map.of()));
+                    appendHistoryById(execution.getId(), rule.getTenantId(), "CONDITION", "ALL", "PASSED", null,
+                            Map.of()));
 
             for (WorkflowActionDto action : rule.getActions()) {
                 Map<String, Object> result =
@@ -99,6 +101,7 @@ public class WorkflowAutomationEngine {
                 enriched.putAll(result);
                 transactionTemplate.executeWithoutResult(status -> appendHistoryById(
                         execution.getId(),
+                        rule.getTenantId(),
                         "ACTION",
                         action.getType().name(),
                         "COMPLETED",
@@ -123,10 +126,16 @@ public class WorkflowAutomationEngine {
         }
     }
 
+    /** Cap due-retry fan-out after outages to avoid thundering-herd memory/latency spikes. */
+    private static final int RETRY_BATCH_SIZE = 100;
+
     public void retryDue(UUID tenantId) {
         List<WorkflowAutomationExecution> due =
                 executionRepository.findByTenantIdAndStateAndNextRetryAtLessThanEqual(
-                        tenantId, "RETRYING", Instant.now());
+                        tenantId,
+                        "RETRYING",
+                        Instant.now(),
+                        PageRequest.of(0, RETRY_BATCH_SIZE));
         if (due.isEmpty()) {
             return;
         }
@@ -146,7 +155,8 @@ public class WorkflowAutomationEngine {
 
     private void retryExecution(WorkflowAutomationExecution execution, WorkflowRule rule) {
         transactionTemplate.executeWithoutResult(status -> {
-            WorkflowAutomationExecution current = executionRepository.findById(execution.getId()).orElse(null);
+            WorkflowAutomationExecution current =
+                    executionRepository.findByTenantIdAndId(rule.getTenantId(), execution.getId()).orElse(null);
             if (current == null) {
                 return;
             }
@@ -167,6 +177,7 @@ public class WorkflowAutomationEngine {
                 context.putAll(result);
                 transactionTemplate.executeWithoutResult(status -> appendHistoryById(
                         execution.getId(),
+                        rule.getTenantId(),
                         "ACTION",
                         action.getType().name(),
                         "COMPLETED",
@@ -176,7 +187,8 @@ public class WorkflowAutomationEngine {
             Map<String, Object> finalContext = new HashMap<>(context);
             transactionTemplate.executeWithoutResult(status -> {
                 WorkflowAutomationExecution current =
-                        executionRepository.findById(execution.getId()).orElse(null);
+                        executionRepository.findByTenantIdAndId(rule.getTenantId(), execution.getId())
+                                .orElse(null);
                 if (current == null) {
                     return;
                 }
@@ -230,7 +242,8 @@ public class WorkflowAutomationEngine {
     }
 
     private void markSkipped(UUID executionId, UUID tenantId) {
-        WorkflowAutomationExecution execution = executionRepository.findById(executionId).orElse(null);
+        WorkflowAutomationExecution execution =
+                executionRepository.findByTenantIdAndId(tenantId, executionId).orElse(null);
         if (execution == null) {
             return;
         }
@@ -247,7 +260,8 @@ public class WorkflowAutomationEngine {
             String businessKey,
             String corr,
             Map<String, Object> finalContext) {
-        WorkflowAutomationExecution execution = executionRepository.findById(executionId).orElse(null);
+        WorkflowAutomationExecution execution =
+                executionRepository.findByTenantIdAndId(rule.getTenantId(), executionId).orElse(null);
         if (execution == null) {
             return;
         }
@@ -271,7 +285,8 @@ public class WorkflowAutomationEngine {
             int maxRetries,
             int retryBackoffSeconds,
             String error) {
-        WorkflowAutomationExecution execution = executionRepository.findById(executionId).orElse(null);
+        WorkflowAutomationExecution execution =
+                executionRepository.findByTenantIdAndId(tenantId, executionId).orElse(null);
         if (execution == null) {
             return;
         }
@@ -296,12 +311,14 @@ public class WorkflowAutomationEngine {
 
     private void appendHistoryById(
             UUID executionId,
+            UUID tenantId,
             String stepType,
             String stepName,
             String status,
             String detail,
             Map<String, Object> payload) {
-        WorkflowAutomationExecution execution = executionRepository.findById(executionId).orElse(null);
+        WorkflowAutomationExecution execution =
+                executionRepository.findByTenantIdAndId(tenantId, executionId).orElse(null);
         if (execution == null) {
             return;
         }

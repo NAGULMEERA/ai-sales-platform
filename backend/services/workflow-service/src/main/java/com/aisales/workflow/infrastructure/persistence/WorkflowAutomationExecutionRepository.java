@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkflowAutomationExecutionRepository
@@ -13,5 +14,5 @@ public interface WorkflowAutomationExecutionRepository
     Optional<WorkflowAutomationExecution> findByTenantIdAndId(UUID tenantId, UUID id);
 
     List<WorkflowAutomationExecution> findByTenantIdAndStateAndNextRetryAtLessThanEqual(
-            UUID tenantId, String state, Instant nextRetryAt);
+            UUID tenantId, String state, Instant nextRetryAt, Pageable pageable);
 }

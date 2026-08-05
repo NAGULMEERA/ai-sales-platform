@@ -27,6 +27,20 @@ public class TenantCacheKeyGenerator {
                 .orElseGet(() -> prefix + ":platform:" + namespace + ":*");
     }
 
+    /**
+     * Builds a namespace eviction pattern for an explicit tenant, independent of the calling
+     * thread's {@link TenantContext}. Use this when invalidating another tenant's cache entries
+     * from a context where the ThreadLocal tenant may be absent or different (e.g. an admin
+     * operation or a background job invalidating a specific, caller-supplied tenant).
+     */
+    public String namespacePatternForTenant(String namespace, UUID tenantId) {
+        String prefix = properties.getKeyPrefix();
+        if (tenantId == null) {
+            return prefix + ":platform:" + namespace + ":*";
+        }
+        return prefix + ":tenant:" + tenantId + ":" + namespace + ":*";
+    }
+
     public String tenantPattern() {
         String prefix = properties.getKeyPrefix();
         return TenantContext.getTenantIdAsUuid()

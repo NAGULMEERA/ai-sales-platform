@@ -23,9 +23,9 @@ public interface SearchDocumentRepository extends JpaRepository<SearchDocument, 
                 setweight(to_tsvector('english', coalesce(keywords, '')), 'B') ||
                 setweight(to_tsvector('english', coalesce(body, '')), 'C'),
                 updated_at = NOW()
-            WHERE id = :id
+            WHERE id = :id AND tenant_id = :tenantId
             """, nativeQuery = true)
-    void refreshSearchVector(@Param("id") UUID id);
+    void refreshSearchVector(@Param("id") UUID id, @Param("tenantId") UUID tenantId);
 
     @Query(value = """
             SELECT d.id

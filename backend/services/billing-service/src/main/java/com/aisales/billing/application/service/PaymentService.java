@@ -123,7 +123,7 @@ public class PaymentService {
         paymentRepository.save(payment);
 
         Invoice invoice = invoiceRepository
-                .findById(payment.getInvoiceId())
+                .findByTenantIdAndIdAndDeletedAtIsNull(payment.getTenantId(), payment.getInvoiceId())
                 .orElseThrow(() -> new NotFoundException("Invoice not found: " + payment.getInvoiceId()));
         if (invoice.getStatus() != InvoiceStatus.PAID) {
             invoice.setStatus(InvoiceStatus.PAID);

@@ -105,7 +105,8 @@ class PaymentServiceTest {
                 .updatedBy("system")
                 .version(0L)
                 .build()));
-        when(invoiceRepository.findById(invoiceId)).thenReturn(Optional.of(issuedInvoice()));
+        when(invoiceRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, invoiceId))
+                .thenReturn(Optional.of(issuedInvoice()));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
         when(invoiceRepository.save(any(Invoice.class))).thenAnswer(inv -> inv.getArgument(0));
 

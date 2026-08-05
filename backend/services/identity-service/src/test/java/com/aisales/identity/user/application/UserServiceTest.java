@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.aisales.common.contracts.user.CreateUserRequest;
+import com.aisales.common.core.util.TenantContext;
 import com.aisales.common.exception.exception.ForbiddenException;
 import com.aisales.common.security.model.UserPrincipal;
 import com.aisales.identity.audit.application.AuditService;
@@ -49,6 +50,7 @@ class UserServiceTest {
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
+        TenantContext.clear();
     }
 
     @Test
@@ -112,6 +114,92 @@ class UserServiceTest {
         assertThat(result.getRoles()).containsExactly("USER");
     }
 
+    @Test
+    void shouldRejectCreateUserForAnotherTenantFromNonPlatformAdmin() {
+        authenticate(Set.of("TENANT_ADMIN"));
+        CreateUserRequest request = CreateUserRequest.builder()
+                .email("outsider@example.com")
+                .password("Password1!")
+                .firstName("Outside")
+                .lastName("Tenant")
+                .roles(Set.of("USER"))
+                .build();
+
+        assertThatThrownBy(() -> userService.createUser(UUID.randomUUID(), request))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void shouldAllowSuperAdminToCreateUserForAnotherTenant() {
+        authenticate(Set.of("SUPER_ADMIN"));
+        when(passwordEncoder.encode(any())).thenReturn("hashed");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId(UUID.randomUUID());
+            user.setCreatedAt(java.time.Instant.now());
+            return user;
+        });
+        CreateUserRequest request = CreateUserRequest.builder()
+                .email("cross-tenant@example.com")
+                .password("Password1!")
+                .firstName("Cross")
+                .lastName("Tenant")
+                .roles(Set.of("USER"))
+                .build();
+
+        var result = userService.createUser(UUID.randomUUID(), request);
+
+        assertThat(result.getRoles()).containsExactly("USER");
+    }
+
+    @Test
+    void shouldNotReturnUserBelongingToAnotherTenant() {
+        authenticate(Set.of("TENANT_ADMIN"));
+        UUID otherUsersId = UUID.randomUUID();
+        when(userRepository.findByIdAndTenantId(otherUsersId, tenantId)).thenReturn(java.util.Optional.empty());
+
+        assertThatThrownBy(() -> userService.getUser(otherUsersId))
+                .isInstanceOf(com.aisales.common.exception.exception.NotFoundException.class);
+    }
+
+    @Test
+    void shouldReturnOwnTenantUserById() {
+        authenticate(Set.of("TENANT_ADMIN"));
+        User user = User.builder()
+                .tenantId(tenantId)
+                .email("teammate@example.com")
+                .firstName("Team")
+                .lastName("Mate")
+                .status(User.UserStatus.ACTIVE)
+                .roles(Set.of("USER"))
+                .build();
+        user.setId(UUID.randomUUID());
+        when(userRepository.findByIdAndTenantId(user.getId(), tenantId)).thenReturn(java.util.Optional.of(user));
+
+        var result = userService.getUser(user.getId());
+
+        assertThat(result.getEmail()).isEqualTo("teammate@example.com");
+    }
+
+    @Test
+    void shouldAllowPlatformAdminToReadUserFromAnyTenant() {
+        authenticate(Set.of("SUPER_ADMIN"));
+        User user = User.builder()
+                .tenantId(UUID.randomUUID())
+                .email("other-tenant-user@example.com")
+                .firstName("Other")
+                .lastName("Tenant")
+                .status(User.UserStatus.ACTIVE)
+                .roles(Set.of("USER"))
+                .build();
+        user.setId(UUID.randomUUID());
+        when(userRepository.findById(user.getId())).thenReturn(java.util.Optional.of(user));
+
+        var result = userService.getUser(user.getId());
+
+        assertThat(result.getEmail()).isEqualTo("other-tenant-user@example.com");
+    }
+
     private void authenticate(Set<String> roles) {
         UserPrincipal principal = UserPrincipal.builder()
                 .userId(UUID.randomUUID().toString())
@@ -121,5 +209,9 @@ class UserServiceTest {
                 .build();
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
+        // Mirrors JwtAuthenticationFilter, which populates TenantContext from the JWT claims
+        // before the request reaches the service layer.
+        TenantContext.setTenantId(tenantId.toString());
+        TenantContext.setPlatformAdmin(roles.contains("SUPER_ADMIN"));
     }
 }

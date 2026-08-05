@@ -61,12 +61,13 @@ class DuplicateLeadDetectionServiceTest {
                         eq("a@example.com"),
                         isNull(),
                         eq("META"),
-                        eq("ext-42")))
+                        eq("ext-42"),
+                        any()))
                 .thenReturn(List.of(match));
 
         service.detectAndRecord(lead);
 
-        verify(duplicateRepository).save(any());
+        verify(duplicateRepository).saveAll(any());
     }
 
     @Test
@@ -89,7 +90,8 @@ class DuplicateLeadDetectionServiceTest {
                         isNull(),
                         eq("+933333333333"),
                         eq("WEB"),
-                        isNull()))
+                        isNull(),
+                        any()))
                 .thenReturn(List.of());
 
         service.detectAndRecord(lead);
@@ -101,6 +103,7 @@ class DuplicateLeadDetectionServiceTest {
                 isNull(),
                 eq("+933333333333"),
                 eq("WEB"),
-                isNull());
+                isNull(),
+                any());
     }
 }

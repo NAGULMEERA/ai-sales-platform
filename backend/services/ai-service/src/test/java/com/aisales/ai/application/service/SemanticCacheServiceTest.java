@@ -3,6 +3,7 @@ package com.aisales.ai.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,6 +16,7 @@ import com.aisales.ai.infrastructure.embedding.EmbeddingProviderRegistry;
 import com.aisales.ai.infrastructure.persistence.SemanticCacheEntry;
 import com.aisales.ai.infrastructure.persistence.SemanticCacheJpaRepository;
 import com.aisales.ai.infrastructure.persistence.SemanticCacheVectorRepository;
+import com.aisales.common.cache.PlatformCacheService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +39,7 @@ class SemanticCacheServiceTest {
     @Mock private EmbeddingProviderRegistry providerRegistry;
     @Mock private EmbeddingProvider embeddingProvider;
     @Mock private ObjectProvider<com.aisales.common.cache.PlatformCacheService> platformCacheService;
+    @Mock private PlatformCacheService platformCache;
     @Mock private PlatformTransactionManager transactionManager;
     @Mock private AiQuotaService aiQuotaService;
     @Mock private TokenUsageService tokenUsageService;
@@ -107,7 +110,7 @@ class SemanticCacheServiceTest {
                 CachedLlmResponse.builder().content("answer").model("BAAI/bge-m3").build(),
                 "BAAI/bge-m3");
 
-        verify(vectorRepository).updateEmbedding(any(), any());
+        verify(vectorRepository).updateEmbedding(any(), any(), any());
         verify(aiQuotaService).reserveEmbed(tenantId);
         verify(aiQuotaService).release(eq(tenantId), eq(AiQuotaService.OPERATION_EMBED), eq(8192L));
         verify(tokenUsageService).recordEmbeddingUsage(
@@ -118,5 +121,21 @@ class SemanticCacheServiceTest {
                 eq("SEMANTIC_CACHE_PUT"),
                 eq("SEMANTIC_CACHE_PUT"),
                 eq(4));
+    }
+
+    @Test
+    void shouldEvictRedisEntriesForExplicitTenantOnInvalidate() {
+        doAnswer(invocation -> {
+                    java.util.function.Consumer<PlatformCacheService> consumer = invocation.getArgument(0);
+                    consumer.accept(platformCache);
+                    return null;
+                })
+                .when(platformCacheService)
+                .ifAvailable(any());
+
+        semanticCacheService.invalidateTenant(tenantId);
+
+        verify(cacheRepository).deleteByTenantId(tenantId);
+        verify(platformCache).evictNamespaceForTenant("semantic-cache", tenantId);
     }
 }

@@ -6,11 +6,13 @@ import com.aisales.lead.infrastructure.persistence.LeadDuplicateRepository;
 import com.aisales.lead.infrastructure.persistence.LeadRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -21,6 +23,9 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 public class DuplicateLeadDetectionService {
+
+    /** Cap candidate fan-out on shared phones/source IDs so create stays bounded. */
+    private static final int MAX_DUPLICATE_CANDIDATES = 50;
 
     private final LeadRepository leadRepository;
     private final LeadDuplicateRepository leadDuplicateRepository;
@@ -47,11 +52,13 @@ public class DuplicateLeadDetectionService {
                 email,
                 whatsapp,
                 sourceType,
-                sourceId);
+                sourceId,
+                PageRequest.of(0, MAX_DUPLICATE_CANDIDATES));
 
         Instant now = Instant.now();
+        List<LeadDuplicate> toSave = new ArrayList<>(matches.size());
         for (Lead match : matches) {
-            leadDuplicateRepository.save(LeadDuplicate.builder()
+            toSave.add(LeadDuplicate.builder()
                     .tenantId(lead.getTenantId())
                     .leadId(lead.getId())
                     .duplicateOfLeadId(match.getId())
@@ -59,6 +66,9 @@ public class DuplicateLeadDetectionService {
                     .detectedAt(now)
                     .resolved(false)
                     .build());
+        }
+        if (!toSave.isEmpty()) {
+            leadDuplicateRepository.saveAll(toSave);
         }
     }
 

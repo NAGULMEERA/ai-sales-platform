@@ -33,6 +33,9 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class DocumentEmbeddingPipeline {
 
+    /** Bound provider HTTP payload size; large docs are embedded in slices. */
+    private static final int EMBED_BATCH_SIZE = 64;
+
     private final KnowledgeDocumentRepository knowledgeDocumentRepository;
     private final KnowledgeChunkRepository knowledgeChunkRepository;
     private final KnowledgeChunkVectorRepository knowledgeChunkVectorRepository;
@@ -74,9 +77,21 @@ public class DocumentEmbeddingPipeline {
         EmbeddingProvider embeddingProvider = embeddingProviderRegistry.resolveDefault();
         long reserved = aiQuotaService.reserveEmbed(tenantId);
         try {
-            EmbeddingBatchResult batch = embeddingProvider.embedWithUsage(chunks);
-            List<float[]> vectors = batch.vectors();
-            Integer providerTokens = batch.promptTokens();
+            List<float[]> vectors = new ArrayList<>(chunks.size());
+            int providerTokens = 0;
+            for (int start = 0; start < chunks.size(); start += EMBED_BATCH_SIZE) {
+                int end = Math.min(start + EMBED_BATCH_SIZE, chunks.size());
+                List<String> slice = chunks.subList(start, end);
+                EmbeddingBatchResult batch = embeddingProvider.embedWithUsage(slice);
+                List<float[]> sliceVectors = batch.vectors();
+                if (sliceVectors.size() != slice.size()) {
+                    throw new ValidationException("Embedding provider returned unexpected vector count");
+                }
+                vectors.addAll(sliceVectors);
+                if (batch.promptTokens() != null) {
+                    providerTokens += batch.promptTokens();
+                }
+            }
             if (vectors.size() != chunks.size()) {
                 throw new ValidationException("Embedding provider returned unexpected vector count");
             }
@@ -84,7 +99,7 @@ public class DocumentEmbeddingPipeline {
             UUID knowledgeBaseId = document.getKnowledgeBaseId();
             String modelName = embeddingProvider.modelName();
             UUID updatedBy = parseUuidOrNull(TenantContext.getUserId());
-            Integer tokensForLedger = providerTokens;
+            Integer tokensForLedger = providerTokens > 0 ? providerTokens : null;
 
             return new TransactionTemplate(transactionManager).execute(status -> {
                 KnowledgeDocument managed = knowledgeDocumentRepository
@@ -116,7 +131,7 @@ public class DocumentEmbeddingPipeline {
                 knowledgeChunkRepository.flush();
 
                 List<UUID> chunkIds = savedChunks.stream().map(KnowledgeChunk::getId).toList();
-                knowledgeChunkVectorRepository.updateEmbeddings(chunkIds, vectors);
+                knowledgeChunkVectorRepository.updateEmbeddings(tenantId, chunkIds, vectors);
 
                 tokenUsageService.recordEmbeddingUsage(
                         tenantId,

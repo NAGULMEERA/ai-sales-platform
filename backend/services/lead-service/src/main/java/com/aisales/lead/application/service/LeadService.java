@@ -141,7 +141,7 @@ public class LeadService {
 
         Lead saved = leadRepository.saveAndFlush(lead);
         if (!StringUtils.hasText(saved.getExternalId())) {
-            saved = leadRepository.findById(saved.getId()).orElse(saved);
+            saved = leadRepository.findByTenantIdAndId(tenantId, saved.getId()).orElse(saved);
         }
         duplicateDetection.detectAndRecord(saved);
         sideEffects.recordActivity(saved.getId(), "CREATED", "Lead captured", actor);

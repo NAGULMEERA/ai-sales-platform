@@ -1,41 +1,61 @@
 package com.aisales.ai.infrastructure.persistence;
 
 import jakarta.persistence.EntityManager;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Session;
 import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
 public class KnowledgeChunkVectorRepository {
 
+    private static final int JDBC_BATCH_SIZE = 50;
+
     private final EntityManager entityManager;
 
-    public void updateEmbedding(UUID chunkId, float[] embedding) {
+    public void updateEmbedding(UUID tenantId, UUID chunkId, float[] embedding) {
         entityManager.createNativeQuery(
-                        "UPDATE knowledge_chunk SET embedding = cast(:embedding as vector) WHERE id = :id")
+                        "UPDATE knowledge_chunk SET embedding = cast(:embedding as vector) "
+                                + "WHERE id = :id AND tenant_id = :tenantId")
                 .setParameter("embedding", toVectorLiteral(embedding))
                 .setParameter("id", chunkId)
+                .setParameter("tenantId", tenantId)
                 .executeUpdate();
     }
 
     /**
-     * Batch-write embeddings for already-persisted chunks (same semantics as
-     * {@link #updateEmbedding(UUID, float[])}, fewer round-trips).
+     * Batch-write embeddings for already-persisted chunks using JDBC {@code executeBatch}
+     * (same tenant isolation as {@link #updateEmbedding}, far fewer round-trips).
      */
-    public void updateEmbeddings(List<UUID> chunkIds, List<float[]> embeddings) {
+    public void updateEmbeddings(UUID tenantId, List<UUID> chunkIds, List<float[]> embeddings) {
         if (chunkIds == null || embeddings == null || chunkIds.isEmpty()) {
             return;
         }
         if (chunkIds.size() != embeddings.size()) {
             throw new IllegalArgumentException("chunkIds and embeddings size mismatch");
         }
-        for (int i = 0; i < chunkIds.size(); i++) {
-            updateEmbedding(chunkIds.get(i), embeddings.get(i));
-        }
-        entityManager.flush();
+
+        Session session = entityManager.unwrap(Session.class);
+        session.doWork(connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "UPDATE knowledge_chunk SET embedding = cast(? as vector) "
+                            + "WHERE id = ? AND tenant_id = ?")) {
+                for (int i = 0; i < chunkIds.size(); i++) {
+                    ps.setString(1, toVectorLiteral(embeddings.get(i)));
+                    ps.setObject(2, chunkIds.get(i));
+                    ps.setObject(3, tenantId);
+                    ps.addBatch();
+                    if ((i + 1) % JDBC_BATCH_SIZE == 0) {
+                        ps.executeBatch();
+                    }
+                }
+                ps.executeBatch();
+            }
+        });
     }
 
     /**

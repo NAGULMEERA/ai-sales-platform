@@ -3,6 +3,7 @@ package com.aisales.identity.subscription.api.controller;
 import com.aisales.common.core.dto.ApiResponse;
 import com.aisales.common.core.util.CorrelationIdUtils;
 import com.aisales.common.core.util.TenantContext;
+import com.aisales.common.security.annotation.PreAuthorizeTenant;
 import com.aisales.common.security.model.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,6 +27,7 @@ import com.aisales.identity.tenant.domain.entity.Tenant;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
+@PreAuthorizeTenant
 @Tag(name = "Subscription & Features", description = "Tenant subscription and feature gating")
 public class SubscriptionController {
 

@@ -19,19 +19,25 @@ import com.aisales.conversation.application.mapper.ConversationMapper;
 import com.aisales.conversation.domain.entity.ConversationThread;
 import com.aisales.conversation.infrastructure.persistence.ConversationMessageRepository;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ConversationContextService {
+
+    /** Bound AI/context payload size; full history remains available via listMessages. */
+    private static final int MAX_CONTEXT_MESSAGES = 100;
 
     private final ConversationService conversationService;
     private final ConversationMessageRepository messageRepository;
@@ -47,11 +53,14 @@ public class ConversationContextService {
      */
     public ConversationContextDto loadContext(UUID conversationId) {
         ConversationThread thread = conversationService.requireThread(conversationId);
+        // Newest-first page, then reverse to chronological order for prompt assembly.
         List<ConversationMessageDto> messages = messageRepository
-                .findByTenantIdAndConversationIdOrderByCreatedAtAsc(thread.getTenantId(), conversationId)
+                .findRecentByTenantIdAndConversationId(
+                        thread.getTenantId(), conversationId, PageRequest.of(0, MAX_CONTEXT_MESSAGES))
                 .stream()
                 .map(mapper::toMessageDto)
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
+        Collections.reverse(messages);
 
         LeadDto lead = loadLead(thread.getLeadId());
         CustomerDto customer = loadCustomer(thread.getCustomerId(), thread.getLeadId());

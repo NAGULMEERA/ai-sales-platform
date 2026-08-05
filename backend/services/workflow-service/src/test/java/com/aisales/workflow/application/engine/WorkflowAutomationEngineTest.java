@@ -114,8 +114,8 @@ class WorkflowAutomationEngineTest {
             executions.put(e.getId(), e);
             return e;
         });
-        when(executionRepository.findById(any())).thenAnswer(inv ->
-                Optional.ofNullable(executions.get(inv.getArgument(0))));
+        when(executionRepository.findByTenantIdAndId(eq(tenantId), any())).thenAnswer(inv ->
+                Optional.ofNullable(executions.get(inv.getArgument(1))));
         when(historyRepository.save(any(WorkflowExecutionHistory.class))).thenAnswer(inv -> inv.getArgument(0));
         when(actionExecutor.execute(any(), eq(tenantId.toString()), eq("conv-1"), any()))
                 .thenReturn(Map.of("sent", true));
@@ -165,8 +165,8 @@ class WorkflowAutomationEngineTest {
             executions.put(e.getId(), e);
             return e;
         });
-        when(executionRepository.findById(any())).thenAnswer(inv ->
-                Optional.ofNullable(executions.get(inv.getArgument(0))));
+        when(executionRepository.findByTenantIdAndId(eq(tenantId), any())).thenAnswer(inv ->
+                Optional.ofNullable(executions.get(inv.getArgument(1))));
         when(historyRepository.save(any(WorkflowExecutionHistory.class))).thenAnswer(inv -> inv.getArgument(0));
 
         engine.onTrigger(

@@ -109,7 +109,8 @@ public class GatewayConfig {
                     .filters(f -> f.requestRateLimiter(config -> config
                             .setRateLimiter(aiExecuteRedisRateLimiter)
                             .setKeyResolver(tenantPlanKeyResolver)
-                            .setDenyEmptyKey(false)))
+                            // Fail closed: authenticated SaaS routes must carry a tenant key.
+                            .setDenyEmptyKey(true)))
                     .uri("lb://ai-service"));
         }
 
@@ -119,7 +120,7 @@ public class GatewayConfig {
                     .filters(f -> f.requestRateLimiter(config -> config
                             .setRateLimiter(writeRedisRateLimiter)
                             .setKeyResolver(tenantPlanKeyResolver)
-                            .setDenyEmptyKey(false)))
+                            .setDenyEmptyKey(true)))
                     .uri("lb://lead-service"));
         }
 
@@ -129,7 +130,7 @@ public class GatewayConfig {
                     .filters(f -> f.requestRateLimiter(config -> config
                             .setRateLimiter(mediaUploadRedisRateLimiter)
                             .setKeyResolver(tenantPlanKeyResolver)
-                            .setDenyEmptyKey(false)))
+                            .setDenyEmptyKey(true)))
                     .uri("lb://media-service"));
         }
 
@@ -139,7 +140,7 @@ public class GatewayConfig {
                     .filters(f -> f.requestRateLimiter(config -> config
                             .setRateLimiter(searchRedisRateLimiter)
                             .setKeyResolver(tenantPlanKeyResolver)
-                            .setDenyEmptyKey(false)))
+                            .setDenyEmptyKey(true)))
                     .uri("lb://search-service"));
         }
 
@@ -149,7 +150,7 @@ public class GatewayConfig {
                     .filters(f -> f.requestRateLimiter(config -> config
                             .setRateLimiter(analyticsRedisRateLimiter)
                             .setKeyResolver(tenantPlanKeyResolver)
-                            .setDenyEmptyKey(false)))
+                            .setDenyEmptyKey(true)))
                     .uri("lb://analytics-service"));
         }
 

@@ -9,8 +9,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -18,6 +22,9 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 public class CustomerDuplicateDetectionService {
+
+    /** Cap candidate fan-out on shared phones/emails so create/update stays bounded. */
+    private static final int MAX_DUPLICATE_CANDIDATES = 50;
 
     private final CustomerRepository customerRepository;
     private final CustomerDuplicateRepository duplicateRepository;
@@ -48,12 +55,16 @@ public class CustomerDuplicateDetectionService {
                 email,
                 whatsapp,
                 externalCrmId,
-                governmentId);
+                governmentId,
+                PageRequest.of(0, MAX_DUPLICATE_CANDIDATES));
+
+        Set<UUID> alreadyRecorded = new HashSet<>(duplicateRepository.findUnresolvedDuplicateOfCustomerIds(
+                customer.getTenantId(), customer.getId()));
 
         Instant now = Instant.now();
+        List<CustomerDuplicate> toSave = new ArrayList<>();
         for (Customer match : matches) {
-            if (duplicateRepository.existsByTenantIdAndCustomerIdAndDuplicateOfCustomerIdAndResolvedFalse(
-                    customer.getTenantId(), customer.getId(), match.getId())) {
+            if (alreadyRecorded.contains(match.getId())) {
                 continue;
             }
             List<String> reasons = new ArrayList<>();
@@ -90,7 +101,7 @@ public class CustomerDuplicateDetectionService {
             BigDecimal score = BigDecimal.valueOf(Math.min(1.0, 0.5 + (0.15 * exact)))
                     .setScale(4, RoundingMode.HALF_UP);
 
-            duplicateRepository.save(CustomerDuplicate.builder()
+            toSave.add(CustomerDuplicate.builder()
                     .tenantId(customer.getTenantId())
                     .customerId(customer.getId())
                     .duplicateOfCustomerId(match.getId())
@@ -100,6 +111,9 @@ public class CustomerDuplicateDetectionService {
                     .detectedAt(now)
                     .resolved(false)
                     .build());
+        }
+        if (!toSave.isEmpty()) {
+            duplicateRepository.saveAll(toSave);
         }
     }
 

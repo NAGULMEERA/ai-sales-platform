@@ -2,6 +2,7 @@ package com.aisales.lead.api.controller;
 
 import com.aisales.common.contracts.lead.EnsurePipelineRequest;
 import com.aisales.common.contracts.lead.PipelineDto;
+import com.aisales.common.security.annotation.PreAuthorizeTenant;
 import com.aisales.lead.application.service.PipelineService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/pipelines")
 @RequiredArgsConstructor
+@PreAuthorizeTenant
 @Tag(name = "Pipelines", description = "Tenant sales pipeline definitions (stages + transitions)")
 public class PipelineController {
 
