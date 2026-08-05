@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -26,6 +27,9 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "AI Quota", description = "Per-tenant daily AI token budgets (AI_003 when exceeded)")
 public class AiQuotaController {
 
+    private static final String MANAGE = "hasAuthority('ai:quota:manage') or hasAuthority('tenant:admin') "
+            + "or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')";
+
     private final AiQuotaService aiQuotaService;
 
     @GetMapping
@@ -37,6 +41,7 @@ public class AiQuotaController {
 
     @PutMapping
     @PreAuthorizeTenant
+    @PreAuthorize(MANAGE)
     @Operation(summary = "Upsert tenant AI quota override (admin)")
     public ApiResponse<AiQuotaStatusDto> upsert(@Valid @RequestBody UpsertAiQuotaRequest request) {
         return ApiResponse.ok(aiQuotaService.upsert(requireTenantId(), request));
@@ -44,6 +49,7 @@ public class AiQuotaController {
 
     @PutMapping("/plan-package")
     @PreAuthorizeTenant
+    @PreAuthorize(MANAGE)
     @Operation(summary = "Apply a configured plan package (FREE / PREMIUM) to this tenant")
     public ApiResponse<AiQuotaStatusDto> applyPlanPackage(@RequestParam String plan) {
         return ApiResponse.ok(aiQuotaService.applyPlanPackage(requireTenantId(), plan));

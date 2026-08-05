@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.aisales</groupId>
+        <artifactId>ai-sales-platform</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>architecture-tests</artifactId>
+    <name>architecture-tests</name>
+    <description>
+        Platform-wide architecture governance tests. Validates the Maven module dependency
+        graph (common/services/plugins/infrastructure) for module-level rules that ArchUnit
+        cannot see from inside a single service's classpath: cross-service coupling, plugin
+        contract isolation, common-to-service dependency direction, and circular module
+        dependencies. See docs/03-architecture/architecture-governance.md for the full rule
+        catalogue. This module owns no business code; it only reads pom.xml files from disk.
+    </description>
+
+    <properties>
+        <!-- This module performs no business logic; there is nothing to instrument or release. -->
+        <maven.install.skip>true</maven.install.skip>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

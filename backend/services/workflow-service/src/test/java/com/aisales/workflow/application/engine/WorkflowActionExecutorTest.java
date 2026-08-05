@@ -24,6 +24,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.transaction.PlatformTransactionManager;
 
 @ExtendWith(MockitoExtension.class)
 class WorkflowActionExecutorTest {
@@ -32,13 +33,14 @@ class WorkflowActionExecutorTest {
     @Mock private ObjectProvider<LeadServiceClient> leadServiceClient;
     @Mock private ObjectProvider<com.aisales.common.contracts.client.DealServiceClient> dealServiceClient;
     @Mock private ObjectProvider<com.aisales.common.contracts.client.AiServiceClient> aiServiceClient;
+    @Mock private PlatformTransactionManager transactionManager;
 
     private WorkflowActionExecutor executor;
 
     @BeforeEach
     void setUp() {
         executor = new WorkflowActionExecutor(
-                eventPublisher, leadServiceClient, dealServiceClient, aiServiceClient);
+                eventPublisher, leadServiceClient, dealServiceClient, aiServiceClient, transactionManager);
     }
 
     @Test

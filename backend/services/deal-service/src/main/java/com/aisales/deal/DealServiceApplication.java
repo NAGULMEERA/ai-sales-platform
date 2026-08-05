@@ -8,14 +8,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication(scanBasePackages = "com.aisales.deal")
 @EnableDiscoveryClient
-@EntityScan(basePackages = {
-        "com.aisales.deal",
-        "com.aisales.common.events.outbox"
-})
-@EnableJpaRepositories(basePackages = {
-        "com.aisales.deal",
-        "com.aisales.common.events.outbox"
-})
+// Outbox JPA wiring is owned by common-events OutboxAutoConfiguration
+// (active when aisales.events.outbox.enabled=true). Do not re-declare it here.
+@EntityScan(basePackages = "com.aisales.deal")
+@EnableJpaRepositories(basePackages = "com.aisales.deal")
 public class DealServiceApplication {
 
     public static void main(String[] args) {

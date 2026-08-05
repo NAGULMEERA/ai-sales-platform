@@ -16,7 +16,6 @@
         <dependency>
             <groupId>com.aisales</groupId>
             <artifactId>plugin-sdk</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

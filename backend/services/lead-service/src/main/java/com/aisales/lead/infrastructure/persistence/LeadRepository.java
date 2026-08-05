@@ -65,5 +65,6 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
             @Param("email") String email,
             @Param("whatsapp") String whatsapp,
             @Param("sourceType") String sourceType,
-            @Param("sourceId") String sourceId);
+            @Param("sourceId") String sourceId,
+            Pageable pageable);
 }

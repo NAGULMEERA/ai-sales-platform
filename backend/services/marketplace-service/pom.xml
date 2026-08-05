@@ -27,7 +27,6 @@
         <dependency>
             <groupId>com.aisales</groupId>
             <artifactId>plugin-sdk</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -67,11 +66,6 @@
         <dependency>
             <groupId>com.aisales</groupId>
             <artifactId>common-testing</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.tngtech.archunit</groupId>
-            <artifactId>archunit-junit5</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

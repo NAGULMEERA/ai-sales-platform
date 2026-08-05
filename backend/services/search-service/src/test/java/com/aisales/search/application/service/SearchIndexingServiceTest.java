@@ -75,7 +75,7 @@ class SearchIndexingServiceTest {
         assertThat(saved.getEntityType()).isEqualTo(SearchEntityType.LEAD);
         assertThat(saved.getTitle()).isEqualTo("Jane Lead");
         assertThat(saved.getBusinessScore()).isEqualTo(80d);
-        verify(documentRepository).refreshSearchVector(saved.getId());
+        verify(documentRepository).refreshSearchVector(saved.getId(), tenantId);
     }
 
     @Test

@@ -23,6 +23,7 @@ import com.aisales.lead.application.mapper.LeadMapper;
 import com.aisales.lead.domain.entity.Lead;
 import com.aisales.lead.infrastructure.persistence.LeadRepository;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,26 +106,22 @@ public class LeadOpportunityConversionService {
         scoreOpportunity(opportunity, lead, selected);
 
         UUID actor = parseUuidOrNull(TenantContext.getUserId());
-        sideEffects.recordActivity(
-                leadId,
+        List<LeadSideEffectRecorder.ActivityEntry> activities = new ArrayList<>();
+        activities.add(new LeadSideEffectRecorder.ActivityEntry(
                 "OPPORTUNITY_CREATED",
-                "Opportunity " + opportunity.getId() + " created from catalog recommendation",
-                actor);
+                "Opportunity " + opportunity.getId() + " created from catalog recommendation"));
         if (selected != null) {
-            sideEffects.recordActivity(
-                    leadId,
+            activities.add(new LeadSideEffectRecorder.ActivityEntry(
                     "CATALOG_MATCHED",
-                    "Matched catalog product " + selected.getProductCode(),
-                    actor);
-            sideEffects.recordActivity(
-                    leadId,
+                    "Matched catalog product " + selected.getProductCode()));
+            activities.add(new LeadSideEffectRecorder.ActivityEntry(
                     "RECOMMENDATION_GENERATED",
                     "Catalog recommendation confidence "
                             + (recommendation.getOverallConfidence() != null
                                     ? recommendation.getOverallConfidence()
-                                    : selected.getConfidenceScore() / 100.0),
-                    actor);
+                                    : selected.getConfidenceScore() / 100.0)));
         }
+        sideEffects.recordActivities(leadId, actor, activities);
 
         return LeadOpportunityConversionResultDto.builder()
                 .lead(leadMapper.toDto(lead))

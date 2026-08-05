@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
 import com.aisales.identity.authentication.domain.entity.RefreshToken;
 import com.aisales.identity.authentication.infrastructure.persistence.RefreshTokenRepository;
 import com.aisales.identity.session.application.SessionService;
@@ -27,12 +28,13 @@ class RefreshTokenServiceTest {
 
     @Mock private RefreshTokenRepository refreshTokenRepository;
     @Mock private SessionService sessionService;
+    @Mock private PlatformTransactionManager transactionManager;
 
     private RefreshTokenService refreshTokenService;
 
     @BeforeEach
     void setUp() {
-        refreshTokenService = new RefreshTokenService(refreshTokenRepository, sessionService);
+        refreshTokenService = new RefreshTokenService(refreshTokenRepository, sessionService, transactionManager);
         org.springframework.test.util.ReflectionTestUtils.setField(
                 refreshTokenService, "refreshTokenExpirationMs", 86_400_000L);
     }

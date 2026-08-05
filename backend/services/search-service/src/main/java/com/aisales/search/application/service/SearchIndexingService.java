@@ -102,7 +102,7 @@ public class SearchIndexingService {
         }
 
         SearchDocument saved = documentRepository.saveAndFlush(document);
-        documentRepository.refreshSearchVector(saved.getId());
+        documentRepository.refreshSearchVector(saved.getId(), tenantId);
 
         PlatformMetrics metrics = platformMetrics.getIfAvailable();
         if (metrics != null) {

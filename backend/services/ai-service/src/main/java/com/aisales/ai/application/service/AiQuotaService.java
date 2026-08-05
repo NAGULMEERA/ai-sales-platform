@@ -20,7 +20,6 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -260,18 +259,11 @@ public class AiQuotaService {
         if (existing.isPresent()) {
             return existing.get();
         }
-        try {
-            budgetDayRepository.saveAndFlush(TenantAiBudgetDay.builder()
-                    .tenantId(tenantId)
-                    .usageDay(usageDay)
-                    .reservedTotal(0)
-                    .reservedExecute(0)
-                    .reservedEmbed(0)
-                    .updatedAt(Instant.now(clock))
-                    .build());
-        } catch (DataIntegrityViolationException ignored) {
-            // Concurrent creator won the insert.
-        }
+        // ON CONFLICT DO NOTHING never aborts the surrounding PostgreSQL transaction,
+        // unlike catching a DataIntegrityViolationException from a failed saveAndFlush().
+        // A prior try/catch here caused the follow-up findForUpdate to fail with
+        // "current transaction is aborted" whenever two callers raced for the same day.
+        budgetDayRepository.insertIgnoreConflict(tenantId, usageDay, Instant.now(clock));
         return budgetDayRepository
                 .findForUpdate(tenantId, usageDay)
                 .orElseThrow(() -> new IllegalStateException("Failed to lock AI budget day row"));

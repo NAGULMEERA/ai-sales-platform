@@ -4,14 +4,20 @@ import com.aisales.common.contracts.user.CreateUserRequest;
 import com.aisales.common.contracts.user.UserDto;
 import com.aisales.common.core.util.CorrelationIdUtils;
 import com.aisales.common.core.util.EmailNormalizer;
+import com.aisales.common.core.util.TenantContext;
 import com.aisales.common.events.model.UserCreatedEvent;
 import com.aisales.common.events.publisher.EventPublisher;
+import com.aisales.common.exception.exception.ForbiddenException;
 import com.aisales.common.exception.exception.NotFoundException;
 import com.aisales.common.exception.exception.ValidationException;
+import com.aisales.common.exception.model.ErrorCode;
+import com.aisales.common.security.model.UserPrincipal;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +33,8 @@ import com.aisales.identity.user.infrastructure.persistence.UserRepository;
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final String SUPER_ADMIN = "SUPER_ADMIN";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EventPublisher eventPublisher;
@@ -34,11 +42,30 @@ public class UserService {
 
     @Transactional
     public UserDto createUser(UUID tenantId, CreateUserRequest request) {
+        // The tenant id is supplied via header rather than derived purely from the JWT, so an
+        // explicit ownership check is required here: only a platform admin may create a user for
+        // a tenant other than their own. Regular callers whose token happens to carry no tenant
+        // claim (context empty) are rejected rather than silently trusting the header.
+        if (!TenantContext.isPlatformAdmin()) {
+            String contextTenantId = TenantContext.getTenantId();
+            if (contextTenantId == null || contextTenantId.isBlank()
+                    || !contextTenantId.equals(tenantId.toString())) {
+                throw new ForbiddenException(ErrorCode.FORBIDDEN,
+                        "Cannot create a user outside of your own tenant");
+            }
+        }
         String email = EmailNormalizer.normalize(request.getEmail());
         if (userRepository.existsByEmail(email)) {
             throw new ValidationException("Email already registered");
         }
         Set<String> roles = request.getRoles() != null ? request.getRoles() : Set.of("USER");
+        // Only an existing SUPER_ADMIN may grant the SUPER_ADMIN role. Without this check,
+        // any caller permitted to create users (e.g. a TENANT_ADMIN) could self-escalate to
+        // platform-wide admin by simply requesting roles=["SUPER_ADMIN"].
+        if (roles.contains(SUPER_ADMIN) && !callerIsSuperAdmin()) {
+            throw new ForbiddenException(ErrorCode.FORBIDDEN,
+                    "Only a super admin may create users with the SUPER_ADMIN role");
+        }
         User user = User.builder()
                 .tenantId(tenantId)
                 .email(email)
@@ -58,11 +85,36 @@ public class UserService {
         return toDto(user);
     }
 
+    private boolean callerIsSuperAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof UserPrincipal principal)) {
+            return false;
+        }
+        Set<String> callerRoles = principal.getRoles();
+        return callerRoles != null && callerRoles.contains(SUPER_ADMIN);
+    }
+
     @Transactional(readOnly = true)
     public UserDto getUser(UUID id) {
-        return userRepository.findById(id)
+        // Platform admins may look up any user; everyone else is scoped to their own tenant to
+        // prevent cross-tenant enumeration of user records by guessing/leaking a UUID.
+        if (TenantContext.isPlatformAdmin()) {
+            return userRepository.findById(id)
+                    .map(this::toDto)
+                    .orElseThrow(() -> new NotFoundException("User", id));
+        }
+        UUID tenantId = requireTenantId();
+        return userRepository.findByIdAndTenantId(id, tenantId)
                 .map(this::toDto)
                 .orElseThrow(() -> new NotFoundException("User", id));
+    }
+
+    private UUID requireTenantId() {
+        String tenantId = TenantContext.getTenantId();
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new ForbiddenException(ErrorCode.FORBIDDEN, "Tenant context is required");
+        }
+        return UUID.fromString(tenantId);
     }
 
     private UserDto toDto(User user) {

@@ -14,11 +14,13 @@ public class SemanticCacheVectorRepository {
 
     private final EntityManager entityManager;
 
-    public void updateEmbedding(UUID id, float[] embedding) {
+    public void updateEmbedding(UUID tenantId, UUID id, float[] embedding) {
         entityManager.createNativeQuery(
-                        "UPDATE semantic_cache SET query_embedding = cast(:embedding as vector) WHERE id = :id")
+                        "UPDATE semantic_cache SET query_embedding = cast(:embedding as vector) "
+                                + "WHERE id = :id AND tenant_id = :tenantId")
                 .setParameter("embedding", toVectorLiteral(embedding))
                 .setParameter("id", id)
+                .setParameter("tenantId", tenantId)
                 .executeUpdate();
     }
 

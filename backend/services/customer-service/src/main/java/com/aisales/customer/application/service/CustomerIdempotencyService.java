@@ -1,6 +1,7 @@
 package com.aisales.customer.application.service;
 
 import com.aisales.common.contracts.customer.CustomerDto;
+import com.aisales.common.core.util.TenantContext;
 import com.aisales.common.exception.exception.ValidationException;
 import com.aisales.customer.domain.entity.IdempotencyKey;
 import com.aisales.customer.infrastructure.persistence.IdempotencyKeyRepository;
@@ -13,7 +14,6 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -38,8 +38,9 @@ public class CustomerIdempotencyService {
             return Optional.empty();
         }
         String normalizedKey = idempotencyKey.trim();
-        acquireTransactionLock(normalizedKey);
-        return findCached(normalizedKey);
+        UUID tenantId = currentTenantId();
+        acquireTransactionLock(tenantId, normalizedKey);
+        return findCached(tenantId, normalizedKey);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -48,35 +49,44 @@ public class CustomerIdempotencyService {
             return;
         }
         String normalizedKey = idempotencyKey.trim();
+        UUID tenantId = currentTenantId();
+        String serializedResponse;
         try {
-            Instant now = Instant.now();
-            idempotencyKeyRepository.save(IdempotencyKey.builder()
-                    .idempotencyKey(normalizedKey)
-                    .operation(CREATE_CUSTOMER_OPERATION)
-                    .resourceId(resourceId)
-                    .responseBody(objectMapper.writeValueAsString(response))
-                    .httpStatus(HttpStatus.CREATED.value())
-                    .createdAt(now)
-                    .expiresAt(now.plus(TTL))
-                    .build());
+            serializedResponse = objectMapper.writeValueAsString(response);
         } catch (JsonProcessingException ex) {
             throw new ValidationException("Failed to store idempotent customer response");
-        } catch (DataIntegrityViolationException ex) {
-            findCached(normalizedKey)
+        }
+        Instant now = Instant.now();
+        int inserted = idempotencyKeyRepository.insertIgnoreConflict(
+                UUID.randomUUID(), tenantId, normalizedKey, CREATE_CUSTOMER_OPERATION, resourceId,
+                serializedResponse, HttpStatus.CREATED.value(), now, now.plus(TTL));
+        if (inserted == 0) {
+            // A concurrent request already stored a response for this key (the advisory
+            // lock in beginCreate should make this rare). ON CONFLICT DO NOTHING never
+            // aborts the surrounding transaction, so this lookup is safe to run here.
+            findCached(tenantId, normalizedKey)
                     .orElseThrow(() -> new ValidationException("Idempotency key conflict without stored response"));
         }
     }
 
-    private Optional<CustomerDto> findCached(String normalizedKey) {
-        return idempotencyKeyRepository.findByIdempotencyKey(normalizedKey)
+    private Optional<CustomerDto> findCached(UUID tenantId, String normalizedKey) {
+        return idempotencyKeyRepository.findByTenantIdAndIdempotencyKey(tenantId, normalizedKey)
                 .filter(key -> CREATE_CUSTOMER_OPERATION.equals(key.getOperation()))
                 .filter(key -> !key.isExpired())
                 .map(this::deserialize);
     }
 
-    private void acquireTransactionLock(String idempotencyKey) {
+    private UUID currentTenantId() {
+        // Idempotency keys are client-supplied and must be scoped per tenant: without this,
+        // two tenants submitting the same key value could collide and one tenant would be
+        // served the other tenant's cached response (cross-tenant data leak).
+        return TenantContext.getTenantIdAsUuid()
+                .orElseThrow(() -> new ValidationException("Tenant context is required for idempotent customer creation"));
+    }
+
+    private void acquireTransactionLock(UUID tenantId, String idempotencyKey) {
         entityManager.createNativeQuery("SELECT pg_advisory_xact_lock(hashtext(:key))")
-                .setParameter("key", idempotencyKey)
+                .setParameter("key", tenantId + ":" + idempotencyKey)
                 .getSingleResult();
     }
 

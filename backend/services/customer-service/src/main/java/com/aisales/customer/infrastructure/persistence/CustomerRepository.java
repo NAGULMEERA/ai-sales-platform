@@ -83,5 +83,6 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
             @Param("email") String email,
             @Param("whatsapp") String whatsapp,
             @Param("externalCrmId") String externalCrmId,
-            @Param("governmentId") String governmentId);
+            @Param("governmentId") String governmentId,
+            Pageable pageable);
 }

@@ -22,15 +22,21 @@ public interface PromptTemplateRepository extends JpaRepository<PromptTemplate, 
 
     boolean existsByTenantIdAndCodeAndDeletedAtIsNull(UUID tenantId, String code);
 
+    // industryCode/capability are always persisted upper-cased and languageCode lower-cased
+    // (PromptService.normalizeDimension/normalizeLanguage runs on every write and every caller
+    // of this method), so comparing the raw columns/params directly is equivalent to wrapping
+    // both sides in UPPER(...) but lets the plain btree idx_prompt_template_dimensions
+    // (tenant_id, industry_code, capability, language_code) index be used instead of forcing a
+    // full scan (a function on an indexed column defeats a plain index).
     @Query("""
             SELECT p FROM PromptTemplate p
             WHERE p.tenantId = :tenantId
               AND p.deletedAt IS NULL
               AND p.status = :status
-              AND UPPER(p.industryCode) = UPPER(:industryCode)
-              AND UPPER(p.capability) = UPPER(:capability)
+              AND p.industryCode = :industryCode
+              AND p.capability = :capability
               AND (
-                    (:languageCode IS NOT NULL AND UPPER(p.languageCode) = UPPER(:languageCode))
+                    (:languageCode IS NOT NULL AND p.languageCode = :languageCode)
                  OR (:languageCode IS NULL AND p.languageCode IS NULL)
               )
             ORDER BY p.updatedAt DESC
@@ -47,8 +53,8 @@ public interface PromptTemplateRepository extends JpaRepository<PromptTemplate, 
             WHERE p.tenantId = :tenantId
               AND p.deletedAt IS NULL
               AND p.status = :status
-              AND UPPER(p.industryCode) = UPPER(:industryCode)
-              AND UPPER(p.capability) = UPPER(:capability)
+              AND p.industryCode = :industryCode
+              AND p.capability = :capability
               AND p.languageCode IS NULL
             ORDER BY p.updatedAt DESC
             """)

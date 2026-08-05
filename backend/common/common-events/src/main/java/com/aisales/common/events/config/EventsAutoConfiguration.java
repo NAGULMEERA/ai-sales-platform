@@ -6,15 +6,19 @@ import com.aisales.common.events.publisher.LoggingEventPublisher;
 import com.aisales.common.observability.metrics.PlatformMetrics;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.kafka.autoconfigure.KafkaAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.KafkaTemplate;
 
-@Configuration
+// Must run after Boot's KafkaAutoConfiguration so @ConditionalOnBean(KafkaTemplate)
+// sees the auto-configured template.
+@AutoConfiguration(after = KafkaAutoConfiguration.class)
 @ConditionalOnClass(KafkaTemplate.class)
 public class EventsAutoConfiguration {
 

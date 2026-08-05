@@ -56,4 +56,18 @@ class TenantCacheKeyGeneratorTest {
         assertThat(generator.tenantPattern())
                 .isEqualTo("aisales:tenant:" + TENANT_ID + ":*");
     }
+
+    @Test
+    void shouldBuildNamespacePatternForExplicitTenantIgnoringThreadContext() {
+        TenantContext.setTenantId(UUID.randomUUID().toString());
+
+        assertThat(generator.namespacePatternForTenant("semantic-cache", TENANT_ID))
+                .isEqualTo("aisales:tenant:" + TENANT_ID + ":semantic-cache:*");
+    }
+
+    @Test
+    void shouldBuildPlatformNamespacePatternForExplicitTenantWhenTenantIdIsNull() {
+        assertThat(generator.namespacePatternForTenant("semantic-cache", null))
+                .isEqualTo("aisales:platform:semantic-cache:*");
+    }
 }

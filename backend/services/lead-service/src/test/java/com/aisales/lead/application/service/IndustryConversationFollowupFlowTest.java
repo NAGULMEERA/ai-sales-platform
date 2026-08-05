@@ -78,7 +78,7 @@ class IndustryConversationFollowupFlowTest {
                 followupRepository, scoreRepository, statusHistoryRepository, duplicateRepository,
                 mapper, eventPublisher, new LeadStateMachine(), sideEffects, duplicateDetection,
                 assignmentPoolService, pipelineService, customerConversionGateway, noopTxManager(), org.mockito.Mockito.mock(LeadIdempotencyService.class), org.mockito.Mockito.mock(org.springframework.beans.factory.ObjectProvider.class), org.mockito.Mockito.mock(org.springframework.beans.factory.ObjectProvider.class));
-        timelineService = new LeadConversationTimelineService(sideEffects);
+        timelineService = new LeadConversationTimelineService(sideEffects, leadRepository);
     }
 
     @AfterEach
@@ -136,11 +136,13 @@ class IndustryConversationFollowupFlowTest {
     void shouldProjectConversationOntoLeadTimelineForBothIndustries() {
         String conversationId = UUID.randomUUID().toString();
         when(activityRepository.save(any(LeadActivity.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(leadRepository.findByTenantIdAndIdAndDeletedAtIsNull(tenantId, leadId))
+                .thenReturn(Optional.of(new Lead()));
 
-        timelineService.onConversationStarted(leadId.toString(), conversationId, "WHATSAPP");
+        timelineService.onConversationStarted(tenantId.toString(), leadId.toString(), conversationId, "WHATSAPP");
         timelineService.onMessageAdded(
-                leadId.toString(), conversationId, UUID.randomUUID().toString(), "AGENT");
-        timelineService.onConversationClosed(leadId.toString(), conversationId, "resolved");
+                tenantId.toString(), leadId.toString(), conversationId, UUID.randomUUID().toString(), "AGENT");
+        timelineService.onConversationClosed(tenantId.toString(), leadId.toString(), conversationId, "resolved");
 
         ArgumentCaptor<LeadActivity> captor = ArgumentCaptor.forClass(LeadActivity.class);
         verify(activityRepository, org.mockito.Mockito.times(3)).save(captor.capture());

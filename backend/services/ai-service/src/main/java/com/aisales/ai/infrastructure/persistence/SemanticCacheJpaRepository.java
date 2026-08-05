@@ -12,6 +12,8 @@ public interface SemanticCacheJpaRepository extends JpaRepository<SemanticCacheE
     Optional<SemanticCacheEntry> findByTenantIdAndPromptScopeAndQueryHashAndModelUsed(
             UUID tenantId, String promptScope, String queryHash, String modelUsed);
 
+    Optional<SemanticCacheEntry> findByIdAndTenantId(UUID id, UUID tenantId);
+
     @Modifying
     @Query("DELETE FROM SemanticCacheEntry s WHERE s.tenantId = :tenantId")
     void deleteByTenantId(@Param("tenantId") UUID tenantId);

@@ -17,7 +17,9 @@ import com.aisales.common.exception.exception.NotFoundException;
 import com.aisales.common.exception.exception.ValidationException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -105,9 +107,10 @@ public class PromptService {
         Page<PromptTemplate> result = promptTemplateRepository
                 .findByTenantIdAndDeletedAtIsNullOrderByUpdatedAtDesc(
                         tenantId, PageRequest.of(safePage, safeSize));
+        Map<UUID, PromptVersionEntity> latestVersionByPromptId = latestVersionsFor(tenantId, result.getContent());
         return PageResponse.<PromptDto>builder()
                 .content(result.getContent().stream()
-                        .map(t -> mapper.toDto(t, latestVersion(t)))
+                        .map(t -> mapper.toDto(t, latestVersionByPromptId.get(t.getId())))
                         .toList())
                 .page(result.getNumber())
                 .size(result.getSize())
@@ -348,6 +351,23 @@ public class PromptService {
         List<PromptVersionEntity> versions = promptVersionRepository
                 .findByTenantIdAndPromptIdOrderByVersionNumberDesc(template.getTenantId(), template.getId());
         return versions.isEmpty() ? null : versions.get(0);
+    }
+
+    /**
+     * Batch-loads the latest version per template in one query instead of one query per row
+     * (avoids N+1 when rendering a page of prompts).
+     */
+    private Map<UUID, PromptVersionEntity> latestVersionsFor(UUID tenantId, List<PromptTemplate> templates) {
+        if (templates.isEmpty()) {
+            return Map.of();
+        }
+        List<UUID> promptIds = templates.stream().map(PromptTemplate::getId).toList();
+        Map<UUID, PromptVersionEntity> latestByPromptId = new LinkedHashMap<>();
+        for (PromptVersionEntity version : promptVersionRepository
+                .findByTenantIdAndPromptIdInOrderByPromptIdAscVersionNumberDesc(tenantId, promptIds)) {
+            latestByPromptId.putIfAbsent(version.getPromptId(), version);
+        }
+        return latestByPromptId;
     }
 
     private PromptTemplate requireTemplate(UUID id) {

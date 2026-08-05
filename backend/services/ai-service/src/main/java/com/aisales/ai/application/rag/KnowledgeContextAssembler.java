@@ -1,7 +1,9 @@
 package com.aisales.ai.application.rag;
 
+import com.aisales.ai.application.service.PromptVariableSanitizer;
 import com.aisales.common.contracts.ai.RetrievedKnowledgeChunkDto;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -9,7 +11,10 @@ import org.springframework.util.StringUtils;
  * Assembles retrieved chunks as delimited untrusted data to reduce RAG prompt-injection risk.
  */
 @Component
+@RequiredArgsConstructor
 public class KnowledgeContextAssembler {
+
+    private final PromptVariableSanitizer promptVariableSanitizer;
 
     public String assemble(List<RetrievedKnowledgeChunkDto> chunks) {
         if (chunks == null || chunks.isEmpty()) {
@@ -27,7 +32,8 @@ public class KnowledgeContextAssembler {
             if (i > 1) {
                 sb.append("\n\n");
             }
-            sb.append("[").append(i++).append("] ").append(chunk.getContent().trim());
+            String sanitized = promptVariableSanitizer.sanitizeKnowledgeChunk(chunk.getContent().trim());
+            sb.append("[").append(i++).append("] ").append(sanitized);
         }
         sb.append("\n<<<END_KNOWLEDGE_DATA>>>");
         return sb.toString();

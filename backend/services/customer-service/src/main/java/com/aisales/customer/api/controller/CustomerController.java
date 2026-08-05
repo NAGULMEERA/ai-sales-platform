@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,6 +53,9 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorizeTenant
 @Tag(name = "Customers", description = "Industry-agnostic customer aggregate with identity resolution")
 public class CustomerController {
+
+    private static final String DELETE = "hasAuthority('customer:delete') or hasAuthority('tenant:admin') "
+            + "or hasAnyRole('TENANT_ADMIN','ADMIN','SUPER_ADMIN')";
 
     private final CustomerService customerService;
 
@@ -141,6 +145,7 @@ public class CustomerController {
 
     @PostMapping("/{id}/archive")
     @Operation(summary = "Archive a customer")
+    @PreAuthorize(DELETE)
     public ApiResponse<CustomerDto> archive(
             @PathVariable UUID id,
             @RequestBody(required = false) Map<String, String> body) {
@@ -158,6 +163,7 @@ public class CustomerController {
 
     @PostMapping("/{id}/merge")
     @Operation(summary = "Merge another customer into this survivor")
+    @PreAuthorize(DELETE)
     public ApiResponse<CustomerDto> merge(
             @PathVariable UUID id,
             @Valid @RequestBody MergeCustomerRequest request) {
@@ -167,6 +173,7 @@ public class CustomerController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Soft-delete a customer")
+    @PreAuthorize(DELETE)
     public void delete(@PathVariable UUID id) {
         customerService.deleteCustomer(id);
     }

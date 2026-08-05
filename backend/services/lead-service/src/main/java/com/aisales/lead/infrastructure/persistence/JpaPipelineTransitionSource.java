@@ -1,9 +1,10 @@
 package com.aisales.lead.infrastructure.persistence;
 
 import com.aisales.common.contracts.lead.LeadStatus;
+import com.aisales.common.core.util.TenantContext;
+import com.aisales.lead.domain.entity.SalesPipelineTransition;
 import com.aisales.lead.domain.service.DefaultSalesPipelineDefinition;
 import com.aisales.lead.domain.service.PipelineTransitionSource;
-import com.aisales.lead.domain.entity.SalesPipelineTransition;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -11,15 +12,20 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 public class JpaPipelineTransitionSource implements PipelineTransitionSource {
 
     private final SalesPipelineTransitionRepository transitionRepository;
-    private final Map<UUID, Map<LeadStatus, Set<LeadStatus>>> cache = new ConcurrentHashMap<>();
+    private final SalesPipelineRepository pipelineRepository;
+    private final Map<CacheKey, Map<LeadStatus, Set<LeadStatus>>> cache = new ConcurrentHashMap<>();
 
-    public JpaPipelineTransitionSource(SalesPipelineTransitionRepository transitionRepository) {
+    public JpaPipelineTransitionSource(
+            SalesPipelineTransitionRepository transitionRepository,
+            SalesPipelineRepository pipelineRepository) {
         this.transitionRepository = transitionRepository;
+        this.pipelineRepository = pipelineRepository;
     }
 
     @Override
@@ -27,21 +33,27 @@ public class JpaPipelineTransitionSource implements PipelineTransitionSource {
         if (pipelineId == null) {
             return DefaultSalesPipelineDefinition.allowedTargets(from);
         }
-        Map<LeadStatus, Set<LeadStatus>> graph = cache.computeIfAbsent(pipelineId, this::loadGraph);
+        Map<LeadStatus, Set<LeadStatus>> graph = cache.computeIfAbsent(cacheKey(pipelineId), this::loadGraph);
         if (graph.isEmpty()) {
             return DefaultSalesPipelineDefinition.allowedTargets(from);
         }
         return EnumSet.copyOf(graph.getOrDefault(from, EnumSet.noneOf(LeadStatus.class)));
     }
 
+    @Override
     public void evict(UUID pipelineId) {
         if (pipelineId != null) {
-            cache.remove(pipelineId);
+            cache.remove(cacheKey(pipelineId));
         }
     }
 
-    private Map<LeadStatus, Set<LeadStatus>> loadGraph(UUID pipelineId) {
-        List<SalesPipelineTransition> rows = transitionRepository.findByPipelineId(pipelineId);
+    private Map<LeadStatus, Set<LeadStatus>> loadGraph(CacheKey key) {
+        // Defense in depth: never cache transitions for a pipeline the current tenant does not own.
+        if (key.tenantId() != null
+                && pipelineRepository.findByIdAndTenantId(key.pipelineId(), key.tenantId()).isEmpty()) {
+            return Map.of();
+        }
+        List<SalesPipelineTransition> rows = transitionRepository.findByPipelineId(key.pipelineId());
         if (rows.isEmpty()) {
             return Map.of();
         }
@@ -57,6 +69,12 @@ public class JpaPipelineTransitionSource implements PipelineTransitionSource {
         return graph;
     }
 
+    private static CacheKey cacheKey(UUID pipelineId) {
+        String raw = TenantContext.getTenantId();
+        UUID tenantId = StringUtils.hasText(raw) ? UUID.fromString(raw) : null;
+        return new CacheKey(tenantId, pipelineId);
+    }
+
     private static LeadStatus parseStatus(String code) {
         if (code == null || code.isBlank()) {
             return null;
@@ -66,5 +84,8 @@ public class JpaPipelineTransitionSource implements PipelineTransitionSource {
         } catch (IllegalArgumentException ex) {
             return null;
         }
+    }
+
+    private record CacheKey(UUID tenantId, UUID pipelineId) {
     }
 }

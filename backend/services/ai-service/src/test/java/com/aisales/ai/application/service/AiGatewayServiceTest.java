@@ -87,7 +87,7 @@ class AiGatewayServiceTest {
                 eventPublisher,
                 knowledgeRetrievalService,
                 retrieverRegistry,
-                new KnowledgeContextAssembler(),
+                new KnowledgeContextAssembler(new PromptVariableSanitizer()),
                 aiQuotaService,
                 tokenUsageService,
                 semanticCacheService,

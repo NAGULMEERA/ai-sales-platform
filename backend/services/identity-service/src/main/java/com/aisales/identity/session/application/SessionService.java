@@ -1,6 +1,7 @@
 package com.aisales.identity.session.application;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,19 @@ public class SessionService {
     @Transactional
     public void revokeSessionByRefreshTokenId(UUID refreshTokenId) {
         userSessionRepository.findByRefreshTokenIdAndRevokedAtIsNull(refreshTokenId)
+                .forEach(s -> s.setRevokedAt(Instant.now()));
+    }
+
+    /**
+     * Batch variant of {@link #revokeSessionByRefreshTokenId(UUID)} for revoking every session
+     * in a refresh-token family in one query instead of one query per token.
+     */
+    @Transactional
+    public void revokeSessionsByRefreshTokenIds(Collection<UUID> refreshTokenIds) {
+        if (refreshTokenIds == null || refreshTokenIds.isEmpty()) {
+            return;
+        }
+        userSessionRepository.findByRefreshTokenIdInAndRevokedAtIsNull(refreshTokenIds)
                 .forEach(s -> s.setRevokedAt(Instant.now()));
     }
 

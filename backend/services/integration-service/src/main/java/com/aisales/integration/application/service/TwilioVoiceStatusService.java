@@ -6,8 +6,10 @@ import com.aisales.common.contracts.lead.UpdateLeadRequest;
 import com.aisales.common.core.dto.ApiResponse;
 import com.aisales.common.core.util.TenantContext;
 import com.aisales.integration.domain.entity.VoiceCall;
+import com.aisales.integration.infrastructure.configuration.VoiceProperties;
 import com.aisales.integration.infrastructure.persistence.VoiceCallRepository;
 import com.aisales.integration.infrastructure.voice.TwilioVoiceProvider;
+import com.aisales.integration.infrastructure.voice.TwilioWebhookSignatureVerifier;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,8 +33,21 @@ public class TwilioVoiceStatusService {
     private final VoiceCallRepository voiceCallRepository;
     private final LeadServiceClient leadServiceClient;
     private final PlatformTransactionManager transactionManager;
+    private final VoiceProperties voiceProperties;
 
-    public void onStatus(String callSid, String callStatus, String to, String from) {
+    public void onStatus(Map<String, String> formParams, String signatureHeader) {
+        VoiceProperties.Twilio twilio = voiceProperties.getTwilio();
+        TwilioWebhookSignatureVerifier.verify(
+                twilio.getStatusCallbackUrl(), formParams, signatureHeader,
+                twilio.getAuthToken(), twilio.isEnabled());
+
+        String callSid = formParams.get("CallSid");
+        String callStatus = formParams.get("CallStatus");
+        String to = formParams.get("To");
+        onStatus(callSid, callStatus, to, formParams.get("From"));
+    }
+
+    private void onStatus(String callSid, String callStatus, String to, String from) {
         if (!StringUtils.hasText(callSid)) {
             return;
         }
