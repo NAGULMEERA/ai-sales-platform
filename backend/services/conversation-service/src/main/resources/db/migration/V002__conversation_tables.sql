@@ -49,7 +49,8 @@ CREATE TABLE conversation_memory (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_conversation_memory_vector ON conversation_memory(embedding vector_cosine_ops HNSW);
+CREATE INDEX IF NOT EXISTS idx_conversation_memory_vector
+    ON conversation_memory USING hnsw (embedding vector_cosine_ops);
 
 CREATE TABLE ai_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

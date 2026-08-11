@@ -15,6 +15,10 @@ spring:
     url: jdbc:postgresql://localhost:5433/deal_db
     username: aisales
     password: aisales
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
   kafka:
     bootstrap-servers: localhost:9092
 
