@@ -1,0 +1,39 @@
+# Local profile — Postgres :5433.
+# Infra: scripts\prepare-local-debug.bat
+# IntelliJ: use "appointment-service (local debug)" or Active profiles = local
+
+spring:
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+  config:
+    import:
+      - optional:classpath:platform/application-observability.yml
+  datasource:
+    url: jdbc:postgresql://localhost:5433/appointment_db
+    username: aisales
+    password: aisales
+
+management:
+  tracing:
+    enabled: false
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+aisales:
+  security:
+    jwt:
+      public-key-location: classpath:jwt/local-public.pem
+      key-id: aisales-1
+  startup-validation:
+    enabled: false
+
+logging:
+  level:
+    com.aisales.appointment: INFO

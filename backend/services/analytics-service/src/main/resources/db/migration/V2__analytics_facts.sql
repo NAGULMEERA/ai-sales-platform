@@ -14,8 +14,9 @@ CREATE INDEX IF NOT EXISTS idx_analytics_event_tenant_metric_time
     ON analytics_event (tenant_id, metric_name, occurred_at DESC)
     WHERE deleted_at IS NULL;
 
+-- timestamptz::date is not IMMUTABLE (session TimeZone). Use fixed UTC day bucket.
 CREATE INDEX IF NOT EXISTS idx_analytics_event_tenant_day
-    ON analytics_event (tenant_id, (occurred_at::date), metric_name)
+    ON analytics_event (tenant_id, ((occurred_at AT TIME ZONE 'UTC')::date), metric_name)
     WHERE deleted_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS analytics_daily_rollup (

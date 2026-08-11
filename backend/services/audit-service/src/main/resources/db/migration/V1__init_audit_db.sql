@@ -1,4 +1,4 @@
-﻿CREATE EXTENSION IF NOT EXISTS ""pgcrypto"";
+﻿CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE audit_log (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

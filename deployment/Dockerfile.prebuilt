@@ -1,0 +1,32 @@
+# Runtime image from a locally built Spring Boot jar.
+# Build example (from repo root):
+#   docker build -f deployment/Dockerfile.prebuilt ^
+#     --build-arg JAR_NAME=identity-service-1.0.0-SNAPSHOT.jar ^
+#     --build-arg SERVER_PORT=8081 ^
+#     -t aisales/identity-service:local ^
+#     backend/services/identity-service/target
+
+FROM eclipse-temurin:21-jre-alpine
+
+ARG JAR_NAME
+ARG SERVER_PORT=8080
+
+WORKDIR /app
+
+RUN addgroup -S aisales && adduser -S -G aisales aisales \
+ && apk add --no-cache curl \
+ && rm -rf /var/cache/apk/*
+
+COPY ${JAR_NAME} /app/app.jar
+RUN chown aisales:aisales /app/app.jar
+
+USER aisales
+EXPOSE ${SERVER_PORT}
+
+ENV JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError" \
+    SERVER_PORT=${SERVER_PORT}
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
+  CMD curl -fsS "http://127.0.0.1:${SERVER_PORT}/actuator/health/liveness" || exit 1
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

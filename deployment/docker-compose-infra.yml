@@ -6,6 +6,8 @@ services:
       POSTGRES_USER: aisales
       POSTGRES_PASSWORD: aisales
       POSTGRES_DB: aisales
+    # Local IntelliJ debug runs many services; default max_connections=100 is too low.
+    command: ["postgres", "-c", "max_connections=300", "-c", "shared_buffers=256MB"]
     ports:
       - "5433:5432"
     volumes:
@@ -55,7 +57,8 @@ services:
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      CLUSTER_ID: aisales-kafka-cluster
+      # Must be a valid Kafka base64 UUID (from: kafka-storage random-uuid)
+      CLUSTER_ID: J2e6kZyoSJ2mXx6rM_wOaQ
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     ports:
       - "9092:9092"

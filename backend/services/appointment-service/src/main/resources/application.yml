@@ -4,13 +4,15 @@
 spring:
   application:
     name: appointment-service
+  profiles:
+    default: local
   config:
     import:
       - optional:configserver:http://localhost:8888
       - optional:classpath:platform/application-observability.yml
       - optional:classpath:platform/application-prod.yml
   datasource:
-    url: jdbc:postgresql://localhost:5432/appointment_db
+    url: jdbc:postgresql://localhost:5433/appointment_db
     username: aisales
     password: ${DB_PASSWORD:${SPRING_DATASOURCE_PASSWORD:aisales}}
   jpa:

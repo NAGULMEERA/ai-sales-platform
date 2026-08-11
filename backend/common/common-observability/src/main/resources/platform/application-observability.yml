@@ -114,3 +114,16 @@ resilience4j:
       smtpEmail:
         max-concurrent-calls: 10
         max-wait-duration: 0ms
+
+---
+# Local IntelliJ debug: many services share one Postgres — keep pools small.
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    hikari:
+      maximum-pool-size: ${HIKARI_MAX_POOL:5}
+      minimum-idle: ${HIKARI_MIN_IDLE:1}
+      connection-timeout: ${HIKARI_CONNECTION_TIMEOUT_MS:30000}
+      max-lifetime: ${HIKARI_MAX_LIFETIME_MS:600000}
