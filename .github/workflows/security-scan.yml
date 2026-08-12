@@ -30,7 +30,7 @@ jobs:
         # failBuildOnCVSS=9 keeps CI informative; raise enforcement when baseline cleans up
       - name: Upload Dependency-Check report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dependency-check-report
           path: backend/target/dependency-check-report.*
