@@ -79,7 +79,7 @@
         <jetbrains-annotations.version>17.0.0</jetbrains-annotations.version>
         <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
         <pdfbox.version>3.0.3</pdfbox.version>
-        <aws-sdk-s3.version>2.25.70</aws-sdk-s3.version>
+        <aws-sdk-s3.version>2.54.7</aws-sdk-s3.version>
     </properties>
 
     <dependencyManagement>
